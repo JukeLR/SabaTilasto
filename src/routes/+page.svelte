@@ -456,6 +456,7 @@
 		justify-content: center;
 		gap: 20px;
 		flex-wrap: wrap;
+		margin-bottom: 10px;
 	}
 
 	.period-label {
@@ -484,21 +485,21 @@
 	}
 
 	.team-section {
-		margin-bottom: 50px;
+		margin-bottom: 30px;
 	}
 
 	h2 {
 		font-size: 1.8rem;
 		font-weight: 600;
-		margin-bottom: 20px;
+		margin-bottom: 15px;
 		text-decoration: underline;
 	}
 
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 20px;
-		margin-bottom: 20px;
+		gap: 15px;
+		margin-bottom: 15px;
 	}
 
 	.stat-item {
@@ -518,12 +519,12 @@
 		color: white;
 		border: none;
 		border-radius: 8px;
-		padding: 20px;
+		padding: 15px;
 		font-size: 2rem;
 		font-weight: bold;
 		cursor: pointer;
 		transition: background-color 0.2s;
-		min-height: 80px;
+		min-height: 70px;
 	}
 
 	.stat-button:hover {
@@ -538,8 +539,8 @@
 	.action-buttons {
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
-		margin-top: 40px;
+		gap: 15px;
+		margin-top: 20px;
 		align-items: center;
 	}
 
@@ -548,8 +549,8 @@
 		color: #1a1a1a;
 		border: none;
 		border-radius: 8px;
-		padding: 15px 60px;
-		font-size: 1.5rem;
+		padding: 12px 50px;
+		font-size: 1.3rem;
 		font-weight: bold;
 		cursor: pointer;
 		transition: background-color 0.2s;
@@ -565,8 +566,8 @@
 		color: white;
 		border: none;
 		border-radius: 8px;
-		padding: 15px 60px;
-		font-size: 1.5rem;
+		padding: 12px 50px;
+		font-size: 1.3rem;
 		font-weight: bold;
 		cursor: pointer;
 		transition: background-color 0.2s;
@@ -810,41 +811,70 @@
 
 	@media (max-width: 768px) {
 		.container {
-			padding: 15px;
+			padding: 10px;
 		}
 
 		h1 {
-			font-size: 2rem;
+			font-size: 1.6rem;
+			margin-bottom: 10px;
 		}
 
 		h2 {
-			font-size: 1.5rem;
+			font-size: 1.3rem;
+			margin-bottom: 10px;
+		}
+
+		header {
+			margin-bottom: 20px;
+		}
+
+		.team-section {
+			margin-bottom: 20px;
 		}
 
 		.stats-grid {
 			grid-template-columns: repeat(3, 1fr);
-			gap: 15px;
+			gap: 10px;
 		}
 
 		.periods {
-			gap: 15px;
+			gap: 12px;
+			margin-bottom: 5px;
+		}
+
+		.period-label {
+			font-size: 1rem;
 		}
 
 		.checkbox-container input[type="checkbox"] {
-			width: 35px;
-			height: 35px;
+			width: 30px;
+			height: 30px;
+		}
+
+		.checkbox-label {
+			font-size: 0.9rem;
+		}
+
+		.stat-item label {
+			font-size: 0.85rem;
 		}
 
 		.stat-button {
-			font-size: 1.8rem;
-			padding: 15px;
-			min-height: 70px;
+			font-size: 1.5rem;
+			padding: 10px 5px;
+			min-height: 55px;
+		}
+
+		.action-buttons {
+			gap: 10px;
+			margin-top: 15px;
 		}
 
 		.undo-button,
 		.summary-button {
 			min-width: 100%;
-			padding: 15px 40px;
+			padding: 12px 30px;
+			font-size: 1.2rem;
 		}
 
 		.back-button {
@@ -879,28 +909,31 @@
 
 	@media (max-width: 480px) {
 		h1 {
-			font-size: 1.6rem;
+			font-size: 1.4rem;
 		}
 
 		.period-label {
-			font-size: 1rem;
+			font-size: 0.9rem;
 		}
 
 		.checkbox-label {
-			font-size: 1rem;
+			font-size: 0.85rem;
 		}
 
 		.stat-item label {
-			font-size: 1rem;
+			font-size: 0.8rem;
 		}
 
 		.stat-button {
-			font-size: 1.5rem;
+			font-size: 1.3rem;
+			padding: 8px 3px;
+			min-height: 50px;
 		}
 
 		.undo-button,
 		.summary-button {
-			font-size: 1.3rem;
+			font-size: 1.1rem;
+			padding: 10px 25px;
 		}
 
 		.back-button {
