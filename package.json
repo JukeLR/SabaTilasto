@@ -15,9 +15,17 @@
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.47.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@types/nodemailer": "^7.0.3",
 		"svelte": "^5.41.0",
 		"svelte-check": "^4.3.3",
 		"typescript": "^5.9.3",
 		"vite": "^7.1.10"
+	},
+	"dependencies": {
+		"@neondatabase/serverless": "^1.0.2",
+		"bcryptjs": "^3.0.3",
+		"dotenv": "^17.2.3",
+		"nodemailer": "^7.0.10",
+		"undici": "^7.16.0"
 	}
 }
