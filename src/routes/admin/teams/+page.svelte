@@ -197,11 +197,6 @@
 			if (!response.ok) {
 				const data = await response.json();
 				throw new Error(data.error || 'Joukkueen poistaminen epäonnistui');
-		}
-	}
-</script>
-
-<div class="admin-container">
 			}
 
 			successMessage = 'Joukkue poistettu onnistuneesti!';
