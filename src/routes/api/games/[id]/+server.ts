@@ -22,7 +22,6 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 			const games = await sql`
 				SELECT 
 					g.id,
-					g.user_id,
 					g.series_id,
 					g.own_team_id,
 					g.opponent_team_name as "opponentName",
@@ -37,7 +36,6 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 				FROM games g
 				LEFT JOIN teams t ON g.own_team_id = t.id
 				WHERE g.id = ${gameId}
-				AND g.user_id = ${parseInt(userId)}
 			`;
 
 			if (games.length === 0) {
@@ -53,10 +51,7 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 			return json({ error: 'Peliä ei löytynyt' }, { status: 404 });
 		}
 
-		// Varmista että peli kuuluu käyttäjälle
-		if (gameData.game.user_id !== parseInt(userId)) {
-			return json({ error: 'Ei oikeutta' }, { status: 403 });
-		}
+		// Pelit eivät ole enää käyttäjäkohtaisia, joten ei tarvitse tarkistaa omistajuutta
 
 		return json(gameData);
 
