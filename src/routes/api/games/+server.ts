@@ -1,5 +1,4 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { getUserGames } from '$lib/game-stats';
 import { sql } from '$lib/db';
 
 export const GET = async ({ cookies }: RequestEvent) => {
@@ -11,21 +10,7 @@ export const GET = async ({ cookies }: RequestEvent) => {
 
 		// Hae kaikki pelit (ei käyttäjäkohtaisia)
 		const games = await sql`
-			SELECT 
-				id,
-				series_id,
-				own_team_id,
-				opponent_team_name,
-				game_location,
-				game_date,
-				lineup,
-				field_positions,
-				status,
-				notes,
-				final_own_score,
-				final_opp_score,
-				created_at,
-				updated_at
+			SELECT *
 			FROM games
 			ORDER BY game_date DESC, created_at DESC
 		`;
@@ -33,6 +18,7 @@ export const GET = async ({ cookies }: RequestEvent) => {
 		return json({ games });
 
 	} catch (error) {
+		console.error('Get games error:', error);
 		console.error('Get games error:', error);
 		return json({ error: 'Pelien haku epäonnistui' }, { status: 500 });
 	}
