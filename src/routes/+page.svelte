@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	
 	let { data }: { data: PageData } = $props();
 	
-	let selectedPeriod = $state(1);
 	let opponentTeamName = $state('');
-	let selectedGoalkeeper = $state('');
+	let goalkeeperName = $state(''); // Aloitusnäytön maalivahti tekstikentästä
 	let goalkeepers = $state<any[]>([]);
 	let isSaving = $state(false);
 	let saveMessage = $state('');
@@ -21,6 +21,27 @@
 	let loginPassword = $state('');
 	let loginError = $state('');
 	let isLoggingIn = $state(false);
+	
+	// Pelin tiedot ja kentälliset
+	let currentGameId = $state<number | null>(null);
+	let currentGame = $state<any>(null);
+	let showFieldPositionsModal = $state(false);
+	let players = $state<any[]>([]);
+	let fieldPositions = $state<(number | null)[]>(Array(21).fill(null));
+	let currentFieldSlot = $state<number | null>(null);
+	let pollInterval: number | null = null;
+	
+	// Maalivahdin nimi lasketaan automaattisesti kentällisistä
+	const selectedGoalkeeper = $derived.by(() => {
+		const goalkeeperPlayerId = fieldPositions[0];
+		if (goalkeeperPlayerId && Array.isArray(players) && players.length > 0) {
+			const goalkeeper = players.find(p => p.id === goalkeeperPlayerId);
+			if (goalkeeper) {
+				return `${goalkeeper.first_name} ${goalkeeper.last_name}`;
+			}
+		}
+		return '';
+	});
 	
 	// Rekisteröitymislomakkeen kentät
 	let registerUsername = $state('');
@@ -37,19 +58,36 @@
 	let forgotPasswordSuccess = $state('');
 	let isSendingPassword = $state(false);
 
-	// Eräkohtaiset tilastot
-	type PeriodStats = {
-		ownGoals: number;
-		ownBlockedShots: number;
-		ownMissedShots: number;
-		ownBlocks: number;
-		ownSaves: number;
-		ownCatches: number;
-		oppGoals: number;
-		oppSaves: number;
-		oppMissed: number;
-		oppBlocks: number;
-	};
+	// Tilastot (ei eräkohtaisia)
+	let ownGoals = $state(0);
+	let ownBlockedShots = $state(0);
+	let ownMissedShots = $state(0);
+	let ownBlocks = $state(0);
+	let ownSaves = $state(0);
+	let ownCatches = $state(0);
+	let oppGoals = $state(0);
+	let oppSaves = $state(0);
+	let oppMissed = $state(0);
+	let oppBlocks = $state(0);
+
+	// Lasketut arvot
+	let totalOwnShotsOnGoal = $derived(ownGoals + oppSaves + ownBlockedShots);
+	let ownGoalieSavePercentage = $derived.by(() => {
+		const totalShotsAgainst = ownSaves + oppGoals;
+		if (totalShotsAgainst === 0) return '0.0';
+		return ((ownSaves / totalShotsAgainst) * 100).toFixed(1);
+	});
+	let oppGoalieSavePercentage = $derived.by(() => {
+		const totalShots = oppSaves + ownGoals;
+		if (totalShots === 0) return '0.0';
+		return ((oppSaves / totalShots) * 100).toFixed(1);
+	});
+
+	let history: Array<{
+		team: 'own' | 'opp';
+		stat: string;
+		value: number;
+	}> = $state([]);
 
 	// Päivitä state kun data muuttuu
 	$effect(() => {
@@ -61,122 +99,185 @@
 		fetchGoalkeepers();
 	});
 
+	onMount(async () => {
+		// Tarkista onko URL:ssa game-parametri
+		const urlParams = new URLSearchParams(window.location.search);
+		const gameId = urlParams.get('game');
+		
+		if (gameId) {
+			currentGameId = parseInt(gameId);
+			await loadGameData(currentGameId);
+			startPolling();
+		}
+		
+		// Siivoa polling kun komponentti poistetaan
+		return () => {
+			stopPolling();
+		};
+	});
+
+	async function loadGameData(gameId: number, isPolling = false) {
+		try {
+			const response = await fetch(`/api/games/${gameId}?basic=true`);
+			if (response.ok) {
+				const gameData = await response.json();
+				
+				// Ensimmäisellä latauksella asetetaan kaikki
+				if (!isPolling) {
+					currentGame = gameData;
+					opponentTeamName = gameData.opponentName || '';
+					
+					// Aseta kentälliset
+					if (gameData.fieldPositions) {
+						fieldPositions = gameData.fieldPositions;
+					}
+					
+					// Hae kaikki pelaajat
+					await fetchPlayers();
+					
+					// Suodata pelaajat lineup-sarakkeen perusteella
+					if (gameData.lineup && Array.isArray(gameData.lineup)) {
+						players = players.filter(p => gameData.lineup.includes(p.id));
+					}
+				} else {
+					// Pollingissa päivitetään vain tiedot, ei fieldPositions jos modal on auki
+					currentGame = gameData;
+					opponentTeamName = gameData.opponentName || '';
+					
+					// Päivitä kentälliset vain jos modal ei ole auki
+					if (!showFieldPositionsModal && gameData.fieldPositions) {
+						fieldPositions = gameData.fieldPositions;
+					}
+				}
+			}
+		} catch (error) {
+			console.error('Virhe pelin tietojen haussa:', error);
+		}
+	}
+
+	function startPolling() {
+		if (pollInterval || !currentGameId) return;
+		
+		pollInterval = setInterval(() => {
+			if (currentGameId) {
+				loadGameData(currentGameId, true);
+			}
+		}, 3000); // Päivitä 3 sekunnin välein
+	}
+
+	function stopPolling() {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+			pollInterval = null;
+		}
+	}
+
+	async function fetchPlayers() {
+		try {
+			const response = await fetch('/api/admin/players');
+			if (response.ok) {
+				const data = await response.json();
+				players = data.players || [];
+			}
+		} catch (error) {
+			console.error('Virhe pelaajien haussa:', error);
+		}
+	}
+
+	function openPlayerSelector(position: number) {
+		if (fieldPositions[position]) {
+			// Jos paikalla on jo pelaaja, poista se
+			fieldPositions[position] = null;
+			saveFieldPositions();
+		} else {
+			// Avaa dropdown
+			currentFieldSlot = position;
+		}
+	}
+
+	function assignPlayerToPosition(playerId: number, position: number) {
+		// Poista pelaaja muista paikoista
+		for (let i = 0; i < fieldPositions.length; i++) {
+			if (fieldPositions[i] === playerId) {
+				fieldPositions[i] = null;
+			}
+		}
+		
+		// Aseta pelaaja uuteen paikkaan
+		fieldPositions[position] = playerId;
+		
+		// Sulje dropdown ja tallenna
+		currentFieldSlot = null;
+		saveFieldPositions();
+	}
+
+	// Käytettävissä olevat pelaajat (ei ole vielä kentällä)
+	const availablePlayers = $derived(
+		players.filter(p => !fieldPositions.includes(p.id))
+	);
+
+	async function saveFieldPositions() {
+		if (!currentGameId || !currentGame) return;
+
+		try {
+			const response = await fetch(`/api/games/${currentGameId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					seriesId: currentGame.series_id,
+					ownTeamId: currentGame.own_team_id,
+					opponentName: currentGame.opponentName,
+					gameLocation: currentGame.gameLocation,
+					gameDate: currentGame.gameDate,
+					lineup: currentGame.lineup,
+					fieldPositions: fieldPositions,
+					status: currentGame.status,
+					notes: currentGame.notes
+				})
+			});
+			
+			if (!response.ok) {
+				const error = await response.text();
+				console.error('Tallennus epäonnistui:', response.status, error);
+			} else {
+				console.log('Kentälliset tallennettu onnistuneesti');
+			}
+		} catch (err) {
+			console.error('Virhe tallennuksessa:', err);
+		}
+	}
+
 	async function fetchGoalkeepers() {
 		try {
 			const response = await fetch('/api/admin/players');
 			if (response.ok) {
-				const players = await response.json();
-				goalkeepers = players.filter((p: any) => p.position === 'Maalivahti');
+				const data = await response.json();
+				const playersData = data.players || [];
+				goalkeepers = playersData.filter((p: any) => p.position === 'Maalivahti');
 			}
 		} catch (error) {
 			console.error('Virhe maalivahtien haussa:', error);
 		}
 	}
 
-	let periodStats: Record<number, PeriodStats> = $state({
-		1: {
-			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0,
-			oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0
-		},
-		2: {
-			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0,
-			oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0
-		},
-		3: {
-			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0,
-			oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0
-		}
-	});
-
-	// Nykyisen erän tilastot (computed)
-	let currentStats = $derived(periodStats[selectedPeriod]);
-
-	// Koko pelin yhteenlasketut tilastot
-	let totalOwnGoals = $derived(periodStats[1].ownGoals + periodStats[2].ownGoals + periodStats[3].ownGoals);
-	let totalOwnBlockedShots = $derived(periodStats[1].ownBlockedShots + periodStats[2].ownBlockedShots + periodStats[3].ownBlockedShots);
-	let totalOwnMissedShots = $derived(periodStats[1].ownMissedShots + periodStats[2].ownMissedShots + periodStats[3].ownMissedShots);
-	let totalOwnBlocks = $derived(periodStats[1].ownBlocks + periodStats[2].ownBlocks + periodStats[3].ownBlocks);
-	let totalOwnSaves = $derived(periodStats[1].ownSaves + periodStats[2].ownSaves + periodStats[3].ownSaves);
-	let totalOwnCatches = $derived(periodStats[1].ownCatches + periodStats[2].ownCatches + periodStats[3].ownCatches);
-
-	let totalOppGoals = $derived(periodStats[1].oppGoals + periodStats[2].oppGoals + periodStats[3].oppGoals);
-	let totalOppSaves = $derived(periodStats[1].oppSaves + periodStats[2].oppSaves + periodStats[3].oppSaves);
-	let totalOppMissed = $derived(periodStats[1].oppMissed + periodStats[2].oppMissed + periodStats[3].oppMissed);
-	let totalOppBlocks = $derived(periodStats[1].oppBlocks + periodStats[2].oppBlocks + periodStats[3].oppBlocks);
-
-	// Lasketaan meidän laukaukset maalia kohti (maalit + vastustajan torjunnat + blokit)
-	let totalOwnShotsOnGoal = $derived(totalOwnGoals + totalOppSaves + totalOwnBlockedShots);
-
-	// Vastustajan torjunta-%: (torjunnat / (torjunnat + päästetyt maalit)) * 100
-	let oppGoalieSavePercentage = $derived(() => {
-		const totalShots = totalOppSaves + totalOwnGoals;
-		if (totalShots === 0) return '0.0';
-		return ((totalOppSaves / totalShots) * 100).toFixed(1);
-	});
-
-	// Oman maalivahdin torjunta-%: (torjunnat / (torjunnat + vastustajan maalit)) * 100
-	let ownGoalieSavePercentage = $derived(() => {
-		const totalShotsAgainst = totalOwnSaves + totalOppGoals;
-		if (totalShotsAgainst === 0) return '0.0';
-		return ((totalOwnSaves / totalShotsAgainst) * 100).toFixed(1);
-	});
-
-	let history: Array<{
-		team: 'own' | 'opp';
-		stat: string;
-		value: number;
-		period: number;
-	}> = $state([]);
-
 	function increment(team: 'own' | 'opp', stat: string) {
 		let currentValue = 0;
-		const period = selectedPeriod;
 		
 		if (team === 'own') {
-			if (stat === 'goals') { 
-				currentValue = periodStats[period].ownGoals; 
-				periodStats[period].ownGoals++; 
-			}
-			else if (stat === 'blocked') { 
-				currentValue = periodStats[period].ownBlockedShots; 
-				periodStats[period].ownBlockedShots++; 
-			}
-			else if (stat === 'missed') { 
-				currentValue = periodStats[period].ownMissedShots; 
-				periodStats[period].ownMissedShots++; 
-			}
-			else if (stat === 'blocks') {
-				currentValue = periodStats[period].ownBlocks;
-				periodStats[period].ownBlocks++;
-			}
-			else if (stat === 'saves') {
-				currentValue = periodStats[period].ownSaves;
-				periodStats[period].ownSaves++;
-			}
-			else if (stat === 'catches') {
-				currentValue = periodStats[period].ownCatches;
-				periodStats[period].ownCatches++;
-			}
+			if (stat === 'goals') { currentValue = ownGoals; ownGoals++; }
+			else if (stat === 'blocked') { currentValue = ownBlockedShots; ownBlockedShots++; }
+			else if (stat === 'missed') { currentValue = ownMissedShots; ownMissedShots++; }
+			else if (stat === 'blocks') { currentValue = ownBlocks; ownBlocks++; }
+			else if (stat === 'saves') { currentValue = ownSaves; ownSaves++; }
+			else if (stat === 'catches') { currentValue = ownCatches; ownCatches++; }
 		} else {
-			if (stat === 'goals') { 
-				currentValue = periodStats[period].oppGoals; 
-				periodStats[period].oppGoals++; 
-			}
-			else if (stat === 'saves') {
-				currentValue = periodStats[period].oppSaves;
-				periodStats[period].oppSaves++;
-			}
-			else if (stat === 'missed') {
-				currentValue = periodStats[period].oppMissed;
-				periodStats[period].oppMissed++;
-			}
-			else if (stat === 'blocks') {
-				currentValue = periodStats[period].oppBlocks;
-				periodStats[period].oppBlocks++;
-			}
+			if (stat === 'goals') { currentValue = oppGoals; oppGoals++; }
+			else if (stat === 'saves') { currentValue = oppSaves; oppSaves++; }
+			else if (stat === 'missed') { currentValue = oppMissed; oppMissed++; }
+			else if (stat === 'blocks') { currentValue = oppBlocks; oppBlocks++; }
 		}
 
-		history = [...history, { team, stat, value: currentValue, period }];
+		history = [...history, { team, stat, value: currentValue }];
 	}
 
 	function undo() {
@@ -185,28 +286,35 @@
 		const last = history.pop();
 		if (!last) return;
 
-		const { team, stat, period } = last;
+		const { team, stat } = last;
 
 		if (team === 'own') {
-			if (stat === 'goals') periodStats[period].ownGoals--;
-			else if (stat === 'blocked') periodStats[period].ownBlockedShots--;
-			else if (stat === 'missed') periodStats[period].ownMissedShots--;
-			else if (stat === 'blocks') periodStats[period].ownBlocks--;
-			else if (stat === 'saves') periodStats[period].ownSaves--;
-			else if (stat === 'catches') periodStats[period].ownCatches--;
+			if (stat === 'goals') ownGoals--;
+			else if (stat === 'blocked') ownBlockedShots--;
+			else if (stat === 'missed') ownMissedShots--;
+			else if (stat === 'blocks') ownBlocks--;
+			else if (stat === 'saves') ownSaves--;
+			else if (stat === 'catches') ownCatches--;
 		} else {
-			if (stat === 'goals') periodStats[period].oppGoals--;
-			else if (stat === 'saves') periodStats[period].oppSaves--;
-			else if (stat === 'missed') periodStats[period].oppMissed--;
-			else if (stat === 'blocks') periodStats[period].oppBlocks--;
+			if (stat === 'goals') oppGoals--;
+			else if (stat === 'saves') oppSaves--;
+			else if (stat === 'missed') oppMissed--;
+			else if (stat === 'blocks') oppBlocks--;
 		}
 	}
 
 	function resetAllStats() {
 		if (confirm('Haluatko varmasti nollata kaikki tilastot?')) {
-			periodStats[1] = { ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0, oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0 };
-			periodStats[2] = { ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0, oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0 };
-			periodStats[3] = { ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0, oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0 };
+			ownGoals = 0;
+			ownBlockedShots = 0;
+			ownMissedShots = 0;
+			ownBlocks = 0;
+			ownSaves = 0;
+			ownCatches = 0;
+			oppGoals = 0;
+			oppSaves = 0;
+			oppMissed = 0;
+			oppBlocks = 0;
 			history = [];
 		}
 	}
@@ -219,50 +327,6 @@
 
 	function closeSummary() {
 		showSummaryView = false;
-	}
-
-	async function saveGame() {
-		if (!opponentTeamName.trim()) {
-			saveMessage = 'Anna vastustajan nimi!';
-			setTimeout(() => saveMessage = '', 3000);
-			return;
-		}
-
-		if (!isLoggedIn) {
-			saveMessage = 'Kirjaudu sisään tallentaaksesi pelin!';
-			showLoginModal = true;
-			setTimeout(() => saveMessage = '', 3000);
-			return;
-		}
-
-		isSaving = true;
-		saveMessage = '';
-
-		try {
-			const response = await fetch('/api/games/save', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					opponentTeamName: opponentTeamName.trim(),
-					periodStats
-				})
-			});
-
-			const data = await response.json();
-
-			if (response.ok) {
-				saveMessage = 'Peli tallennettu!';
-				setTimeout(() => saveMessage = '', 3000);
-			} else {
-				saveMessage = data.error || 'Tallennus epäonnistui';
-				setTimeout(() => saveMessage = '', 3000);
-			}
-		} catch (error) {
-			saveMessage = 'Yhteysvirhe. Yritä uudelleen.';
-			setTimeout(() => saveMessage = '', 3000);
-		} finally {
-			isSaving = false;
-		}
 	}
 
 	async function logout() {
@@ -640,163 +704,54 @@
 		{/if}
 
 <div class="container">
-	{#if showSummaryView}
-		<div class="summary-view">
-			<h1>Yhteenveto - {opponentTeamName || 'Vastustaja'}</h1>
-			
-			<!-- Lopputulos -->
-			<div class="final-score">
-				<h2>Lopputulos</h2>
-				<div class="score-big">
-					{totalOwnGoals} - {totalOppGoals}
-				</div>
-			</div>
+	<header>
+			{#if currentGameId !== null}
+				<button class="field-positions-btn" onclick={() => {
+					console.log('Kentälliset-nappi klikattu');
+					showFieldPositionsModal = true;
+				}}>
+					Kentälliset ({fieldPositions.filter(id => id !== null).length})
+				</button>
+			{/if}
 
-			<!-- Eräkohtaiset tulokset -->
-			{#each [1, 2, 3] as period}
-				{@const pStats = periodStats[period]}
-				{@const hasData = pStats.ownGoals + pStats.ownBlockedShots + pStats.ownMissedShots + 
-				                   pStats.oppGoals + pStats.oppSaves > 0}
-				{#if hasData}
-					<div class="period-summary">
-						<h3>Erä {period}</h3>
-						<div class="period-score">
-							<span class="score-label">Tulos:</span>
-							<span class="score-display">{pStats.ownGoals} - {pStats.oppGoals}</span>
-						</div>
-						
-						<div class="period-stats">
-							<div class="stat-row">
-								<span>Meidän maalit:</span>
-								<span>{pStats.ownGoals}</span>
-							</div>
-							<div class="stat-row">
-								<span>Vastustajan maalit:</span>
-								<span>{pStats.oppGoals}</span>
-							</div>
-							<div class="stat-row">
-								<span>Vedot maalia kohti:</span>
-								<span>{pStats.oppSaves}</span>
-							</div>
-							<div class="stat-row">
-								<span>Vedot ohi:</span>
-								<span>{pStats.ownMissedShots}</span>
-							</div>
-							<div class="stat-row">
-								<span>Vedot blokkiin:</span>
-								<span>{pStats.ownBlockedShots}</span>
-							</div>
-							<div class="stat-row">
-								<span>BlokkiPisteet:</span>
-								<span>{pStats.ownBlocks}</span>
-							</div>
-							<div class="stat-row">
-								<span>Vastustajan vedot ohi:</span>
-								<span>{pStats.oppMissed}</span>
-							</div>
-						</div>
+			{#if currentGameId !== null}
+				<div class="game-info-display">
+					<div class="info-item">
+						<span class="info-label">Maalivahti:</span>
+						<span class="info-value">{selectedGoalkeeper || '-'}</span>
 					</div>
-				{/if}
-			{/each}
-
-			<!-- Koko pelin yhteenveto -->
-			<div class="game-summary">
-				<h2>Koko peli - Yhteensä</h2>
-				
-				<div class="summary-stats">
-					<div class="summary-item">
-						<span class="stat-name">Meidän maalit:</span>
-						<span class="stat-value">{totalOwnGoals}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Vastustajan maalit:</span>
-						<span class="stat-value">{totalOppGoals}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Laukaukset maalia kohti:</span>
-						<span class="stat-value">{totalOppSaves}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Laukaukset ohi:</span>
-						<span class="stat-value">{totalOwnMissedShots}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Laukaukset blokkiin:</span>
-						<span class="stat-value">{totalOwnBlockedShots}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Vastustajan blokatut vedot:</span>
-						<span class="stat-value">{totalOwnBlocks}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Vastustajan vedot ohi:</span>
-						<span class="stat-value">{totalOppMissed}</span>
-					</div>
-					<div class="summary-item total">
-						<span class="stat-name">Laukaukset yhteensä:</span>
-						<span class="stat-value">{totalOwnShotsOnGoal}</span>
-					</div>
-					<div class="summary-item goalkeeper-total">
-						<span class="stat-name">Oman maalivahdin ({selectedGoalkeeper || 'ei nimetty'}) torjunta-%:</span>
-						<span class="stat-value">{ownGoalieSavePercentage()}%</span>
-					</div>
-					<div class="summary-item goalkeeper-total">
-						<span class="stat-name">Vastustajan maalivahdin torjunta-%:</span>
-						<span class="stat-value">{oppGoalieSavePercentage()}%</span>
+					<div class="info-item">
+						<span class="info-label">Vastustaja:</span>
+						<span class="info-value">{opponentTeamName || '-'}</span>
 					</div>
 				</div>
-			</div>
-
-			<!-- Takaisin-painike -->
-			<div class="summary-buttons">
-				<button class="back-button" onclick={closeSummary}>Takaisin</button>
-			</div>
-		</div>
-	{:else}
-		<header>
-			<h1>Pelitilastointi</h1>
-
-			<div class="game-info">
-				<div class="form-group">
-					<label for="goalkeeper">Maalivahti</label>
-					<input 
-						type="text" 
-						id="goalkeeper" 
-						bind:value={selectedGoalkeeper}
-						placeholder=""
-					/>
+			{:else}
+				<div class="game-info">
+					<div class="form-group">
+						<label for="goalkeeper">Maalivahti</label>
+						<input 
+							type="text" 
+							id="goalkeeper" 
+							bind:value={goalkeeperName}
+							placeholder=""
+						/>
+					</div>
+					<div class="form-group">
+						<label for="opponent">Vastustaja</label>
+						<input 
+							type="text" 
+							id="opponent" 
+							bind:value={opponentTeamName}
+							placeholder=""
+						/>
+					</div>
 				</div>
-				<div class="form-group">
-					<label for="opponent">Vastustaja</label>
-					<input 
-						type="text" 
-						id="opponent" 
-						bind:value={opponentTeamName}
-						placeholder=""
-					/>
-				</div>
-			</div>
+			{/if}
 		</header>
-
-		<div class="periods">
-			<span class="period-label">Erä:</span>
-			<label class="checkbox-container">
-				<input type="checkbox" checked={selectedPeriod === 1} onclick={() => selectedPeriod = 1} />
-				<span class="checkbox-label">I</span>
-			</label>
-			<label class="checkbox-container">
-				<input type="checkbox" checked={selectedPeriod === 2} onclick={() => selectedPeriod = 2} />
-				<span class="checkbox-label">II</span>
-			</label>
-			<label class="checkbox-container">
-				<input type="checkbox" checked={selectedPeriod === 3} onclick={() => selectedPeriod = 3} />
-				<span class="checkbox-label">III</span>
-			</label>
-		</div>
 
 		<!-- Pistetilanne -->
 		<div class="score-display">
-			<span class="score">{totalOwnGoals} - {totalOppGoals}</span>
+			<span class="score">{ownGoals} - {oppGoals}</span>
 		</div>
 
 		<section class="stats-section">
@@ -804,13 +759,13 @@
 				<div class="stat-item">
 					<span class="stat-label">Maali meille</span>
 					<button class="stat-button green" onclick={() => increment('own', 'goals')}>
-						{currentStats.ownGoals}
+						{ownGoals}
 					</button>
 				</div>
 				<div class="stat-item">
 					<span class="stat-label">Maali vastustajalle</span>
 					<button class="stat-button orange" onclick={() => increment('opp', 'goals')}>
-						{currentStats.oppGoals}
+						{oppGoals}
 					</button>
 				</div>
 			</div>
@@ -820,19 +775,19 @@
 				<div class="stat-item">
 					<span class="stat-label">Veto maalia kohti</span>
 					<button class="stat-button green" onclick={() => increment('opp', 'saves')}>
-						{currentStats.oppSaves}
+						{oppSaves}
 					</button>
 				</div>
 				<div class="stat-item">
 					<span class="stat-label">Veto ohi</span>
 					<button class="stat-button yellow" onclick={() => increment('own', 'missed')}>
-						{currentStats.ownMissedShots}
+						{ownMissedShots}
 					</button>
 				</div>
 				<div class="stat-item">
 					<span class="stat-label">Veto blokkiin</span>
 					<button class="stat-button yellow" onclick={() => increment('own', 'blocked')}>
-						{currentStats.ownBlockedShots}
+						{ownBlockedShots}
 					</button>
 				</div>
 			</div>
@@ -841,13 +796,13 @@
 				<div class="stat-item">
 					<span class="stat-label">BlokkiPisteet</span>
 					<button class="stat-button green" onclick={() => increment('own', 'blocks')}>
-						{currentStats.ownBlocks || 0}
+						{ownBlocks || 0}
 					</button>
 				</div>
 				<div class="stat-item">
 					<span class="stat-label">Vastustajan vedot ohi maalin</span>
 					<button class="stat-button green" onclick={() => increment('opp', 'missed')}>
-						{currentStats.oppMissed || 0}
+						{oppMissed || 0}
 					</button>
 				</div>
 			</div>
@@ -856,13 +811,13 @@
 				<div class="stat-item">
 					<span class="stat-label">Torjunta</span>
 					<button class="stat-button green" onclick={() => increment('own', 'saves')}>
-						{currentStats.ownSaves || 0}
+						{ownSaves || 0}
 					</button>
 				</div>
 				<div class="stat-item">
 					<span class="stat-label">Maalivahdin katko</span>
 					<button class="stat-button green" onclick={() => increment('own', 'catches')}>
-						{currentStats.ownCatches || 0}
+						{ownCatches || 0}
 					</button>
 				</div>
 			</div>
@@ -873,8 +828,392 @@
 			<button class="summary-button" onclick={showSummary}>Yhteenveto</button>
 			<button class="reset-button" onclick={resetAllStats}>Tyhjennä</button>
 		</div>
-	{/if}
 </div>
+
+<!-- Yhteenveto-modal -->
+{#if showSummaryView}
+	<div class="modal-overlay">
+		<div class="summary-view">
+			<h1>Yhteenveto - {opponentTeamName || 'Vastustaja'}</h1>
+			
+			<!-- Lopputulos -->
+			<div class="final-score">
+				<h2>Lopputulos</h2>
+				<div class="score-big">
+					{ownGoals} - {oppGoals}
+				</div>
+			</div>
+
+			<!-- Koko pelin yhteenveto -->
+			<div class="game-summary">
+				<h2>Pelin tilastot</h2>
+				
+				<div class="summary-stats">
+					<div class="summary-item">
+						<span class="stat-name">Meidän maalit:</span>
+						<span class="stat-value">{ownGoals}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Vastustajan maalit:</span>
+						<span class="stat-value">{oppGoals}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Laukaukset maalia kohti:</span>
+						<span class="stat-value">{oppSaves}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Laukaukset ohi:</span>
+						<span class="stat-value">{ownMissedShots}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Laukaukset blokkiin:</span>
+						<span class="stat-value">{ownBlockedShots}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Vastustajan blokatut vedot:</span>
+						<span class="stat-value">{ownBlocks}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Vastustajan vedot ohi:</span>
+						<span class="stat-value">{oppMissed}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Maalivahdin torjunnat:</span>
+						<span class="stat-value">{ownSaves}</span>
+					</div>
+					<div class="summary-item">
+						<span class="stat-name">Maalivahdin katkot:</span>
+						<span class="stat-value">{ownCatches}</span>
+					</div>
+					<div class="summary-item total">
+						<span class="stat-name">Laukaukset yhteensä:</span>
+						<span class="stat-value">{totalOwnShotsOnGoal}</span>
+					</div>
+					<div class="summary-item goalkeeper-total">
+						<span class="stat-name">Oma ({currentGameId !== null ? (selectedGoalkeeper || 'ei nimetty') : (goalkeeperName || 'ei nimetty')}) torjunta-%:</span>
+						<span class="stat-value">{ownGoalieSavePercentage}%</span>
+					</div>
+					<div class="summary-item goalkeeper-total">
+						<span class="stat-name">Vastustajan torjunta-%:</span>
+						<span class="stat-value">{oppGoalieSavePercentage}%</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Takaisin-painike -->
+			<div class="summary-buttons">
+				<button class="back-button" onclick={closeSummary}>Takaisin</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Kentälliset-modaali -->
+{#if showFieldPositionsModal}
+	{console.log('Modaali näytetään, showFieldPositionsModal:', showFieldPositionsModal)}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="modal-overlay" onclick={() => showFieldPositionsModal = false}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="field-modal" onclick={(e) => e.stopPropagation()}>
+			<div class="field-layout">
+				<div class="field-section goalkeeper-section">
+					<h4>Maalivahti</h4>
+					<div class="field-slot-container">
+						<button class="field-slot-button goalkeeper-button" onclick={() => openPlayerSelector(0)}>
+							{#if fieldPositions[0]}
+								{@const player = players.find(p => p.id === fieldPositions[0])}
+								{player?.nick || `${player?.first_name} ${player?.last_name}`}
+							{:else}
+								Valitse
+							{/if}
+						</button>
+						{#if currentFieldSlot === 0}
+							<select 
+								class="player-dropdown-select"
+								onchange={(e) => {
+									const playerId = parseInt(e.currentTarget.value);
+									if (playerId) {
+										assignPlayerToPosition(playerId, 0);
+									}
+								}}
+							>
+								<option value="">-- Valitse pelaaja --</option>
+								{#each availablePlayers as player}
+									<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+								{/each}
+							</select>
+						{/if}
+					</div>
+				</div>
+				
+				<div class="field-section">
+					<h4>1. Kenttä</h4>
+					<div class="field-row">
+						{#each [1, 2, 3] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+					<div class="field-row defenders">
+						{#each [4, 5] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<div class="field-section">
+					<h4>2. Kenttä</h4>
+					<div class="field-row">
+						{#each [6, 7, 8] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+					<div class="field-row defenders">
+						{#each [9, 10] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<div class="field-section">
+					<h4>3. Kenttä</h4>
+					<div class="field-row">
+						{#each [11, 12, 13] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+					<div class="field-row defenders">
+						{#each [14, 15] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<div class="field-section">
+					<h4>4. Kenttä</h4>
+					<div class="field-row">
+						{#each [16, 17, 18] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+					<div class="field-row defenders">
+						{#each [19, 20] as position}
+							<div class="field-slot-container">
+								<button class="field-slot-button" onclick={() => openPlayerSelector(position)}>
+									{#if fieldPositions[position]}
+										{@const player = players.find(p => p.id === fieldPositions[position])}
+										{player?.nick || `${player?.first_name} ${player?.last_name}`}
+									{:else}
+										Valitse
+									{/if}
+								</button>
+								{#if currentFieldSlot === position}
+									<select 
+										class="player-dropdown-select"
+										onchange={(e) => {
+											const playerId = parseInt(e.currentTarget.value);
+											if (playerId) {
+												assignPlayerToPosition(playerId, position);
+											}
+										}}
+									>
+										<option value="">-- Valitse pelaaja --</option>
+										{#each availablePlayers as player}
+											<option value={player.id}>{player.nick || `${player.first_name} ${player.last_name}`}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+			
+			<div class="modal-footer">
+				<button class="btn-cancel" onclick={async () => {
+					await saveFieldPositions();
+					showFieldPositionsModal = false;
+				}}>Sulje</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	:global(body) {
@@ -882,6 +1221,7 @@
 		padding: 0;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 		background-color: #f0f0f0;
+		touch-action: manipulation; /* Estää zoomaus kaksoisnapautuksella */
 	}
 
 	.container {
@@ -891,6 +1231,7 @@
 		padding-top: 80px;
 		min-height: 100vh;
 		background-color: #f0f0f0;
+		touch-action: manipulation;
 	}
 
 	/* Hampurilaisvalikko */
@@ -1244,6 +1585,12 @@
 		gap: 15px;
 		justify-content: center;
 		flex-wrap: wrap;
+		position: sticky;
+		bottom: 0;
+		background-color: white;
+		padding: 15px;
+		margin: 0 -20px -20px -20px;
+		box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 	}
 
 	.save-button {
@@ -1334,6 +1681,37 @@
 		font-weight: 600;
 	}
 
+	/* Pelin tiedot tekstinä */
+	.game-info-display {
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+		margin: 0 auto 25px auto;
+		padding: 20px 25px;
+		background-color: #f8f9fa;
+		border-radius: 8px;
+		max-width: 600px;
+	}
+
+	.info-item {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+	}
+
+	.info-label {
+		font-size: 1rem;
+		color: #666;
+		font-weight: 600;
+		min-width: 100px;
+	}
+
+	.info-value {
+		font-size: 1.1rem;
+		color: #000;
+		font-weight: 700;
+	}
+
 	.game-info select,
 	.game-info input {
 		width: 100%;
@@ -1400,6 +1778,7 @@
 		min-height: 90px;
 		color: #000;
 		box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+		touch-action: manipulation; /* Estää zoomaus nappia painettaessa */
 	}
 
 	.stat-button:hover {
@@ -1503,7 +1882,7 @@
 	}
 
 	.summary-view {
-		padding: 20px 0;
+		padding: 20px 20px 80px 20px;
 	}
 
 	.period-summary {
@@ -1814,73 +2193,73 @@
 
 	@media (max-width: 480px) {
 		.container {
-			padding: 10px;
-			padding-top: 65px;
+			padding: 8px;
+			padding-top: 60px;
 		}
 
 		h1 {
-			font-size: 1.3rem;
-			margin-bottom: 10px;
-		}
-
-		.score-display {
-			margin: 0 -10px 10px -10px;
-			padding: 10px;
-		}
-
-		.score-display .score {
-			font-size: 1.8rem;
-		}
-
-		.periods {
-			gap: 8px;
+			font-size: 1.2rem;
 			margin-bottom: 8px;
 		}
 
+		.score-display {
+			margin: 0 -8px 8px -8px;
+			padding: 8px;
+		}
+
+		.score-display .score {
+			font-size: 1.6rem;
+		}
+
+		.periods {
+			gap: 6px;
+			margin-bottom: 6px;
+		}
+
 		.period-label {
-			font-size: 0.85rem;
-			margin-bottom: 4px;
+			font-size: 0.8rem;
+			margin-bottom: 3px;
 		}
 
 		.checkbox-container input[type="checkbox"] {
-			width: 20px;
-			height: 20px;
+			width: 18px;
+			height: 18px;
 		}
 
 		.checkbox-label {
-			font-size: 0.85rem;
+			font-size: 0.8rem;
 		}
 
 		.game-info {
-			gap: 30px;
-			margin-bottom: 10px;
+			gap: 20px;
+			margin-bottom: 8px;
 		}
 
 		.game-info label {
-			font-size: 0.8rem;
+			font-size: 0.75rem;
 			margin-bottom: 2px;
 		}
 
 		.game-info select,
 		.game-info input {
-			padding: 5px;
-			font-size: 0.8rem;
+			padding: 4px;
+			font-size: 0.75rem;
 		}
 
 		.stats-section h2 {
-			font-size: 0.9rem;
-			margin-bottom: 4px;
-			margin-top: 4px;
+			font-size: 0.85rem;
+			margin-bottom: 3px;
+			margin-top: 3px;
 		}
 
 		.stats-section {
-			margin-bottom: 10px;
+			margin-bottom: 8px;
 		}
 
 		.stats-row {
 			grid-template-columns: repeat(3, 1fr);
-			gap: 8px;
-			margin-bottom: 8px;
+			gap: 6px;
+			margin-bottom: 6px;
 		}
 
 		.stats-row.two-cols {
@@ -1888,31 +2267,402 @@
 		}
 
 		.stat-item {
-			gap: 4px;
+			gap: 3px;
 		}
 
 		.stat-label {
-			font-size: 0.8rem;
+			font-size: 0.7rem;
+			line-height: 1.1;
 		}
 
 		.stat-button {
-			font-size: 1.5rem;
-			padding: 12px 5px;
-			min-height: 60px;
+			font-size: 1.3rem;
+			padding: 10px 4px;
+			min-height: 50px;
 		}
 
 		.action-buttons {
-			margin-top: 20px;
+			margin-top: 15px;
 			flex-direction: row;
-			gap: 8px;
+			gap: 6px;
 		}
 
 		.undo-button,
 		.summary-button,
 		.reset-button {
-			font-size: 0.9rem;
-			padding: 12px 15px;
+			font-size: 0.8rem;
+			padding: 10px 12px;
 			min-width: auto;
+			flex: 1;
+		}
+
+		/* Yhteenveto mobiili */
+		.modal-overlay {
+			padding: 0;
+		}
+
+		.summary-view {
+			padding: 15px 15px 80px 15px;
+			width: 100%;
+			max-width: 100%;
+			height: 100vh;
+			overflow-y: auto;
+			border-radius: 0;
+			margin: 0;
+		}
+
+		.final-score {
+			margin-bottom: 20px;
+		}
+
+		.final-score h2 {
+			font-size: 1.2rem;
+			margin-bottom: 10px;
+		}
+
+		.score-big {
+			font-size: 2rem;
+			padding: 12px;
+			min-width: 150px;
+		}
+
+		.game-summary {
+			padding: 15px;
+			margin-bottom: 15px;
+		}
+
+		.game-summary h2 {
+			font-size: 1rem;
+			margin-bottom: 12px;
+		}
+
+		.summary-stats {
+			padding: 12px;
+		}
+
+		.summary-item {
+			padding: 8px 0;
+			font-size: 0.85rem;
+			flex-wrap: wrap;
+		}
+
+		.stat-name {
+			font-size: 0.85rem;
+		}
+
+		.stat-value {
+			font-size: 1rem;
+		}
+
+		.summary-item.total {
+			font-size: 0.95rem;
+			padding-top: 12px;
+		}
+
+		.summary-item.goalkeeper-total {
+			padding: 10px;
+			margin-top: 10px;
+			flex-direction: column;
+			gap: 5px;
+			text-align: center;
+		}
+
+		.summary-item.goalkeeper-total .stat-value {
+			font-size: 1.2rem;
+		}
+
+		.summary-buttons {
+			padding: 12px 15px;
+			margin: 0 -15px -15px -15px;
+			position: sticky;
+			bottom: 0;
+		}
+
+		.back-button {
+			font-size: 0.9rem;
+			padding: 12px;
+			width: 100%;
+		}
+	}
+
+	/* Kentälliset-nappi */
+	.field-positions-btn {
+		width: 100%;
+		padding: 15px;
+		background-color: #4CAF50;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.2s;
+		margin-bottom: 20px;
+	}
+
+	.field-positions-btn:hover {
+		background-color: #45a049;
+	}
+
+	/* Kentälliset-modaali */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	.field-modal {
+		position: relative;
+		background: white;
+		border-radius: 16px;
+		max-width: 850px;
+		width: 95%;
+		max-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+		overflow: hidden;
+	}
+
+	.field-layout {
+		padding: 30px 25px 20px;
+		overflow-y: auto;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 15px;
+	}
+
+	.field-section {
+		width: 100%;
+		max-width: 700px;
+		padding: 0;
+		background-color: transparent;
+		border-radius: 8px;
+	}
+
+	.field-section h4 {
+		margin: 0 0 20px 0;
+		font-size: 1.3rem;
+		color: #000;
+		text-align: center;
+		font-weight: 700;
+	}
+
+	.field-row {
+		display: flex;
+		gap: 12px;
+		justify-content: center;
+		margin-bottom: 12px;
+	}
+
+	.field-row:last-child {
+		margin-bottom: 0;
+	}
+
+	.field-slot-button {
+		min-width: 180px;
+		padding: 18px 15px;
+		background-color: #5b9bd5;
+		color: #000;
+		border: none;
+		border-radius: 10px;
+		font-size: 1rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.field-slot-button:hover {
+		background-color: #4a8cc4;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	/* Maalivahti-osio */
+	.goalkeeper-section {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 15px;
+	}
+
+	.goalkeeper-button {
+		width: 100%;
+		max-width: 500px;
+	}
+
+	/* Pelaaja-slot container */
+	.field-slot-container {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		min-width: 180px;
+		flex: 1;
+	}
+
+	.player-dropdown-select {
+		width: 100%;
+		padding: 12px 10px;
+		border: 2px solid #5b9bd5;
+		border-radius: 8px;
+		font-size: 0.95rem;
+		background-color: white;
+		cursor: pointer;
+		transition: all 0.2s;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.player-dropdown-select:hover {
+		border-color: #4a8cc4;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.player-dropdown-select:focus {
+		outline: none;
+		border-color: #3a7cb3;
+		box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.2);
+	}
+
+	/* Puolustajien rivi - isommat napit */
+	.field-row.defenders {
+		gap: 20px;
+	}
+
+	.field-row.defenders .field-slot-button {
+		min-width: 240px;
+		flex: 1;
+		max-width: 280px;
+	}
+
+	.modal-footer {
+		padding: 25px;
+		border-top: none;
+		display: flex;
+		gap: 20px;
+		justify-content: center;
+		background-color: white;
+	}
+
+	.btn-cancel {
+		padding: 15px 50px;
+		background-color: #6c757d;
+		color: white;
+		border: none;
+		border-radius: 10px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 160px;
+	}
+
+	.btn-cancel:hover {
+		background-color: #5a6268;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	@media (max-width: 768px) {
+		.modal-overlay {
+			padding: 0;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.field-modal {
+			width: 95%;
+			max-width: 95%;
+			max-height: 95vh;
+			border-radius: 16px;
+			margin: auto;
+		}
+
+		.field-layout {
+			padding: 15px 10px;
+			gap: 10px;
+		}
+
+		.field-section {
+			max-width: 100%;
+		}
+
+		.field-section h4 {
+			font-size: 1rem;
+			margin-bottom: 10px;
+		}
+
+		.goalkeeper-section {
+			gap: 10px;
+		}
+
+		.goalkeeper-button {
+			width: 100%;
+			max-width: 100%;
+			padding: 12px;
+			font-size: 0.9rem;
+		}
+
+		.field-row {
+			gap: 8px;
+			margin-bottom: 8px;
+		}
+
+		.field-row.defenders {
+			gap: 12px;
+		}
+
+		.field-slot-container {
+			min-width: 0;
+			flex: 1;
+		}
+
+		.field-slot-button {
+			padding: 10px 6px;
+			font-size: 0.75rem;
+			min-height: 40px;
+			min-width: 90px;
+			max-width: 110px;
+			flex: 1;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.field-row.defenders .field-slot-button {
+			flex: 1;
+			min-width: 120px;
+			max-width: none;
+			padding: 12px 8px;
+			font-size: 0.85rem;
+		}
+
+		.player-dropdown-select {
+			padding: 8px 6px;
+			font-size: 0.75rem;
+		}
+
+		.modal-footer {
+			padding: 12px 10px;
+			gap: 10px;
+		}
+
+		.btn-cancel {
+			padding: 12px 20px;
+			font-size: 0.95rem;
+			min-width: 0;
 			flex: 1;
 		}
 	}

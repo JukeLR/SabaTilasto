@@ -69,7 +69,7 @@ export const PUT = async ({ request, cookies }: RequestEvent) => {
 		// Jos päivitetään rooli
 		if (newRole !== undefined) {
 			// Validoi rooli
-			const validRoles = ['admin', 'toimihenkilö', 'kirjuri', 'pelaaja'];
+			const validRoles = ['admin', 'junioripäällikkö', 'vastuuvalmentaja', 'toimihenkilö', 'kirjuri', 'pelaaja'];
 			if (!validRoles.includes(newRole)) {
 				return json({ error: 'Virheellinen rooli' }, { status: 400 });
 			}

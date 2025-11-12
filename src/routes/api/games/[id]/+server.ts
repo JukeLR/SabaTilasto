@@ -85,7 +85,7 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 		const result = await sql`
 			UPDATE games
 			SET status = ${status}, updated_at = NOW()
-			WHERE id = ${gameId} AND user_id = ${parseInt(userId)}
+			WHERE id = ${gameId}
 			RETURNING id
 		`;
 
@@ -144,7 +144,7 @@ export const PUT = async ({ params, request, cookies }: RequestEvent) => {
 				status = ${status || 'Luotu'},
 				notes = ${notes || null},
 				updated_at = NOW()
-			WHERE id = ${gameId} AND user_id = ${parseInt(userId)}
+			WHERE id = ${gameId}
 			RETURNING id
 		`;
 

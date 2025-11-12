@@ -1467,7 +1467,7 @@
 		min-width: 180px;
 		padding: 18px 15px;
 		background-color: #5b9bd5;
-		color: white;
+		color: #000;
 		border: none;
 		border-radius: 10px;
 		font-size: 1rem;
@@ -1489,7 +1489,7 @@
 		width: 100%;
 		padding: 12px;
 		background-color: #5b9bd5;
-		color: white;
+		color: #000;
 		border: none;
 		border-radius: 6px;
 		font-size: 1rem;

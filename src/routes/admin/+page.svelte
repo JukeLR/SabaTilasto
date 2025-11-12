@@ -149,6 +149,8 @@
 									class="role-select"
 								>
 									<option value="admin">Admin</option>
+									<option value="junioripäällikkö">Junioripäällikkö</option>
+									<option value="vastuuvalmentaja">Vastuuvalmentaja</option>
 									<option value="toimihenkilö">Toimihenkilö</option>
 									<option value="kirjuri">Kirjuri</option>
 									<option value="pelaaja">Pelaaja</option>

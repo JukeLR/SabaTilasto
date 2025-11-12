@@ -109,35 +109,38 @@
 				</button>
 				
 				{#if userRole === 'admin'}
-					<button class="menu-item" onclick={() => navigateTo('/games/new')}>
-						Luo peli
-					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin')}>
 						Käyttäjähallinta
 					</button>
+					<button class="menu-item" onclick={() => navigateTo('/admin/series')}>
+						Sarjat
+					</button>
+				{/if}
+				
+				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
+					<button class="menu-item" onclick={() => navigateTo('/games')}>
+						Pelit
+					</button>
+				{/if}
+				
+				{#if userRole === 'admin'}
 					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
 						Joukkueet
 					</button>
-				<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
-					Pelaajat
-				</button>
-				<button class="menu-item" onclick={() => navigateTo('/admin/series')}>
-					Sarjat
-				</button>
-				<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
-					Kaikki tilastot
-				</button>
-				{/if}
-				
-				{#if userRole === 'admin' || userRole === 'toimihenkilö'}
-					<button class="menu-item" onclick={() => navigateTo('/reports')}>
-						Raportit
+					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
+						Pelaajat
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/games/new')}>
+						Luo peli
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
+						Kaikki tilastot
 					</button>
 				{/if}
 				
-				{#if userRole === 'admin' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
-					<button class="menu-item" onclick={() => navigateTo('/games')}>
-						Pelit
+				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö'}
+					<button class="menu-item" onclick={() => navigateTo('/reports')}>
+						Raportit
 					</button>
 				{/if}
 				
