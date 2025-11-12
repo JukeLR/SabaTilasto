@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -26,14 +26,33 @@
 	}
 
 	async function logout() {
+		showMenu = false;
+		
 		try {
-			await fetch('/api/auth/logout', { method: 'POST' });
-			showMenu = false;
-			isLoggedIn = false;
-			currentUser = null;
-			window.location.href = '/';
+			const response = await fetch('/api/auth/logout', { 
+				method: 'POST',
+				credentials: 'include'
+			});
+			
+			if (response.ok) {
+				// Tyhjennä paikallinen tila
+				isLoggedIn = false;
+				currentUser = null;
+				
+				// Invalidoi kaikki data ja lataa uudelleen
+				await invalidateAll();
+				
+				// Ohjaa etusivulle
+				await goto('/', { replaceState: true, invalidateAll: true });
+			} else {
+				console.error('Logout failed:', response.status);
+				// Yritä silti kirjata ulos pakottamalla reload
+				window.location.href = '/';
+			}
 		} catch (error) {
 			console.error('Logout error:', error);
+			// Virhetilanteessa pakota reload
+			window.location.href = '/';
 		}
 	}
 
