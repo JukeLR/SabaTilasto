@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS games (
     own_team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
     opponent_team_name VARCHAR(100),
     game_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    lineup INTEGER[],  -- Peliin valitut pelaajat (ID:t)
+    field_positions INTEGER[],  -- Kentälliset järjestyksessä (21 paikkaa: maalivahti + 4x5 kenttäpelaajaa)
+    is_played BOOLEAN DEFAULT false,  -- Onko peli pelattu
+    notes TEXT,  -- Vapaat muistiinpanot
     final_own_score INTEGER DEFAULT 0,
     final_opp_score INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

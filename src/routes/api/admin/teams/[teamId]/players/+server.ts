@@ -3,20 +3,8 @@ import type { RequestHandler } from './$types';
 import { sql } from '$lib/db';
 import { getUserById } from '$lib/auth';
 
-export const GET: RequestHandler = async ({ params, cookies }) => {
+export const GET: RequestHandler = async ({ params }) => {
 	try {
-		const userId = cookies.get('user_id');
-		
-		if (!userId) {
-			return json({ error: 'Ei kirjauduttu sisään' }, { status: 401 });
-		}
-
-		const user = await getUserById(parseInt(userId));
-		
-		if (!user) {
-			return json({ error: 'Ei oikeuksia' }, { status: 403 });
-		}
-
 		const teamId = parseInt(params.teamId);
 		
 		if (isNaN(teamId)) {
@@ -44,13 +32,17 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 		// Filtteröi pelaajat joilla on kyseinen team_id
 		const players = allPlayers.filter(player => {
+			console.log(`Pelaaja ${player.first_name} ${player.last_name}, team_ids:`, player.team_ids);
 			if (!player.team_ids) return false;
-			return player.team_ids.includes(teamId);
+			const hasTeam = player.team_ids.includes(teamId);
+			console.log(`  Sisältää joukkueen ${teamId}:`, hasTeam);
+			return hasTeam;
 		});
 
 		console.log('Löydettiin pelaajia joukkueelle', teamId, ':', players.length);
+		console.log('Palautetaan pelaajat:', players.map(p => `${p.first_name} ${p.last_name}`));
 
-		return json({ players });
+		return json(players);
 	} catch (error) {
 		console.error('Virhe pelaajien haussa:', error);
 		return json({ error: 'Pelaajien haku epäonnistui' }, { status: 500 });

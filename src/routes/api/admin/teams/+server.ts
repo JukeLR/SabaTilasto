@@ -24,7 +24,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			ORDER BY name ASC
 		`;
 
-		return json({ teams });
+		return json(teams);
 	} catch (error) {
 		console.error('Virhe joukkueiden haussa:', error);
 		return json({ error: 'Joukkueiden haku epäonnistui' }, { status: 500 });

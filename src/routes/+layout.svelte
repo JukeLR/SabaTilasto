@@ -109,6 +109,9 @@
 				</button>
 				
 				{#if userRole === 'admin'}
+					<button class="menu-item" onclick={() => navigateTo('/games/new')}>
+						Luo peli
+					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin')}>
 						Käyttäjähallinta
 					</button>
