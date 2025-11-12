@@ -6,9 +6,15 @@
 	let { children, data } = $props();
 	
 	let showMenu = $state(false);
-	let isLoggedIn = $derived(data?.isLoggedIn || false);
-	let currentUser = $derived(data?.user);
-	let userRole = $derived(data?.user?.role || '');
+	let showLoginModal = $state(false);
+	let loginUsername = $state('');
+	let loginPassword = $state('');
+	let loginError = $state('');
+	let isLoggingIn = $state(false);
+	
+	let isLoggedIn = $state(data?.isLoggedIn || false);
+	let currentUser = $state(data?.user);
+	let userRole = $derived(currentUser?.role || '');
 
 	function toggleMenu() {
 		showMenu = !showMenu;
@@ -23,6 +29,8 @@
 		try {
 			await fetch('/api/auth/logout', { method: 'POST' });
 			showMenu = false;
+			isLoggedIn = false;
+			currentUser = null;
 			window.location.href = '/';
 		} catch (error) {
 			console.error('Logout error:', error);
@@ -31,7 +39,46 @@
 
 	function openLoginModal() {
 		showMenu = false;
-		window.location.href = '/';
+		showLoginModal = true;
+		loginError = '';
+		loginUsername = '';
+		loginPassword = '';
+	}
+
+	function closeLoginModal() {
+		showLoginModal = false;
+		loginError = '';
+	}
+
+	async function handleLogin() {
+		loginError = '';
+		isLoggingIn = true;
+
+		try {
+			const response = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ 
+					username: loginUsername, 
+					password: loginPassword 
+				})
+			});
+
+			const data = await response.json();
+
+			if (response.ok) {
+				isLoggedIn = true;
+				currentUser = data.user;
+				closeLoginModal();
+				window.location.reload();
+			} else {
+				loginError = data.error || 'Kirjautuminen epäonnistui';
+			}
+		} catch (error) {
+			loginError = 'Yhteysvirhe. Yritä uudelleen.';
+		} finally {
+			isLoggingIn = false;
+		}
 	}
 </script>
 
@@ -98,6 +145,55 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Kirjautumis-modal -->
+{#if showLoginModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="modal-overlay" onclick={closeLoginModal}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+			<button class="modal-close" onclick={closeLoginModal}>&times;</button>
+			
+			<h2>Kirjaudu sisään</h2>
+			
+			{#if loginError}
+				<div class="error-message">{loginError}</div>
+			{/if}
+
+			<form onsubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+				<div class="form-group">
+					<label for="modal-username">Käyttäjätunnus</label>
+					<input 
+						type="text" 
+						id="modal-username" 
+						bind:value={loginUsername}
+						required 
+						disabled={isLoggingIn}
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="modal-password">Salasana</label>
+					<input 
+						type="password" 
+						id="modal-password" 
+						bind:value={loginPassword}
+						required 
+						disabled={isLoggingIn}
+					/>
+				</div>
+
+				<div class="modal-buttons">
+					<button type="submit" class="btn-login" disabled={isLoggingIn}>
+						{isLoggingIn ? 'Kirjaudutaan...' : 'Kirjaudu'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
 
 {@render children()}
 
@@ -193,6 +289,118 @@
 
 	.menu-item:hover {
 		background-color: #f5f5f5;
+	}
+
+	/* Modal tyylit */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 2000;
+	}
+
+	.modal-content {
+		background-color: white;
+		border-radius: 12px;
+		padding: 30px;
+		max-width: 400px;
+		width: 90%;
+		position: relative;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+	}
+
+	.modal-close {
+		position: absolute;
+		top: 15px;
+		right: 15px;
+		background: none;
+		border: none;
+		font-size: 2rem;
+		cursor: pointer;
+		color: #666;
+		line-height: 1;
+		padding: 0;
+		width: 30px;
+		height: 30px;
+	}
+
+	.modal-close:hover {
+		color: #000;
+	}
+
+	.modal-content h2 {
+		margin-top: 0;
+		margin-bottom: 20px;
+		color: #1a1a1a;
+		text-align: center;
+	}
+
+	.error-message {
+		background-color: #f8d7da;
+		color: #721c24;
+		padding: 12px;
+		border-radius: 6px;
+		margin-bottom: 15px;
+		text-align: center;
+	}
+
+	.form-group {
+		margin-bottom: 15px;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 5px;
+		color: #333;
+		font-weight: 500;
+	}
+
+	.form-group input {
+		width: 100%;
+		padding: 10px;
+		border: 2px solid #ddd;
+		border-radius: 6px;
+		font-size: 1rem;
+		box-sizing: border-box;
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: #4a90e2;
+	}
+
+	.modal-buttons {
+		display: flex;
+		gap: 10px;
+		margin-top: 20px;
+	}
+
+	.btn-login {
+		flex: 1;
+		padding: 12px;
+		background-color: #4a90e2;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.btn-login:hover:not(:disabled) {
+		background-color: #357abd;
+	}
+
+	.btn-login:disabled {
+		background-color: #ccc;
+		cursor: not-allowed;
 	}
 
 	@media (max-width: 768px) {

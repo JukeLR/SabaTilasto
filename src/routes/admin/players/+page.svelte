@@ -13,6 +13,7 @@
 	// Lomakkeen tiedot
 	let newFirstName = $state('');
 	let newLastName = $state('');
+	let newNick = $state('');
 	let newJerseyNumber = $state('');
 	let newPosition = $state('');
 	let newTeamIds = $state<number[]>([]);
@@ -22,9 +23,15 @@
 	let editingPlayerId = $state<number | null>(null);
 	let editFirstName = $state('');
 	let editLastName = $state('');
+	let editNick = $state('');
 	let editJerseyNumber = $state('');
 	let editPosition = $state('');
 	let editTeamIds = $state<number[]>([]);
+
+	// Joukkueiden valinta modaali
+	let showTeamModal = $state(false);
+	let modalPlayerId = $state<number | null>(null);
+	let modalTeamIds = $state<number[]>([]);
 
 	onMount(() => {
 		loadTeams();
@@ -80,6 +87,7 @@
 				body: JSON.stringify({
 					firstName: newFirstName,
 					lastName: newLastName,
+					nick: newNick,
 					jerseyNumber: newJerseyNumber ? parseInt(newJerseyNumber) : null,
 					position: newPosition || null,
 					teamIds: newTeamIds
@@ -94,6 +102,7 @@
 			successMessage = 'Pelaaja lisätty onnistuneesti!';
 			newFirstName = '';
 			newLastName = '';
+			newNick = '';
 			newJerseyNumber = '';
 			newPosition = '';
 			newTeamIds = [];
@@ -112,6 +121,7 @@
 		editingPlayerId = player.id;
 		editFirstName = player.first_name;
 		editLastName = player.last_name;
+		editNick = player.nick || '';
 		editJerseyNumber = player.jersey_number?.toString() || '';
 		editPosition = player.position || '';
 		editTeamIds = player.team_ids || [];
@@ -121,6 +131,7 @@
 		editingPlayerId = null;
 		editFirstName = '';
 		editLastName = '';
+		editNick = '';
 		editJerseyNumber = '';
 		editPosition = '';
 		editTeamIds = [];
@@ -143,6 +154,7 @@
 					id: playerId,
 					firstName: editFirstName,
 					lastName: editLastName,
+					nick: editNick,
 					jerseyNumber: editJerseyNumber ? parseInt(editJerseyNumber) : null,
 					position: editPosition || null,
 					teamIds: editTeamIds
@@ -194,29 +206,77 @@
 	}
 
 	function toggleTeam(teamId: number, isEditing: boolean = false) {
-		if (isEditing) {
-			if (editTeamIds.includes(teamId)) {
-				editTeamIds = editTeamIds.filter((id) => id !== teamId);
+		const targetArray = isEditing ? modalTeamIds : newTeamIds;
+		
+		if (targetArray.includes(teamId)) {
+			if (isEditing) {
+				modalTeamIds = modalTeamIds.filter((id) => id !== teamId);
 			} else {
-				editTeamIds = [...editTeamIds, teamId];
+				newTeamIds = newTeamIds.filter((id) => id !== teamId);
 			}
 		} else {
-			if (newTeamIds.includes(teamId)) {
-				newTeamIds = newTeamIds.filter((id) => id !== teamId);
+			if (isEditing) {
+				modalTeamIds = [...modalTeamIds, teamId];
 			} else {
 				newTeamIds = [...newTeamIds, teamId];
 			}
 		}
 	}
 
-	function goBack() {
-		window.history.back();
+	function openTeamModal(player: any) {
+		modalPlayerId = player.id;
+		modalTeamIds = player.team_ids || [];
+		showTeamModal = true;
+	}
+
+	function closeTeamModal() {
+		showTeamModal = false;
+		modalPlayerId = null;
+		modalTeamIds = [];
+	}
+
+	async function saveTeamSelection() {
+		if (!modalPlayerId) return;
+
+		error = '';
+		successMessage = '';
+
+		try {
+			const player = players.find(p => p.id === modalPlayerId);
+			if (!player) return;
+
+			const response = await fetch('/api/admin/players', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					id: modalPlayerId,
+					firstName: player.first_name,
+					lastName: player.last_name,
+					nick: player.nick,
+					jerseyNumber: player.jersey_number,
+					position: player.position,
+					teamIds: modalTeamIds
+				})
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || 'Joukkueiden päivittäminen epäonnistui');
+			}
+
+			successMessage = 'Joukkueet päivitetty onnistuneesti!';
+			closeTeamModal();
+			await loadPlayers();
+
+			setTimeout(() => (successMessage = ''), 3000);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Virhe päivitettäessä joukkueita';
+		}
 	}
 </script>
 
 <div class="admin-container">
 	<div class="header">
-		<button class="back-button" onclick={goBack}>← Takaisin</button>
 		<h1>Pelaajien hallinta</h1>
 	</div>
 
@@ -258,6 +318,17 @@
 						bind:value={newLastName}
 						placeholder="Esim. Meikäläinen"
 						required
+						disabled={isAdding}
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="nick">Lempinimi</label>
+					<input
+						type="text"
+						id="nick"
+						bind:value={newNick}
+						placeholder="Esim. Masa"
 						disabled={isAdding}
 					/>
 				</div>
@@ -328,6 +399,7 @@
 					<thead>
 						<tr>
 							<th>Nimi</th>
+							<th>Lempinimi</th>
 							<th>Pelinumero</th>
 							<th>Pelipaikka</th>
 							<th>Joukkueet</th>
@@ -344,6 +416,9 @@
 										<input type="text" bind:value={editLastName} class="edit-input" placeholder="Sukunimi" />
 									</td>
 									<td>
+										<input type="text" bind:value={editNick} class="edit-input" placeholder="Lempinimi" />
+									</td>
+									<td>
 										<input type="number" bind:value={editJerseyNumber} class="edit-input" placeholder="Numero" />
 									</td>
 									<td>
@@ -355,25 +430,11 @@
 										</select>
 									</td>
 									<td>
-										<div class="team-checkboxes-inline">
-											{#each teams as team}
-												<label class="checkbox-label-small">
-													<input
-														type="checkbox"
-														checked={editTeamIds.includes(team.id)}
-														onchange={() => toggleTeam(team.id, true)}
-													/>
-													<span class="team-info-small">
-														<strong>{team.name}</strong>
-														{#if team.age_group || team.home_city}
-															<span class="team-details-small">
-																({team.age_group || ''}{team.age_group && team.home_city ? ', ' : ''}{team.home_city || ''})
-															</span>
-														{/if}
-													</span>
-												</label>
-											{/each}
-										</div>
+										{#if player.teams && player.teams.length > 0}
+											{player.teams.map((t: any) => t.name).join(', ')}
+										{:else}
+											<span class="no-teams-text">Ei joukkueita</span>
+										{/if}
 									</td>
 									<td>
 										<button class="btn-save" onclick={() => saveEdit(player.id)}>Tallenna</button>
@@ -382,6 +443,7 @@
 								{:else}
 									<!-- Normaali näkymä -->
 									<td><strong>{player.first_name} {player.last_name}</strong></td>
+									<td>{player.nick || '-'}</td>
 									<td>{player.jersey_number || '-'}</td>
 									<td>{player.position || '-'}</td>
 									<td>
@@ -390,6 +452,7 @@
 										{:else}
 											<span class="no-teams-text">Ei joukkueita</span>
 										{/if}
+										<button class="btn-small" onclick={() => openTeamModal(player)}>Muokkaa</button>
 									</td>
 									<td>
 										<button class="btn-edit" onclick={() => startEdit(player)}>Muokkaa</button>
@@ -409,6 +472,38 @@
 	</div>
 </div>
 
+<!-- Joukkueiden valinta modaali -->
+{#if showTeamModal}
+	<div class="modal-overlay" onclick={closeTeamModal}>
+		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+			<h2>Valitse joukkueet</h2>
+			<div class="modal-team-list">
+				{#each teams as team}
+					<label class="modal-team-item">
+						<input
+							type="checkbox"
+							checked={modalTeamIds.includes(team.id)}
+							onchange={() => toggleTeam(team.id, true)}
+						/>
+						<span class="team-info">
+							<strong>{team.name}</strong>
+							{#if team.age_group || team.home_city}
+								<span class="team-details">
+									{team.age_group || ''}{team.age_group && team.home_city ? ', ' : ''}{team.home_city || ''}
+								</span>
+							{/if}
+						</span>
+					</label>
+				{/each}
+			</div>
+			<div class="modal-buttons">
+				<button class="btn-save" onclick={saveTeamSelection}>Tallenna</button>
+				<button class="btn-cancel" onclick={closeTeamModal}>Peruuta</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.admin-container {
 		max-width: 1200px;
@@ -417,24 +512,7 @@
 	}
 
 	.header {
-		display: flex;
-		align-items: center;
-		gap: 20px;
 		margin-bottom: 30px;
-	}
-
-	.back-button {
-		background-color: #6c757d;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		padding: 10px 20px;
-		cursor: pointer;
-		font-size: 1rem;
-	}
-
-	.back-button:hover {
-		background-color: #5a6268;
 	}
 
 	h1 {
@@ -679,6 +757,90 @@
 
 	.btn-cancel:hover {
 		background-color: #5a6268;
+	}
+
+	.btn-small {
+		padding: 4px 8px;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.85rem;
+		background-color: #6c757d;
+		color: white;
+		margin-left: 8px;
+	}
+
+	.btn-small:hover {
+		background-color: #5a6268;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.6);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 2000;
+		padding: 20px;
+	}
+
+	.modal-content {
+		background-color: white;
+		border-radius: 8px;
+		padding: 30px;
+		max-width: 500px;
+		width: 100%;
+		max-height: 80vh;
+		overflow-y: auto;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	}
+
+	.modal-content h2 {
+		margin-top: 0;
+		margin-bottom: 20px;
+		color: #1a1a1a;
+	}
+
+	.modal-team-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin-bottom: 20px;
+		max-height: 400px;
+		overflow-y: auto;
+		padding: 10px;
+		background-color: #f8f9fa;
+		border-radius: 6px;
+	}
+
+	.modal-team-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 10px;
+		background-color: white;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.modal-team-item:hover {
+		background-color: #e9ecef;
+	}
+
+	.modal-team-item input[type='checkbox'] {
+		margin-top: 2px;
+		cursor: pointer;
+	}
+
+	.modal-buttons {
+		display: flex;
+		gap: 10px;
+		justify-content: flex-end;
 	}
 
 	@media (max-width: 768px) {

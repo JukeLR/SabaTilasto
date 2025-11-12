@@ -10,6 +10,12 @@
 	let error = $state('');
 	let successMessage = $state('');
 	
+	// Pelaajien näyttäminen
+	let selectedTeamId = $state<number | null>(null);
+	let selectedTeamName = $state('');
+	let teamPlayers = $state<any[]>([]);
+	let isLoadingPlayers = $state(false);
+	
 	// Lomakkeen tiedot
 	let newTeamName = $state('');
 	let newTeamCity = $state('');
@@ -44,6 +50,42 @@
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	async function loadTeamPlayers(teamId: number, teamName: string) {
+		selectedTeamId = teamId;
+		selectedTeamName = teamName;
+		isLoadingPlayers = true;
+		error = '';
+		
+		try {
+			console.log('Ladataan pelaajia joukkueelle:', teamId, teamName);
+			const response = await fetch(`/api/admin/teams/${teamId}/players`);
+			
+			console.log('Response status:', response.status);
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error('API virhe:', errorData);
+				throw new Error(errorData.error || 'Pelaajien lataus epäonnistui');
+			}
+			
+			const data = await response.json();
+			console.log('Saatu data:', data);
+			teamPlayers = data.players || [];
+			console.log('Pelaajia löytyi:', teamPlayers.length);
+		} catch (err) {
+			console.error('Virhe pelaajien latauksessa:', err);
+			error = err instanceof Error ? err.message : 'Virhe ladattaessa pelaajia';
+		} finally {
+			isLoadingPlayers = false;
+		}
+	}
+
+	function closePlayersView() {
+		selectedTeamId = null;
+		selectedTeamName = '';
+		teamPlayers = [];
 	}
 
 	async function addTeam() {
@@ -155,6 +197,11 @@
 			if (!response.ok) {
 				const data = await response.json();
 				throw new Error(data.error || 'Joukkueen poistaminen epäonnistui');
+		}
+	}
+</script>
+
+<div class="admin-container">
 			}
 
 			successMessage = 'Joukkue poistettu onnistuneesti!';
@@ -173,7 +220,6 @@
 
 <div class="admin-container">
 	<div class="header">
-		<button class="back-button" onclick={goBack}>← Takaisin</button>
 		<h1>Joukkueiden hallinta</h1>
 	</div>
 
@@ -284,7 +330,11 @@
 									</td>
 								{:else}
 									<!-- Normaali näkymä -->
-									<td><strong>{team.name}</strong></td>
+									<td>
+										<button class="team-name-link" onclick={() => loadTeamPlayers(team.id, team.name)}>
+											<strong>{team.name}</strong>
+										</button>
+									</td>
 									<td>{team.home_city || '-'}</td>
 									<td>{team.age_group || '-'}</td>
 									<td>{new Date(team.created_at).toLocaleDateString('fi-FI')}</td>
@@ -300,6 +350,47 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Joukkueen pelaajat -->
+	{#if selectedTeamId !== null}
+		<div class="players-section">
+			<div class="players-header">
+				<h2>Joukkueen "{selectedTeamName}" pelaajat</h2>
+				<button class="btn-close-players" onclick={closePlayersView}>Sulje</button>
+			</div>
+
+			{#if isLoadingPlayers}
+				<p class="loading">Ladataan pelaajia...</p>
+			{:else if teamPlayers.length === 0}
+				<p class="no-players">Joukkueella ei ole vielä pelaajia.</p>
+			{:else}
+				<div class="players-table">
+					<table>
+						<thead>
+							<tr>
+								<th>Etunimi</th>
+								<th>Sukunimi</th>
+								<th>Nimimerkki</th>
+								<th>Pelipaikka</th>
+								<th>Pelinumero</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each teamPlayers as player}
+								<tr>
+									<td>{player.first_name}</td>
+									<td>{player.last_name}</td>
+									<td>{player.nick || '-'}</td>
+									<td>{player.position || '-'}</td>
+									<td>{player.jersey_number || '-'}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -310,24 +401,7 @@
 	}
 
 	.header {
-		display: flex;
-		align-items: center;
-		gap: 20px;
 		margin-bottom: 30px;
-	}
-
-	.back-button {
-		background-color: #6c757d;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		padding: 10px 20px;
-		cursor: pointer;
-		font-size: 1rem;
-	}
-
-	.back-button:hover {
-		background-color: #5a6268;
 	}
 
 	h1 {
@@ -454,6 +528,25 @@
 		background-color: #f8f9fa;
 	}
 
+	.team-name-link {
+		background: none;
+		border: none;
+		color: #4a90e2;
+		cursor: pointer;
+		padding: 0;
+		font-size: 1rem;
+		text-decoration: underline;
+		text-align: left;
+	}
+
+	.team-name-link:hover {
+		color: #357abd;
+	}
+
+	.team-name-link strong {
+		font-weight: 600;
+	}
+
 	.edit-input {
 		padding: 5px;
 		border: 1px solid #4a90e2;
@@ -504,6 +597,51 @@
 
 	.btn-cancel:hover {
 		background-color: #5a6268;
+	}
+
+	.players-section {
+		background-color: white;
+		padding: 25px;
+		border-radius: 8px;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		margin-top: 30px;
+		border: 2px solid #4a90e2;
+	}
+
+	.players-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 20px;
+	}
+
+	.players-header h2 {
+		margin: 0;
+	}
+
+	.btn-close-players {
+		background-color: #6c757d;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		padding: 10px 20px;
+		cursor: pointer;
+		font-size: 1rem;
+	}
+
+	.btn-close-players:hover {
+		background-color: #5a6268;
+	}
+
+	.no-players {
+		text-align: center;
+		color: #6c757d;
+		padding: 20px;
+		font-style: italic;
+	}
+
+	.players-table {
+		overflow-x: auto;
 	}
 
 	@media (max-width: 768px) {

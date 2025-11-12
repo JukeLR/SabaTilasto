@@ -6,6 +6,8 @@
 	
 	let selectedPeriod = $state(1);
 	let opponentTeamName = $state('');
+	let selectedGoalkeeper = $state('');
+	let goalkeepers = $state<any[]>([]);
 	let isSaving = $state(false);
 	let saveMessage = $state('');
 	let isLoggedIn = $state(data.isLoggedIn);
@@ -40,13 +42,13 @@
 		ownGoals: number;
 		ownBlockedShots: number;
 		ownMissedShots: number;
-		ownDraws: number;
-		ownTakeaways: number;
+		ownBlocks: number;
+		ownSaves: number;
+		ownCatches: number;
 		oppGoals: number;
-		oppBlockedShots: number;
-		oppMissedShots: number;
-		oppDraws: number;
-		oppTakeaways: number;
+		oppSaves: number;
+		oppMissed: number;
+		oppBlocks: number;
 	};
 
 	// Päivitä state kun data muuttuu
@@ -54,60 +56,70 @@
 		isLoggedIn = data.isLoggedIn;
 		currentUser = data.user;
 		userRole = data.user?.role || '';
+		
+		// Hae maalivahdit kun komponentti latautuu
+		fetchGoalkeepers();
 	});
+
+	async function fetchGoalkeepers() {
+		try {
+			const response = await fetch('/api/admin/players');
+			if (response.ok) {
+				const players = await response.json();
+				goalkeepers = players.filter((p: any) => p.position === 'Maalivahti');
+			}
+		} catch (error) {
+			console.error('Virhe maalivahtien haussa:', error);
+		}
+	}
 
 	let periodStats: Record<number, PeriodStats> = $state({
 		1: {
-			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownDraws: 0, ownTakeaways: 0,
-			oppGoals: 0, oppBlockedShots: 0, oppMissedShots: 0, oppDraws: 0, oppTakeaways: 0
+			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0,
+			oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0
 		},
 		2: {
-			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownDraws: 0, ownTakeaways: 0,
-			oppGoals: 0, oppBlockedShots: 0, oppMissedShots: 0, oppDraws: 0, oppTakeaways: 0
+			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0,
+			oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0
 		},
 		3: {
-			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownDraws: 0, ownTakeaways: 0,
-			oppGoals: 0, oppBlockedShots: 0, oppMissedShots: 0, oppDraws: 0, oppTakeaways: 0
+			ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0,
+			oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0
 		}
 	});
 
 	// Nykyisen erän tilastot (computed)
 	let currentStats = $derived(periodStats[selectedPeriod]);
 
-	// Oma joukkue stats (nykyinen erä)
-	let ownGoals = $derived(currentStats.ownGoals);
-	let ownBlockedShots = $derived(currentStats.ownBlockedShots);
-	let ownMissedShots = $derived(currentStats.ownMissedShots);
-	let ownDraws = $derived(currentStats.ownDraws);
-	let ownTakeaways = $derived(currentStats.ownTakeaways);
-
-	// Vastustaja stats (nykyinen erä)
-	let oppGoals = $derived(currentStats.oppGoals);
-	let oppBlockedShots = $derived(currentStats.oppBlockedShots);
-	let oppMissedShots = $derived(currentStats.oppMissedShots);
-	let oppDraws = $derived(currentStats.oppDraws);
-	let oppTakeaways = $derived(currentStats.oppTakeaways);
-
 	// Koko pelin yhteenlasketut tilastot
 	let totalOwnGoals = $derived(periodStats[1].ownGoals + periodStats[2].ownGoals + periodStats[3].ownGoals);
 	let totalOwnBlockedShots = $derived(periodStats[1].ownBlockedShots + periodStats[2].ownBlockedShots + periodStats[3].ownBlockedShots);
 	let totalOwnMissedShots = $derived(periodStats[1].ownMissedShots + periodStats[2].ownMissedShots + periodStats[3].ownMissedShots);
-	let totalOwnDraws = $derived(periodStats[1].ownDraws + periodStats[2].ownDraws + periodStats[3].ownDraws);
-	let totalOwnTakeaways = $derived(periodStats[1].ownTakeaways + periodStats[2].ownTakeaways + periodStats[3].ownTakeaways);
+	let totalOwnBlocks = $derived(periodStats[1].ownBlocks + periodStats[2].ownBlocks + periodStats[3].ownBlocks);
+	let totalOwnSaves = $derived(periodStats[1].ownSaves + periodStats[2].ownSaves + periodStats[3].ownSaves);
+	let totalOwnCatches = $derived(periodStats[1].ownCatches + periodStats[2].ownCatches + periodStats[3].ownCatches);
 
 	let totalOppGoals = $derived(periodStats[1].oppGoals + periodStats[2].oppGoals + periodStats[3].oppGoals);
-	let totalOppBlockedShots = $derived(periodStats[1].oppBlockedShots + periodStats[2].oppBlockedShots + periodStats[3].oppBlockedShots);
-	let totalOppMissedShots = $derived(periodStats[1].oppMissedShots + periodStats[2].oppMissedShots + periodStats[3].oppMissedShots);
-	let totalOppDraws = $derived(periodStats[1].oppDraws + periodStats[2].oppDraws + periodStats[3].oppDraws);
-	let totalOppTakeaways = $derived(periodStats[1].oppTakeaways + periodStats[2].oppTakeaways + periodStats[3].oppTakeaways);
+	let totalOppSaves = $derived(periodStats[1].oppSaves + periodStats[2].oppSaves + periodStats[3].oppSaves);
+	let totalOppMissed = $derived(periodStats[1].oppMissed + periodStats[2].oppMissed + periodStats[3].oppMissed);
+	let totalOppBlocks = $derived(periodStats[1].oppBlocks + periodStats[2].oppBlocks + periodStats[3].oppBlocks);
 
-	// Torjuntaprosentti laskenta
-	function calculateSavePercentage(saves: number, goalsAgainst: number): string {
-		const totalShots = saves + goalsAgainst;
+	// Lasketaan meidän laukaukset maalia kohti (maalit + vastustajan torjunnat + blokit)
+	let totalOwnShotsOnGoal = $derived(totalOwnGoals + totalOppSaves + totalOwnBlockedShots);
+
+	// Vastustajan torjunta-%: (torjunnat / (torjunnat + päästetyt maalit)) * 100
+	let oppGoalieSavePercentage = $derived(() => {
+		const totalShots = totalOppSaves + totalOwnGoals;
 		if (totalShots === 0) return '0.0';
-		const percentage = (saves / totalShots) * 100;
-		return percentage.toFixed(1);
-	}
+		return ((totalOppSaves / totalShots) * 100).toFixed(1);
+	});
+
+	// Oman maalivahdin torjunta-%: (torjunnat / (torjunnat + vastustajan maalit)) * 100
+	let ownGoalieSavePercentage = $derived(() => {
+		const totalShotsAgainst = totalOwnSaves + totalOppGoals;
+		if (totalShotsAgainst === 0) return '0.0';
+		return ((totalOwnSaves / totalShotsAgainst) * 100).toFixed(1);
+	});
 
 	let history: Array<{
 		team: 'own' | 'opp';
@@ -115,8 +127,6 @@
 		value: number;
 		period: number;
 	}> = $state([]);
-
-	let showSummaryView = $state(false);
 
 	function increment(team: 'own' | 'opp', stat: string) {
 		let currentValue = 0;
@@ -135,38 +145,38 @@
 				currentValue = periodStats[period].ownMissedShots; 
 				periodStats[period].ownMissedShots++; 
 			}
-			else if (stat === 'draws') { 
-				currentValue = periodStats[period].ownDraws; 
-				periodStats[period].ownDraws++; 
+			else if (stat === 'blocks') {
+				currentValue = periodStats[period].ownBlocks;
+				periodStats[period].ownBlocks++;
 			}
-			else if (stat === 'takeaways') { 
-				currentValue = periodStats[period].ownTakeaways; 
-				periodStats[period].ownTakeaways++; 
+			else if (stat === 'saves') {
+				currentValue = periodStats[period].ownSaves;
+				periodStats[period].ownSaves++;
+			}
+			else if (stat === 'catches') {
+				currentValue = periodStats[period].ownCatches;
+				periodStats[period].ownCatches++;
 			}
 		} else {
 			if (stat === 'goals') { 
 				currentValue = periodStats[period].oppGoals; 
 				periodStats[period].oppGoals++; 
 			}
-			else if (stat === 'blocked') { 
-				currentValue = periodStats[period].oppBlockedShots; 
-				periodStats[period].oppBlockedShots++; 
+			else if (stat === 'saves') {
+				currentValue = periodStats[period].oppSaves;
+				periodStats[period].oppSaves++;
 			}
-			else if (stat === 'missed') { 
-				currentValue = periodStats[period].oppMissedShots; 
-				periodStats[period].oppMissedShots++; 
+			else if (stat === 'missed') {
+				currentValue = periodStats[period].oppMissed;
+				periodStats[period].oppMissed++;
 			}
-			else if (stat === 'draws') { 
-				currentValue = periodStats[period].oppDraws; 
-				periodStats[period].oppDraws++; 
-			}
-			else if (stat === 'takeaways') { 
-				currentValue = periodStats[period].oppTakeaways; 
-				periodStats[period].oppTakeaways++; 
+			else if (stat === 'blocks') {
+				currentValue = periodStats[period].oppBlocks;
+				periodStats[period].oppBlocks++;
 			}
 		}
 
-		history.push({ team, stat, value: currentValue, period });
+		history = [...history, { team, stat, value: currentValue, period }];
 	}
 
 	function undo() {
@@ -181,16 +191,27 @@
 			if (stat === 'goals') periodStats[period].ownGoals--;
 			else if (stat === 'blocked') periodStats[period].ownBlockedShots--;
 			else if (stat === 'missed') periodStats[period].ownMissedShots--;
-			else if (stat === 'draws') periodStats[period].ownDraws--;
-			else if (stat === 'takeaways') periodStats[period].ownTakeaways--;
+			else if (stat === 'blocks') periodStats[period].ownBlocks--;
+			else if (stat === 'saves') periodStats[period].ownSaves--;
+			else if (stat === 'catches') periodStats[period].ownCatches--;
 		} else {
 			if (stat === 'goals') periodStats[period].oppGoals--;
-			else if (stat === 'blocked') periodStats[period].oppBlockedShots--;
-			else if (stat === 'missed') periodStats[period].oppMissedShots--;
-			else if (stat === 'draws') periodStats[period].oppDraws--;
-			else if (stat === 'takeaways') periodStats[period].oppTakeaways--;
+			else if (stat === 'saves') periodStats[period].oppSaves--;
+			else if (stat === 'missed') periodStats[period].oppMissed--;
+			else if (stat === 'blocks') periodStats[period].oppBlocks--;
 		}
 	}
+
+	function resetAllStats() {
+		if (confirm('Haluatko varmasti nollata kaikki tilastot?')) {
+			periodStats[1] = { ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0, oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0 };
+			periodStats[2] = { ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0, oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0 };
+			periodStats[3] = { ownGoals: 0, ownBlockedShots: 0, ownMissedShots: 0, ownBlocks: 0, ownSaves: 0, ownCatches: 0, oppGoals: 0, oppSaves: 0, oppMissed: 0, oppBlocks: 0 };
+			history = [];
+		}
+	}
+
+	let showSummaryView = $state(false);
 
 	function showSummary() {
 		showSummaryView = true;
@@ -427,62 +448,6 @@
 
 </script>
 
-<!-- Hampurilaisvalikko -->
-<div class="hamburger-menu">
-	<button class="hamburger-button" onclick={toggleMenu} aria-label="Valikko">
-		<div class="hamburger-icon">
-			<span></span>
-			<span></span>
-			<span></span>
-		</div>
-	</button>
-	
-	{#if showMenu}
-		<div class="menu-dropdown">
-			{#if isLoggedIn}
-				<div class="menu-header">
-					<strong>{currentUser?.firstName} {currentUser?.lastName}</strong>
-					<span class="role-badge">{userRole}</span>
-				</div>
-				
-				{#if userRole === 'admin'}
-					<button class="menu-item" onclick={() => navigateTo('/admin')}>
-						Käyttäjähallinta
-					</button>
-					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
-						Joukkueet
-					</button>
-					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
-						Pelaajat
-					</button>
-					<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
-						Kaikki tilastot
-					</button>
-				{/if}
-				
-				{#if userRole === 'admin' || userRole === 'toimihenkilö'}
-					<button class="menu-item" onclick={() => navigateTo('/reports')}>
-						Raportit
-					</button>
-				{/if}
-				
-				{#if userRole === 'admin' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
-					<button class="menu-item" onclick={() => navigateTo('/games')}>
-						Pelit
-					</button>
-				{/if}
-				
-				<button class="menu-item" onclick={() => navigateTo('/profile')}>
-					Oma profiili
-				</button>
-				<button class="menu-item" onclick={logout}>Kirjaudu ulos</button>
-			{:else}
-				<button class="menu-item" onclick={openLoginModal}>Kirjaudu</button>
-			{/if}
-		</div>
-	{/if}
-</div>
-
 <!-- Kirjautumis-modal -->
 {#if showLoginModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -677,80 +642,57 @@
 <div class="container">
 	{#if showSummaryView}
 		<div class="summary-view">
-			<h1>Yhteenveto</h1>
+			<h1>Yhteenveto - {opponentTeamName || 'Vastustaja'}</h1>
 			
+			<!-- Lopputulos -->
+			<div class="final-score">
+				<h2>Lopputulos</h2>
+				<div class="score-big">
+					{totalOwnGoals} - {totalOppGoals}
+				</div>
+			</div>
+
 			<!-- Eräkohtaiset tulokset -->
 			{#each [1, 2, 3] as period}
 				{@const pStats = periodStats[period]}
 				{@const hasData = pStats.ownGoals + pStats.ownBlockedShots + pStats.ownMissedShots + 
-				                   pStats.oppGoals + pStats.oppBlockedShots + pStats.oppMissedShots > 0}
+				                   pStats.oppGoals + pStats.oppSaves > 0}
 				{#if hasData}
 					<div class="period-summary">
-						<h2>Erä {period}</h2>
+						<h3>Erä {period}</h3>
 						<div class="period-score">
 							<span class="score-label">Tulos:</span>
 							<span class="score-display">{pStats.ownGoals} - {pStats.oppGoals}</span>
 						</div>
 						
-						<div class="teams-grid">
-							<div class="team-column">
-								<h3>Oma joukkue</h3>
-								<div class="period-stats">
-									<div class="stat-row">
-										<span>Maalit:</span>
-										<span>{pStats.ownGoals}</span>
-									</div>
-									<div class="stat-row">
-										<span>Veto blokkiin:</span>
-										<span>{pStats.ownBlockedShots}</span>
-									</div>
-									<div class="stat-row">
-										<span>Veto ohi:</span>
-										<span>{pStats.ownMissedShots}</span>
-									</div>
-									<div class="stat-row">
-										<span>Torjunnat:</span>
-										<span>{pStats.ownDraws}</span>
-									</div>
-									<div class="stat-row">
-										<span>Moken katko:</span>
-										<span>{pStats.ownTakeaways}</span>
-									</div>
-									<div class="stat-row goalkeeper">
-										<span>Torjunta-%:</span>
-										<span>{calculateSavePercentage(pStats.ownDraws, pStats.oppGoals)}%</span>
-									</div>
-								</div>
+						<div class="period-stats">
+							<div class="stat-row">
+								<span>Meidän maalit:</span>
+								<span>{pStats.ownGoals}</span>
 							</div>
-							
-							<div class="team-column">
-								<h3>Vastustaja</h3>
-								<div class="period-stats">
-									<div class="stat-row">
-										<span>Maalit:</span>
-										<span>{pStats.oppGoals}</span>
-									</div>
-									<div class="stat-row">
-										<span>Veto blokkiin:</span>
-										<span>{pStats.oppBlockedShots}</span>
-									</div>
-									<div class="stat-row">
-										<span>Veto ohi:</span>
-										<span>{pStats.oppMissedShots}</span>
-									</div>
-									<div class="stat-row">
-										<span>Torjunnat:</span>
-										<span>{pStats.oppDraws}</span>
-									</div>
-									<div class="stat-row">
-										<span>Moken katko:</span>
-										<span>{pStats.oppTakeaways}</span>
-									</div>
-									<div class="stat-row goalkeeper">
-										<span>Torjunta-%:</span>
-										<span>{calculateSavePercentage(pStats.oppDraws, pStats.ownGoals)}%</span>
-									</div>
-								</div>
+							<div class="stat-row">
+								<span>Vastustajan maalit:</span>
+								<span>{pStats.oppGoals}</span>
+							</div>
+							<div class="stat-row">
+								<span>Vedot maalia kohti:</span>
+								<span>{pStats.oppSaves}</span>
+							</div>
+							<div class="stat-row">
+								<span>Vedot ohi:</span>
+								<span>{pStats.ownMissedShots}</span>
+							</div>
+							<div class="stat-row">
+								<span>Vedot blokkiin:</span>
+								<span>{pStats.ownBlockedShots}</span>
+							</div>
+							<div class="stat-row">
+								<span>BlokkiPisteet:</span>
+								<span>{pStats.ownBlocks}</span>
+							</div>
+							<div class="stat-row">
+								<span>Vastustajan vedot ohi:</span>
+								<span>{pStats.oppMissed}</span>
 							</div>
 						</div>
 					</div>
@@ -759,109 +701,83 @@
 
 			<!-- Koko pelin yhteenveto -->
 			<div class="game-summary">
-				<h2>Koko peli</h2>
-				<div class="final-score">
-					<span class="score-team">Oma joukkue</span>
-					<span class="score-value">{totalOwnGoals} - {totalOppGoals}</span>
-					<span class="score-team">Vastustaja</span>
-				</div>
-			</div>
-			
-			<div class="summary-section">
-				<h2>Oma joukkue - Yhteensä</h2>
+				<h2>Koko peli - Yhteensä</h2>
+				
 				<div class="summary-stats">
 					<div class="summary-item">
-						<span class="stat-name">Maalit:</span>
+						<span class="stat-name">Meidän maalit:</span>
 						<span class="stat-value">{totalOwnGoals}</span>
 					</div>
 					<div class="summary-item">
-						<span class="stat-name">Veto blokkiin:</span>
-						<span class="stat-value">{totalOwnBlockedShots}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Veto ohi:</span>
-						<span class="stat-value">{totalOwnMissedShots}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Torjunnat:</span>
-						<span class="stat-value">{totalOwnDraws}</span>
-					</div>
-					<div class="summary-item">
-						<span class="stat-name">Moken katko:</span>
-						<span class="stat-value">{totalOwnTakeaways}</span>
-					</div>
-				<div class="summary-item total">
-					<span class="stat-name">Laukaukset yhteensä:</span>
-					<span class="stat-value">{totalOwnGoals + totalOwnBlockedShots + totalOwnMissedShots}</span>
-				</div>
-				<div class="summary-item goalkeeper-total">
-					<span class="stat-name">Maalivahdin torjunta-%:</span>
-					<span class="stat-value">{calculateSavePercentage(totalOwnDraws, totalOppGoals)}%</span>
-				</div>
-			</div>
-		</div>
-
-		<div class="summary-section">
-				<h2>Vastustaja - Yhteensä</h2>
-				<div class="summary-stats">
-					<div class="summary-item">
-						<span class="stat-name">Maalit:</span>
+						<span class="stat-name">Vastustajan maalit:</span>
 						<span class="stat-value">{totalOppGoals}</span>
 					</div>
 					<div class="summary-item">
-						<span class="stat-name">Veto blokkiin:</span>
-						<span class="stat-value">{totalOppBlockedShots}</span>
+						<span class="stat-name">Laukaukset maalia kohti:</span>
+						<span class="stat-value">{totalOppSaves}</span>
 					</div>
 					<div class="summary-item">
-						<span class="stat-name">Veto ohi:</span>
-						<span class="stat-value">{totalOppMissedShots}</span>
+						<span class="stat-name">Laukaukset ohi:</span>
+						<span class="stat-value">{totalOwnMissedShots}</span>
 					</div>
 					<div class="summary-item">
-						<span class="stat-name">Torjunnat:</span>
-						<span class="stat-value">{totalOppDraws}</span>
+						<span class="stat-name">Laukaukset blokkiin:</span>
+						<span class="stat-value">{totalOwnBlockedShots}</span>
 					</div>
 					<div class="summary-item">
-						<span class="stat-name">Moken katko:</span>
-						<span class="stat-value">{totalOppTakeaways}</span>
+						<span class="stat-name">Vastustajan blokatut vedot:</span>
+						<span class="stat-value">{totalOwnBlocks}</span>
 					</div>
-				<div class="summary-item total">
-					<span class="stat-name">Laukaukset yhteensä:</span>
-					<span class="stat-value">{totalOppGoals + totalOppBlockedShots + totalOppMissedShots}</span>
-				</div>
-				<div class="summary-item goalkeeper-total">
-					<span class="stat-name">Maalivahdin torjunta-%:</span>
-					<span class="stat-value">{calculateSavePercentage(totalOppDraws, totalOwnGoals)}%</span>
+					<div class="summary-item">
+						<span class="stat-name">Vastustajan vedot ohi:</span>
+						<span class="stat-value">{totalOppMissed}</span>
+					</div>
+					<div class="summary-item total">
+						<span class="stat-name">Laukaukset yhteensä:</span>
+						<span class="stat-value">{totalOwnShotsOnGoal}</span>
+					</div>
+					<div class="summary-item goalkeeper-total">
+						<span class="stat-name">Oman maalivahdin ({selectedGoalkeeper || 'ei nimetty'}) torjunta-%:</span>
+						<span class="stat-value">{ownGoalieSavePercentage()}%</span>
+					</div>
+					<div class="summary-item goalkeeper-total">
+						<span class="stat-name">Vastustajan maalivahdin torjunta-%:</span>
+						<span class="stat-value">{oppGoalieSavePercentage()}%</span>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- Tallennuspainikkeet -->
-		<div class="save-section">
-			{#if saveMessage}
-				<div class="save-message">{saveMessage}</div>
-			{/if}
-			
-			<div class="opponent-input">
-				<label for="opponentName">Vastustajan nimi:</label>
-				<input 
-					type="text" 
-					id="opponentName" 
-					bind:value={opponentTeamName}
-					placeholder="Anna vastustajan nimi"
-				/>
-			</div>
-
+			<!-- Takaisin-painike -->
 			<div class="summary-buttons">
-				<button class="save-button" onclick={saveGame} disabled={isSaving}>
-					{isSaving ? 'Tallennetaan...' : 'Tallenna peli'}
-				</button>
 				<button class="back-button" onclick={closeSummary}>Takaisin</button>
 			</div>
 		</div>
-		</div>
 	{:else}
 		<header>
-		<h1>Pelitilastointi</h1>
+			<h1>Pelitilastointi</h1>
+
+			<div class="game-info">
+				<div class="form-group">
+					<label for="goalkeeper">Maalivahti</label>
+					<input 
+						type="text" 
+						id="goalkeeper" 
+						bind:value={selectedGoalkeeper}
+						placeholder=""
+					/>
+				</div>
+				<div class="form-group">
+					<label for="opponent">Vastustaja</label>
+					<input 
+						type="text" 
+						id="opponent" 
+						bind:value={opponentTeamName}
+						placeholder=""
+					/>
+				</div>
+			</div>
+		</header>
+
 		<div class="periods">
 			<span class="period-label">Erä:</span>
 			<label class="checkbox-container">
@@ -877,84 +793,86 @@
 				<span class="checkbox-label">III</span>
 			</label>
 		</div>
-	</header>
 
-	<section class="team-section">
-		<h2>Oma joukkue</h2>
-		<div class="stats-grid">
-			<div class="stat-item">
-				<label>Maali</label>
-				<button class="stat-button" onclick={() => increment('own', 'goals')}>
-					{ownGoals}
-				</button>
-			</div>
-			<div class="stat-item">
-				<label>Veto blokkiin</label>
-				<button class="stat-button" onclick={() => increment('own', 'blocked')}>
-					{ownBlockedShots}
-				</button>
-			</div>
-			<div class="stat-item">
-				<label>Veto ohi</label>
-				<button class="stat-button" onclick={() => increment('own', 'missed')}>
-					{ownMissedShots}
-				</button>
-			</div>
-			<div class="stat-item">
-				<label>Torjunta</label>
-				<button class="stat-button" onclick={() => increment('own', 'draws')}>
-					{ownDraws}
-				</button>
-			</div>
-			<div class="stat-item">
-				<label>Moken katko</label>
-				<button class="stat-button" onclick={() => increment('own', 'takeaways')}>
-					{ownTakeaways}
-				</button>
-			</div>
+		<!-- Pistetilanne -->
+		<div class="score-display">
+			<span class="score">{totalOwnGoals} - {totalOppGoals}</span>
 		</div>
-	</section>
 
-	<section class="team-section">
-		<h2>Vastustaja</h2>
-		<div class="stats-grid">
-			<div class="stat-item">
-				<label>Maali</label>
-				<button class="stat-button" onclick={() => increment('opp', 'goals')}>
-					{oppGoals}
-				</button>
+		<section class="stats-section">
+			<div class="stats-row two-cols">
+				<div class="stat-item">
+					<span class="stat-label">Maali meille</span>
+					<button class="stat-button green" onclick={() => increment('own', 'goals')}>
+						{currentStats.ownGoals}
+					</button>
+				</div>
+				<div class="stat-item">
+					<span class="stat-label">Maali vastustajalle</span>
+					<button class="stat-button orange" onclick={() => increment('opp', 'goals')}>
+						{currentStats.oppGoals}
+					</button>
+				</div>
 			</div>
-			<div class="stat-item">
-				<label>Veto blokkiin</label>
-				<button class="stat-button" onclick={() => increment('opp', 'blocked')}>
-					{oppBlockedShots}
-				</button>
+
+			<h2>Pelitilanteet:</h2>
+			<div class="stats-row">
+				<div class="stat-item">
+					<span class="stat-label">Veto maalia kohti</span>
+					<button class="stat-button green" onclick={() => increment('opp', 'saves')}>
+						{currentStats.oppSaves}
+					</button>
+				</div>
+				<div class="stat-item">
+					<span class="stat-label">Veto ohi</span>
+					<button class="stat-button yellow" onclick={() => increment('own', 'missed')}>
+						{currentStats.ownMissedShots}
+					</button>
+				</div>
+				<div class="stat-item">
+					<span class="stat-label">Veto blokkiin</span>
+					<button class="stat-button yellow" onclick={() => increment('own', 'blocked')}>
+						{currentStats.ownBlockedShots}
+					</button>
+				</div>
 			</div>
-			<div class="stat-item">
-				<label>Veto ohi</label>
-				<button class="stat-button" onclick={() => increment('opp', 'missed')}>
-					{oppMissedShots}
-				</button>
+
+			<div class="stats-row two-cols">
+				<div class="stat-item">
+					<span class="stat-label">BlokkiPisteet</span>
+					<button class="stat-button green" onclick={() => increment('own', 'blocks')}>
+						{currentStats.ownBlocks || 0}
+					</button>
+				</div>
+				<div class="stat-item">
+					<span class="stat-label">Vastustajan vedot ohi maalin</span>
+					<button class="stat-button green" onclick={() => increment('opp', 'missed')}>
+						{currentStats.oppMissed || 0}
+					</button>
+				</div>
 			</div>
-			<div class="stat-item">
-				<label>Torjunta</label>
-				<button class="stat-button" onclick={() => increment('opp', 'draws')}>
-					{oppDraws}
-				</button>
+
+			<div class="stats-row two-cols">
+				<div class="stat-item">
+					<span class="stat-label">Torjunta</span>
+					<button class="stat-button green" onclick={() => increment('own', 'saves')}>
+						{currentStats.ownSaves || 0}
+					</button>
+				</div>
+				<div class="stat-item">
+					<span class="stat-label">Maalivahdin katko</span>
+					<button class="stat-button green" onclick={() => increment('own', 'catches')}>
+						{currentStats.ownCatches || 0}
+					</button>
+				</div>
 			</div>
-			<div class="stat-item">
-				<label>Moken katko</label>
-				<button class="stat-button" onclick={() => increment('opp', 'takeaways')}>
-					{oppTakeaways}
-				</button>
-			</div>
+		</section>
+
+		<div class="action-buttons">
+			<button class="undo-button" onclick={undo} disabled={history.length === 0}>Undo</button>
+			<button class="summary-button" onclick={showSummary}>Yhteenveto</button>
+			<button class="reset-button" onclick={resetAllStats}>Tyhjennä</button>
 		</div>
-	</section>
-
-	<div class="action-buttons">
-		<button class="undo-button" onclick={undo}>Undo</button>
-		<button class="summary-button" onclick={showSummary}>Yhteenveto</button>
-	</div>
 	{/if}
 </div>
 
@@ -963,15 +881,16 @@
 		margin: 0;
 		padding: 0;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-		background-color: #f5f5f5;
+		background-color: #f0f0f0;
 	}
 
 	.container {
-		max-width: 800px;
+		max-width: 750px;
 		margin: 0 auto;
 		padding: 20px;
+		padding-top: 80px;
 		min-height: 100vh;
-		background-color: white;
+		background-color: #f0f0f0;
 	}
 
 	/* Hampurilaisvalikko */
@@ -1256,6 +1175,22 @@
 		margin-bottom: 40px;
 	}
 
+	.score-display {
+		text-align: center;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		padding: 15px 20px;
+		margin: 0 -20px 20px -20px;
+		border-radius: 0;
+	}
+
+	.score-display .score {
+		font-size: 2.5rem;
+		font-weight: bold;
+		color: white;
+		text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+		letter-spacing: 0.1em;
+	}
+
 	h1 {
 		font-size: 2.5rem;
 		font-weight: bold;
@@ -1334,28 +1269,29 @@
 
 	header {
 		text-align: center;
-		margin-bottom: 40px;
+		margin-bottom: 30px;
 	}
 
 	h1 {
-		font-size: 2.5rem;
+		font-size: 2rem;
 		font-weight: bold;
 		margin: 0 0 20px 0;
-		color: #1a1a1a;
+		color: #000;
 	}
 
 	.periods {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 20px;
+		gap: 15px;
 		flex-wrap: wrap;
-		margin-bottom: 10px;
+		margin-bottom: 20px;
 	}
 
 	.period-label {
-		font-size: 1.2rem;
-		font-weight: 600;
+		font-size: 1rem;
+		font-weight: 500;
+		color: #000;
 	}
 
 	.checkbox-container {
@@ -1363,118 +1299,207 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 5px;
-		cursor: pointer;
 	}
 
 	.checkbox-container input[type="checkbox"] {
-		width: 40px;
-		height: 40px;
+		width: 30px;
+		height: 30px;
 		cursor: pointer;
-		accent-color: #4a90e2;
+		accent-color: #5b9bd5;
 	}
 
 	.checkbox-label {
 		font-size: 1.1rem;
 		font-weight: 600;
+		color: #000;
 	}
 
-	.team-section {
-		margin-bottom: 30px;
-	}
-
-	h2 {
-		font-size: 1.8rem;
-		font-weight: 600;
-		margin-bottom: 15px;
-		text-decoration: underline;
-	}
-
-	.stats-grid {
+	.game-info {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 15px;
-		margin-bottom: 15px;
+		grid-template-columns: 1fr 1fr;
+		gap: 30px;
+		max-width: 600px;
+		margin: 0 auto 25px auto;
+	}
+
+	.game-info .form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.game-info label {
+		font-size: 1rem;
+		color: #000;
+		font-weight: 600;
+	}
+
+	.game-info select,
+	.game-info input {
+		width: 100%;
+		padding: 10px;
+		border: 2px solid #000;
+		border-radius: 4px;
+		font-size: 0.95rem;
+		background-color: white;
+	}
+
+	.game-info select {
+		position: relative;
+	}
+
+	.stats-section {
+		margin-bottom: 20px;
+	}
+
+	.stats-section h2 {
+		font-size: 1.1rem;
+		font-weight: 600;
+		margin-bottom: 6px;
+		margin-top: 5px;
+		color: #000;
+		text-align: left;
+	}
+
+	.stats-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.stats-row:has(> :only-child) {
+		grid-template-columns: 1fr;
+	}
+
+	.stats-row.two-cols {
+		grid-template-columns: repeat(2, 1fr);
 	}
 
 	.stat-item {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 6px;
 	}
 
-	.stat-item label {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: #1a1a1a;
+	.stat-label {
+		font-size: 1.05rem;
+		font-weight: 500;
+		color: #000;
+		text-align: center;
 	}
 
 	.stat-button {
-		background-color: #4a90e2;
-		color: white;
 		border: none;
 		border-radius: 8px;
-		padding: 15px;
-		font-size: 2rem;
+		padding: 25px 15px;
+		font-size: 2.5rem;
 		font-weight: bold;
 		cursor: pointer;
-		transition: background-color 0.2s;
-		min-height: 70px;
+		transition: all 0.2s;
+		min-height: 90px;
+		color: #000;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 	}
 
 	.stat-button:hover {
-		background-color: #357abd;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 	}
 
 	.stat-button:active {
-		background-color: #2868a8;
-		transform: scale(0.98);
+		transform: translateY(0);
+		box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+	}
+
+	.stat-button.green {
+		background-color: #5cb85c;
+	}
+
+	.stat-button.green:hover {
+		background-color: #4cae4c;
+	}
+
+	.stat-button.orange {
+		background-color: #f0ad4e;
+	}
+
+	.stat-button.orange:hover {
+		background-color: #ec971f;
+	}
+
+	.stat-button.yellow {
+		background-color: #ffd966;
+	}
+
+	.stat-button.yellow:hover {
+		background-color: #f4c430;
 	}
 
 	.action-buttons {
 		display: flex;
-		flex-direction: column;
+		flex-direction: row;
 		gap: 15px;
-		margin-top: 20px;
-		align-items: center;
+		margin-top: 30px;
+		justify-content: center;
+		flex-wrap: wrap;
 	}
 
 	.undo-button {
-		background-color: #e89f71;
-		color: #1a1a1a;
+		background-color: #f4b084;
+		color: #000;
 		border: none;
 		border-radius: 8px;
-		padding: 12px 50px;
+		padding: 14px 50px;
 		font-size: 1.3rem;
 		font-weight: bold;
 		cursor: pointer;
-		transition: background-color 0.2s;
-		min-width: 250px;
+		transition: all 0.2s;
+		min-width: 150px;
 	}
 
-	.undo-button:hover {
-		background-color: #d88f61;
+	.undo-button:disabled {
+		background-color: #ddd;
+		color: #888;
+		cursor: not-allowed;
+	}
+
+	.undo-button:hover:not(:disabled) {
+		background-color: #e69b6f;
 	}
 
 	.summary-button {
-		background-color: #6cb86c;
+		background-color: #5b9bd5;
 		color: white;
 		border: none;
 		border-radius: 8px;
-		padding: 12px 50px;
+		padding: 14px 50px;
 		font-size: 1.3rem;
 		font-weight: bold;
 		cursor: pointer;
-		transition: background-color 0.2s;
-		min-width: 250px;
+		transition: all 0.2s;
+		min-width: 150px;
 	}
 
 	.summary-button:hover {
-		background-color: #5ca85c;
+		background-color: #4a8bc2;
 	}
 
-	.summary-button:active,
-	.undo-button:active {
-		transform: scale(0.98);
+	.reset-button {
+		background-color: #dc3545;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		padding: 14px 50px;
+		font-size: 1.3rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 150px;
+	}
+
+	.reset-button:hover {
+		background-color: #c82333;
 	}
 
 	.summary-view {
@@ -1590,11 +1615,24 @@
 	}
 
 	.final-score {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 20px;
-		flex-wrap: wrap;
+		text-align: center;
+		margin-bottom: 30px;
+	}
+
+	.final-score h2 {
+		color: #2868a8;
+		margin-bottom: 15px;
+	}
+
+	.score-big {
+		font-size: 3rem;
+		font-weight: bold;
+		color: #4a90e2;
+		padding: 20px;
+		background-color: white;
+		border-radius: 12px;
+		display: inline-block;
+		min-width: 200px;
 	}
 
 	.summary-section {
@@ -1705,161 +1743,177 @@
 
 	@media (max-width: 768px) {
 		.container {
-			padding: 10px;
+			padding: 15px;
+			padding-top: 70px;
 		}
 
 		h1 {
 			font-size: 1.6rem;
-			margin-bottom: 10px;
-		}
-
-		h2 {
-			font-size: 1.3rem;
-			margin-bottom: 10px;
-		}
-
-		header {
-			margin-bottom: 20px;
-		}
-
-		.team-section {
-			margin-bottom: 20px;
-		}
-
-		.stats-grid {
-			grid-template-columns: repeat(3, 1fr);
-			gap: 10px;
-		}
-
-		.periods {
-			gap: 12px;
-			margin-bottom: 5px;
-		}
-
-		.period-label {
-			font-size: 1rem;
-		}
-
-		.checkbox-container input[type="checkbox"] {
-			width: 30px;
-			height: 30px;
-		}
-
-		.checkbox-label {
-			font-size: 0.9rem;
-		}
-
-		.stat-item label {
-			font-size: 0.85rem;
-		}
-
-		.stat-button {
-			font-size: 1.5rem;
-			padding: 10px 5px;
-			min-height: 55px;
-		}
-
-		.action-buttons {
-			gap: 10px;
-			margin-top: 15px;
-		}
-
-		.undo-button,
-		.summary-button {
-			min-width: 100%;
-			padding: 12px 30px;
-			font-size: 1.2rem;
-		}
-
-		.back-button {
-			min-width: 100%;
-		}
-
-		.score-value {
-			font-size: 2.5rem;
-		}
-
-		.summary-stats {
-			padding: 15px;
-		}
-
-		.teams-grid {
-			grid-template-columns: 1fr;
-			gap: 15px;
-		}
-
-		.period-summary {
-			padding: 15px;
 		}
 
 		.score-display {
-			font-size: 1.5rem;
+			margin: 0 -15px 15px -15px;
+			padding: 12px 15px;
 		}
 
-		.final-score {
+		.score-display .score {
+			font-size: 2rem;
+		}
+
+		.game-info {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.game-info .form-group {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.stats-row {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.stats-row.two-cols {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.stat-button {
+			padding: 18px 8px;
+			font-size: 1.8rem;
+			min-height: 70px;
+		}
+
+		.stat-label {
+			font-size: 0.95rem;
+		}
+
+		.stat-item {
+			gap: 5px;
+		}
+
+		.stats-section h2 {
+			margin-bottom: 5px;
+		}
+
+		.stats-section {
+			margin-bottom: 15px;
+		}
+
+		.action-buttons {
+			flex-direction: row;
 			gap: 10px;
+		}
+
+		.undo-button,
+		.summary-button,
+		.reset-button {
+			flex: 1;
+			min-width: auto;
 		}
 	}
 
 	@media (max-width: 480px) {
+		.container {
+			padding: 10px;
+			padding-top: 65px;
+		}
+
 		h1 {
-			font-size: 1.4rem;
+			font-size: 1.3rem;
+			margin-bottom: 10px;
+		}
+
+		.score-display {
+			margin: 0 -10px 10px -10px;
+			padding: 10px;
+		}
+
+		.score-display .score {
+			font-size: 1.8rem;
+		}
+
+		.periods {
+			gap: 8px;
+			margin-bottom: 8px;
 		}
 
 		.period-label {
-			font-size: 0.9rem;
+			font-size: 0.85rem;
+			margin-bottom: 4px;
+		}
+
+		.checkbox-container input[type="checkbox"] {
+			width: 20px;
+			height: 20px;
 		}
 
 		.checkbox-label {
 			font-size: 0.85rem;
 		}
 
-		.stat-item label {
+		.game-info {
+			gap: 30px;
+			margin-bottom: 10px;
+		}
+
+		.game-info label {
+			font-size: 0.8rem;
+			margin-bottom: 2px;
+		}
+
+		.game-info select,
+		.game-info input {
+			padding: 5px;
+			font-size: 0.8rem;
+		}
+
+		.stats-section h2 {
+			font-size: 0.9rem;
+			margin-bottom: 4px;
+			margin-top: 4px;
+		}
+
+		.stats-section {
+			margin-bottom: 10px;
+		}
+
+		.stats-row {
+			grid-template-columns: repeat(3, 1fr);
+			gap: 8px;
+			margin-bottom: 8px;
+		}
+
+		.stats-row.two-cols {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.stat-item {
+			gap: 4px;
+		}
+
+		.stat-label {
 			font-size: 0.8rem;
 		}
 
 		.stat-button {
-			font-size: 1.3rem;
-			padding: 8px 3px;
-			min-height: 50px;
+			font-size: 1.5rem;
+			padding: 12px 5px;
+			min-height: 60px;
+		}
+
+		.action-buttons {
+			margin-top: 20px;
+			flex-direction: row;
+			gap: 8px;
 		}
 
 		.undo-button,
-		.summary-button {
-			font-size: 1.1rem;
-			padding: 10px 25px;
-		}
-
-		.back-button {
-			font-size: 1.3rem;
-		}
-
-		.stat-name {
-			font-size: 0.95rem;
-		}
-
-		.stat-value {
-			font-size: 1.1rem;
-		}
-
-		.score-value {
-			font-size: 2rem;
-		}
-
-		.score-team {
-			font-size: 1rem;
-		}
-
-		.teams-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.team-column h3 {
-			font-size: 1.1rem;
-		}
-
-		.stat-row {
+		.summary-button,
+		.reset-button {
 			font-size: 0.9rem;
+			padding: 12px 15px;
+			min-width: auto;
+			flex: 1;
 		}
 	}
 </style>

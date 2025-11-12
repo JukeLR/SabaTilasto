@@ -64,6 +64,7 @@ export interface Player {
 	team_ids: number[] | null;
 	first_name: string;
 	last_name: string;
+	nick: string | null;
 	jersey_number: number | null;
 	position: string | null;
 	created_at: Date;

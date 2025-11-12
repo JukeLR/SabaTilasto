@@ -22,6 +22,7 @@ export const GET = async ({ cookies }: RequestEvent) => {
 				p.id,
 				p.first_name,
 				p.last_name,
+				p.nick,
 				p.jersey_number,
 				p.position,
 				p.team_ids,
@@ -58,15 +59,15 @@ export const POST = async ({ request, cookies }: RequestEvent) => {
 			return json({ error: 'Ei oikeuksia' }, { status: 403 });
 		}
 
-		const { firstName, lastName, jerseyNumber, position, teamIds } = await request.json();
+		const { firstName, lastName, nick, jerseyNumber, position, teamIds } = await request.json();
 
 		if (!firstName || !lastName) {
 			return json({ error: 'Etunimi ja sukunimi ovat pakollisia' }, { status: 400 });
 		}
 
 		const result = await sql`
-			INSERT INTO players (first_name, last_name, jersey_number, position, team_ids)
-			VALUES (${firstName}, ${lastName}, ${jerseyNumber || null}, ${position || null}, ${teamIds || []})
+			INSERT INTO players (first_name, last_name, nick, jersey_number, position, team_ids)
+			VALUES (${firstName}, ${lastName}, ${nick || null}, ${jerseyNumber || null}, ${position || null}, ${teamIds || []})
 			RETURNING *
 		`;
 
@@ -90,7 +91,7 @@ export const PUT = async ({ request, cookies }: RequestEvent) => {
 			return json({ error: 'Ei oikeuksia' }, { status: 403 });
 		}
 
-		const { id, firstName, lastName, jerseyNumber, position, teamIds } = await request.json();
+		const { id, firstName, lastName, nick, jerseyNumber, position, teamIds } = await request.json();
 
 		if (!id) {
 			return json({ error: 'Pelaajan ID puuttuu' }, { status: 400 });
@@ -101,6 +102,7 @@ export const PUT = async ({ request, cookies }: RequestEvent) => {
 			SET 
 				first_name = ${firstName},
 				last_name = ${lastName},
+				nick = ${nick || null},
 				jersey_number = ${jerseyNumber || null},
 				position = ${position || null},
 				team_ids = ${teamIds || []}

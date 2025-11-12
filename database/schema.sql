@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS players (
     team_ids INTEGER[],
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
+    nick VARCHAR(100),
     jersey_number INTEGER,
     position VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
