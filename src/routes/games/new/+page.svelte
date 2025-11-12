@@ -15,6 +15,7 @@
 	let isEditMode = $state(false);
 	
 	// Perustiedot
+	let seriesId = $state<number | null>(null);
 	let homeTeamId = $state<number | null>(null);
 	let homeTeamName = $state('');
 	let opponentName = $state('');
@@ -24,6 +25,12 @@
 	
 	// Lisätiedot
 	let notes = $state('');
+	
+	// Sarjat
+	let series = $state<any[]>([]);
+	let showNewSeriesModal = $state(false);
+	let newSeriesName = $state('');
+	let newSeriesSeason = $state('');
 	
 	// Joukkueet ja pelaajat
 	let teams = $state<any[]>([]);
@@ -52,8 +59,9 @@
 	let successMessage = $state('');
 	let isSaving = $state(false);
 	
-	// Hae joukkueet ja mahdollinen muokattava peli kun komponentti latautuu
+	// Hae joukkueet, sarjat ja mahdollinen muokattava peli kun komponentti latautuu
 	onMount(async () => {
+		await fetchSeries();
 		await fetchTeams();
 		
 		// Tarkista onko URL:ssa edit-parametri
@@ -67,6 +75,18 @@
 		}
 	});
 	
+	async function fetchSeries() {
+		try {
+			const response = await fetch('/api/competitions');
+			if (response.ok) {
+				const data = await response.json();
+				series = data.series || [];
+			}
+		} catch (error) {
+			console.error('Virhe sarjojen haussa:', error);
+		}
+	}
+	
 	async function fetchTeams() {
 		try {
 			const response = await fetch('/api/admin/teams');
@@ -76,6 +96,39 @@
 			}
 		} catch (error) {
 			console.error('Virhe joukkueiden haussa:', error);
+		}
+	}
+	
+	async function createSeries() {
+		if (!newSeriesName.trim()) {
+			error = 'Sarjan nimi on pakollinen';
+			return;
+		}
+		
+		try {
+			const response = await fetch('/api/competitions', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: newSeriesName.trim(),
+					season: newSeriesSeason.trim() || null
+				})
+			});
+			
+			if (response.ok) {
+				const result = await response.json();
+				await fetchSeries();
+				seriesId = result.series.id;
+				showNewSeriesModal = false;
+				newSeriesName = '';
+				newSeriesSeason = '';
+			} else {
+				const data = await response.json();
+				error = data.error || 'Sarjan luominen epäonnistui';
+			}
+		} catch (err) {
+			console.error('Error creating series:', err);
+			error = 'Sarjan luominen epäonnistui';
 		}
 	}
 	
@@ -111,6 +164,7 @@
 			const game = await response.json();
 			
 			// Lataa pelin tiedot
+			seriesId = game.series_id || null;
 			homeTeamId = game.own_team_id;
 			opponentName = game.opponentName || '';
 			location = game.gameLocation || '';
@@ -306,6 +360,7 @@
 			];
 			
 			const gameData = {
+				seriesId: seriesId,
 				ownTeamId: homeTeamId,
 				opponentName: opponentName.trim(),
 				gameLocation: location.trim() || null,
@@ -359,6 +414,54 @@
 	
 	{#if successMessage}
 		<div class="success-message">{successMessage}</div>
+	{/if}
+	
+	<!-- Uusi sarja -modal -->
+	{#if showNewSeriesModal}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-overlay" onclick={() => showNewSeriesModal = false}>
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="series-modal" onclick={(e) => e.stopPropagation()}>
+				<div class="modal-header">
+					<h3>Luo uusi sarja</h3>
+					<button type="button" class="modal-close" onclick={() => showNewSeriesModal = false}>&times;</button>
+				</div>
+				
+				<div class="modal-body">
+					<div class="form-group">
+						<label for="newCompName">Sarjan nimi *</label>
+						<input 
+							type="text" 
+							id="newCompName" 
+							bind:value={newSeriesName}
+							placeholder="Esim. Sarja A"
+							required
+						/>
+					</div>
+					
+					<div class="form-group">
+						<label for="newCompSeason">Kausi</label>
+						<input 
+							type="text" 
+							id="newCompSeason" 
+							bind:value={newSeriesSeason}
+							placeholder="Esim. 2024-2025"
+						/>
+					</div>
+				</div>
+				
+				<div class="modal-footer">
+					<button type="button" class="cancel-button" onclick={() => showNewSeriesModal = false}>
+						Peruuta
+					</button>
+					<button type="button" class="save-button" onclick={createSeries}>
+						Tallenna
+					</button>
+				</div>
+			</div>
+		</div>
 	{/if}
 	
 	<!-- Pelaajien valintamodaali -->
@@ -787,6 +890,28 @@
 			<h2>Perustiedot</h2>
 			
 			<div class="form-group">
+				<label for="series">Pelattava sarja</label>
+				<div class="series-selector">
+					<select 
+						id="series" 
+						bind:value={seriesId}
+					>
+						<option value={null}>Ei sarjaa</option>
+						{#each series as s}
+							<option value={s.id}>{s.name}{s.season ? ` (${s.season})` : ''}</option>
+						{/each}
+					</select>
+					<button 
+						type="button" 
+						class="add-series-btn"
+						onclick={() => showNewSeriesModal = true}
+					>
+						+ Uusi sarja
+					</button>
+				</div>
+			</div>
+			
+			<div class="form-group">
 				<label for="homeTeam">Oma joukkue *</label>
 				<select 
 					id="homeTeam" 
@@ -975,6 +1100,33 @@
 		font-size: 0.95rem;
 	}
 	
+	.series-selector {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+	}
+	
+	.series-selector select {
+		flex: 1;
+	}
+	
+	.add-series-btn {
+		padding: 10px 16px;
+		background-color: #28a745;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: background-color 0.2s;
+	}
+	
+	.add-series-btn:hover {
+		background-color: #218838;
+	}
+	
 	input[type="text"],
 	input[type="date"],
 	input[type="time"],
@@ -1077,6 +1229,29 @@
 		align-items: center;
 		z-index: 1000;
 		padding: 20px;
+	}
+	
+	.series-modal {
+		background: white;
+		border-radius: 12px;
+		max-width: 500px;
+		width: 90%;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	}
+	
+	.modal-body {
+		padding: 20px 30px;
+	}
+	
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 10px;
+		padding: 20px 30px;
+		border-top: 1px solid #dee2e6;
+		background-color: #f8f9fa;
 	}
 	
 	.player-modal {
@@ -1418,6 +1593,60 @@
 		.player-list th,
 		.player-list td {
 			padding: 8px;
+		}
+		
+		/* Kentälliset-modal mobiilissa */
+		.field-modal {
+			width: 100%;
+			max-width: 100%;
+			max-height: 100vh;
+			border-radius: 0;
+		}
+		
+		.field-layout {
+			padding: 15px 8px;
+			gap: 8px;
+		}
+		
+		.field-section {
+			max-width: 100%;
+		}
+		
+		.field-section h4 {
+			font-size: 1rem;
+			margin-bottom: 8px;
+		}
+		
+		.field-row {
+			gap: 8px;
+			margin-bottom: 8px;
+		}
+		
+		.field-slot-container {
+			min-width: 0;
+			flex: 1;
+		}
+		
+		.field-slot-button {
+			padding: 8px 4px;
+			font-size: 0.75rem;
+			min-height: 38px;
+			min-width: 0;
+		}
+		
+		.player-dropdown-select {
+			padding: 6px 4px;
+			font-size: 0.75rem;
+		}
+		
+		.field-actions {
+			padding: 10px 8px;
+			gap: 8px;
+		}
+		
+		.field-actions button {
+			padding: 10px 16px;
+			font-size: 0.9rem;
 		}
 	}
 </style>

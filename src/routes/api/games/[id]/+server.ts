@@ -23,6 +23,7 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 				SELECT 
 					g.id,
 					g.user_id,
+					g.series_id,
 					g.own_team_id,
 					g.opponent_team_name as "opponentName",
 					g.game_location as "gameLocation",
@@ -118,6 +119,7 @@ export const PUT = async ({ params, request, cookies }: RequestEvent) => {
 		}
 
 		const {
+			seriesId,
 			ownTeamId,
 			opponentName,
 			gameLocation,
@@ -137,6 +139,7 @@ export const PUT = async ({ params, request, cookies }: RequestEvent) => {
 		const result = await sql`
 			UPDATE games
 			SET 
+				series_id = ${seriesId || null},
 				own_team_id = ${ownTeamId},
 				opponent_team_name = ${opponentName},
 				game_location = ${gameLocation || null},

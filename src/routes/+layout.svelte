@@ -118,12 +118,15 @@
 					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
 						Joukkueet
 					</button>
-					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
-						Pelaajat
-					</button>
-					<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
-						Kaikki tilastot
-					</button>
+				<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
+					Pelaajat
+				</button>
+				<button class="menu-item" onclick={() => navigateTo('/admin/series')}>
+					Sarjat
+				</button>
+				<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
+					Kaikki tilastot
+				</button>
 				{/if}
 				
 				{#if userRole === 'admin' || userRole === 'toimihenkilö'}

@@ -9,7 +9,26 @@ export const GET = async ({ cookies }: RequestEvent) => {
 			return json({ error: 'Ei kirjautunut' }, { status: 401 });
 		}
 
-		const games = await getUserGames(parseInt(userId));
+		// Hae kaikki pelit (ei käyttäjäkohtaisia)
+		const games = await sql`
+			SELECT 
+				id,
+				series_id,
+				own_team_id,
+				opponent_team_name,
+				game_location,
+				game_date,
+				lineup,
+				field_positions,
+				status,
+				notes,
+				final_own_score,
+				final_opp_score,
+				created_at,
+				updated_at
+			FROM games
+			ORDER BY game_date DESC, created_at DESC
+		`;
 
 		return json({ games });
 
@@ -22,6 +41,7 @@ export const GET = async ({ cookies }: RequestEvent) => {
 export const POST = async ({ request, cookies }: RequestEvent) => {
 	try {
 		const {
+			seriesId,
 			ownTeamId,
 			opponentName,
 			gameLocation,
@@ -46,7 +66,7 @@ export const POST = async ({ request, cookies }: RequestEvent) => {
 		try {
 			const result = await sql`
 				INSERT INTO games (
-					user_id,
+					series_id,
 					own_team_id,
 					opponent_team_name,
 					game_location,
@@ -58,7 +78,7 @@ export const POST = async ({ request, cookies }: RequestEvent) => {
 					created_at,
 					updated_at
 				) VALUES (
-					${parseInt(userId)},
+					${seriesId || null},
 					${ownTeamId},
 					${opponentName},
 					${gameLocation || null},

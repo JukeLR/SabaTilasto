@@ -5,15 +5,14 @@ export interface GameWithStats {
 	periods: PeriodStats[];
 }
 
-// Luo uusi peli
+// Luo uusi peli (ei enää käyttäjäkohtainen)
 export async function createGame(
-	userId: number,
 	opponentTeamName: string,
 	ownTeamId?: number
 ): Promise<Game> {
 	const result = await sql`
-		INSERT INTO games (user_id, opponent_team_name, own_team_id)
-		VALUES (${userId}, ${opponentTeamName}, ${ownTeamId || null})
+		INSERT INTO games (opponent_team_name, own_team_id, status)
+		VALUES (${opponentTeamName}, ${ownTeamId || null}, 'Luotu')
 		RETURNING *
 	`;
 	
@@ -106,12 +105,11 @@ export async function getGameWithStats(gameId: number): Promise<GameWithStats | 
 	};
 }
 
-// Hae käyttäjän kaikki pelit
-export async function getUserGames(userId: number): Promise<Game[]> {
+// Hae kaikki pelit (ei käyttäjäkohtaisia)
+export async function getAllGames(): Promise<Game[]> {
 	const result = await sql`
 		SELECT * FROM games 
-		WHERE user_id = ${userId}
-		ORDER BY game_date DESC
+		ORDER BY game_date DESC, created_at DESC
 	`;
 	
 	return result as Game[];
@@ -129,10 +127,10 @@ export async function getGamePeriodStats(gameId: number): Promise<PeriodStats[]>
 }
 
 // Poista peli
-export async function deleteGame(gameId: number, userId: number): Promise<boolean> {
+export async function deleteGame(gameId: number): Promise<boolean> {
 	const result = await sql`
 		DELETE FROM games 
-		WHERE id = ${gameId} AND user_id = ${userId}
+		WHERE id = ${gameId}
 		RETURNING id
 	`;
 	

@@ -27,16 +27,16 @@ CREATE TABLE IF NOT EXISTS users (
 -- Pelit
 CREATE TABLE IF NOT EXISTS games (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     own_team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
     opponent_team_name VARCHAR(100),
     game_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     lineup INTEGER[],  -- Peliin valitut pelaajat (ID:t)
     field_positions INTEGER[],  -- Kentälliset järjestyksessä (21 paikkaa: maalivahti + 4x5 kenttäpelaajaa)
-    is_played BOOLEAN DEFAULT false,  -- Onko peli pelattu
+    status VARCHAR(20) DEFAULT 'Luotu' CHECK (status IN ('Luotu', 'Käynnissä', 'Pelattu')),
     notes TEXT,  -- Vapaat muistiinpanot
     final_own_score INTEGER DEFAULT 0,
     final_opp_score INTEGER DEFAULT 0,
+    series_id INTEGER REFERENCES series(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -96,8 +96,9 @@ CREATE TABLE IF NOT EXISTS player_game_stats (
 );
 
 -- Indeksit suorituskyvyn parantamiseksi
-CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_date ON games(game_date);
+CREATE INDEX IF NOT EXISTS idx_games_series ON games(series_id);
+CREATE INDEX IF NOT EXISTS idx_games_own_team ON games(own_team_id);
 CREATE INDEX IF NOT EXISTS idx_period_stats_game_id ON period_stats(game_id);
 CREATE INDEX IF NOT EXISTS idx_player_stats_game_id ON player_game_stats(game_id);
 
