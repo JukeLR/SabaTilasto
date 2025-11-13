@@ -1,12 +1,36 @@
-
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { onMount } from 'svelte';
   import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
+  import { gameLineup, gameFieldPositions } from '$lib/stores/gameState';
+  import { playerNames, fetchAndUpdatePlayerNames } from '$lib/stores/playerNames';
+  import { get } from 'svelte/store';
   let maalivahtiNimi = "";
   let vastustajaNimi = "";
+  let pollingInterval: any;
+
+  async function fetchGameAndPlayers() {
+    const id = $page.params.id ?? $page.data.id;
+    const res = await fetch(`/api/games/${id}?basic=true`);
+    const data = await res.json();
+    vastustajaNimi = data.opponentName || "";
+    gameLineup.set(data.lineup || []);
+    gameFieldPositions.set(data.fieldPositions || []);
+    await fetchAndUpdatePlayerNames(data.lineup || []);
+    const goalieId = data.fieldPositions?.[0];
+    if (goalieId) {
+      const names = get(playerNames);
+      maalivahtiNimi = names[goalieId] || "";
+    }
+  }
+
+  onMount(() => {
+    fetchGameAndPlayers();
+    pollingInterval = setInterval(fetchGameAndPlayers, 3000);
+    return () => clearInterval(pollingInterval);
+  });
 
   function openKentalliset() {
-    // Oletetaan että id on saatavilla reitiltä
     const id = $page.data.id ?? $page.params.id;
     goto(`/games/${id}/stats/fp`);
   }
@@ -14,10 +38,6 @@
 
 <main class="stats-main">
   <button class="field-btn" on:click={openKentalliset}>Kentälliset</button>
-
-
-
-  <!-- script siirretty tiedoston alkuun -->
 
   <div class="score-row">
     <span class="score-label">Maalivahti: {maalivahtiNimi}</span>

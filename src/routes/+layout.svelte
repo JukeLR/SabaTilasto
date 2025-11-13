@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
+	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
 	
@@ -101,6 +102,16 @@
 			isLoggingIn = false;
 		}
 	}
+
+	onMount(() => {
+		const allowedForGuest = ['/'];
+		const currentPath = window.location.pathname;
+		if (!isLoggedIn && !allowedForGuest.includes(currentPath)) {
+			openLoginModal();
+			// Optionally, you can redirect to '/'
+			// window.location.href = '/';
+		}
+	});
 </script>
 
 <svelte:head>
