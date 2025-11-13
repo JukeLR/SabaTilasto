@@ -389,7 +389,9 @@
 			const result = await response.json();
 			
 			// Ohjaa pelit-sivulle tallennuksen jälkeen
-			goto('/games');
+			if (typeof window !== 'undefined') {
+				goto('/games');
+			}
 			
 		} catch (err) {
 			error = err instanceof Error ? err.message : (isEditMode ? 'Virhe päivittäessä peliä' : 'Virhe luotaessa peliä');
@@ -399,7 +401,9 @@
 	}
 	
 	function cancel() {
-		goto('/');
+		if (typeof window !== 'undefined') {
+			goto('/');
+		}
 	}
 </script>
 

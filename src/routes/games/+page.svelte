@@ -61,10 +61,14 @@
 	function viewGame(gameId: number, status: string) {
 		// Luotu-tilan pelit avataan muokkaukseen
 		if (status === 'Luotu') {
-			goto(`/games/new?edit=${gameId}`);
+			if (typeof window !== 'undefined') {
+				goto(`/games/new?edit=${gameId}`);
+			}
 		} else {
 			// Käynnissä ja Pelattu pelit avataan katselutilassa
-			goto(`/games/${gameId}/start`);
+			if (typeof window !== 'undefined') {
+				goto(`/games/${gameId}/start`);
+			}
 		}
 	}
 
@@ -83,11 +87,15 @@
 			}
 
 			// Ohjaa tilastointisivulle
-			goto(`/?game=${gameId}`);
+			if (typeof window !== 'undefined') {
+				goto(`/games/${gameId}/stats`);
+			}
 		} catch (err) {
 			console.error('Error starting game:', err);
 			// Ohjaa silti tilastointisivulle vaikka status-päivitys epäonnistuisi
-			goto(`/?game=${gameId}`);
+			if (typeof window !== 'undefined') {
+				goto(`/games/${gameId}/stats`);
+			}
 		}
 	}
 </script>

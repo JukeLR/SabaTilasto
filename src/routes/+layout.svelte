@@ -43,7 +43,9 @@
 				await invalidateAll();
 				
 				// Ohjaa etusivulle
-				await goto('/', { replaceState: true, invalidateAll: true });
+				if (typeof window !== 'undefined') {
+					await goto('/', { replaceState: true, invalidateAll: true });
+				}
 			} else {
 				console.error('Logout failed:', response.status);
 				// Yritä silti kirjata ulos pakottamalla reload
@@ -154,6 +156,9 @@
 					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
 						Kaikki tilastot
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/stats')}>
+						Stats-sivusto
 					</button>
 				{/if}
 				

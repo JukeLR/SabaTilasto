@@ -37,7 +37,9 @@
 			const response = await fetch('/api/auth/me');
 			if (!response.ok) {
 				if (response.status === 401) {
-					goto('/login');
+					if (typeof window !== 'undefined') {
+						goto('/login');
+					}
 					return;
 				}
 				throw new Error('Profiilin lataaminen epäonnistui');

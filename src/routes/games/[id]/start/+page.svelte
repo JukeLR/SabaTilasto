@@ -40,11 +40,15 @@
 			}
 
 			// Ohjaa tilastointisivulle
-			goto(`/?game=${data.gameId}`);
+			if (typeof window !== 'undefined') {
+				goto(`/games/${data.gameId}/stats`);
+			}
 		} catch (err) {
 			console.error('Error starting game:', err);
 			// Ohjaa silti tilastointisivulle vaikka status-päivitys epäonnistuisi
-			goto(`/?game=${data.gameId}`);
+			if (typeof window !== 'undefined') {
+				goto(`/games/${data.gameId}/stats`);
+			}
 		}
 	}
 </script>
@@ -88,7 +92,7 @@
 				<button class="start-button" onclick={startGame}>
 					Aloita tilastointi
 				</button>
-				<button class="back-button" onclick={() => goto('/games/new')}>
+				<button class="back-button" onclick={() => { if (typeof window !== 'undefined') goto('/games/new'); }}>
 					Takaisin
 				</button>
 			</div>

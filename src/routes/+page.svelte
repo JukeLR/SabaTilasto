@@ -31,6 +31,15 @@
 	let currentFieldSlot = $state<number | null>(null);
 	let pollInterval: number | null = null;
 	
+	// Maalin kirjaus
+	let showGoalModal = $state(false);
+	let goalType = $state<'NM' | 'AV' | 'YV' | 'TM' | 'RL'>('NM');
+	let selectedPlayers = $state<number[]>([]);
+	let modalStep = $state<'players' | 'scorer'>('players'); // Vaihe 1: pelaajat, Vaihe 2: maalintekijä ja syöttäjä
+	let goalScorer = $state<number | null>(null);
+	let goalAssist = $state<number | null>(null);
+	let isOpponentGoal = $state(false); // Onko vastustajan maali
+	
 	// Maalivahdin nimi lasketaan automaattisesti kentällisistä
 	const selectedGoalkeeper = $derived.by(() => {
 		const goalkeeperPlayerId = fieldPositions[0];
@@ -59,16 +68,18 @@
 	let isSendingPassword = $state(false);
 
 	// Tilastot (ei eräkohtaisia)
-	let ownGoals = $state(0);
 	let ownBlockedShots = $state(0);
 	let ownMissedShots = $state(0);
 	let ownBlocks = $state(0);
 	let ownSaves = $state(0);
 	let ownCatches = $state(0);
-	let oppGoals = $state(0);
 	let oppSaves = $state(0);
 	let oppMissed = $state(0);
 	let oppBlocks = $state(0);
+	
+	// Maalit lasketaan games taulukosta
+	let ownGoals = $derived(currentGame?.team_goals?.length || 0);
+	let oppGoals = $derived(currentGame?.opponent_goals?.length || 0);
 
 	// Lasketut arvot
 	let totalOwnShotsOnGoal = $derived(ownGoals + oppSaves + ownBlockedShots);
@@ -260,19 +271,204 @@
 		}
 	}
 
-	function increment(team: 'own' | 'opp', stat: string) {
+	function openGoalModal(isOpponent = false) {
+		goalType = 'NM';
+		selectedPlayers = [];
+		modalStep = 'players';
+		goalScorer = null;
+		goalAssist = null;
+		isOpponentGoal = isOpponent;
+		showGoalModal = true;
+	}
+
+	function closeGoalModal() {
+		showGoalModal = false;
+		selectedPlayers = [];
+		modalStep = 'players';
+		goalScorer = null;
+		goalAssist = null;
+	}
+
+	async function confirmGoal() {
+		if (modalStep === 'players') {
+			// Vaihe 1: Vastustajan maalissa tarkista että NM tai TM
+			if (isOpponentGoal) {
+				if (goalType !== 'NM' && goalType !== 'TM') {
+					// Vain NM ja TM sallittu vastustajan maaleissa
+					// Jos jokin muu valittuna, älä vaadi pelaajia
+				}
+				
+				// Jos NM tai TM, tarkista että pelaajia valittu
+				if ((goalType === 'NM' || goalType === 'TM') && selectedPlayers.length === 0) {
+					alert('Valitse kentällä olevat pelaajat');
+					return;
+				}
+				
+				// Tallenna minus_points ja goal_type taustalla
+				const playersToSave = [...selectedPlayers];
+				selectedPlayers = [];
+				try {
+					// Tallenna goal_type ja minus_points
+					await fetch(`/api/games/${currentGameId}`, {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							minus_points: playersToSave,
+							goal_type: goalType
+						})
+					});
+					// Tallenna opponent_goals (TM = "TM", muuten maalivahti ID)
+					const opponentGoalValue = goalType === 'TM' ? 'TM' : fieldPositions[0];
+					await fetch(`/api/games/${currentGameId}`, {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							opponent_goal: opponentGoalValue
+						})
+					});
+					// Päivitä pelin tiedot
+					await loadGameData(currentGameId, true);
+					history = [...history, { team: 'opp', stat: 'goals', value: oppGoals }];
+					closeGoalModal();
+				} catch (error) {
+					console.error('Virhe tallennettaessa vastustajan maalia:', error);
+					alert('Tallennus epäonnistui');
+				}
+				return;
+			}
+			
+			// Oma maali: Tarkista tarvitaanko plus_points
+			// AV, YV, TM, RL ei tarvitse plus pisteitä, vain NM
+			const needsPlusPoints = goalType === 'NM';
+			
+			if (needsPlusPoints && selectedPlayers.length === 0) {
+				alert('Valitse vähintään yksi pelaaja');
+				return;
+			}
+			
+			// Siirry heti vaiheeseen 2 (sujuvuuden vuoksi)
+			modalStep = 'scorer';
+			const playersToSave = [...selectedPlayers]; // Tallenna kopio
+			selectedPlayers = []; // Tyhjennä valinnat
+			
+			// Jos NM, tallenna plus_points taustalla
+			if (needsPlusPoints) {
+				fetch(`/api/games/${currentGameId}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						plus_points: playersToSave
+					})
+				}).catch(error => {
+					console.error('Virhe tallennettaessa plus_points:', error);
+				});
+			}
+			// AV, YV, TM, RL: Ei tallenneta mitään vaiheessa 1
+		} else if (modalStep === 'scorer') {
+			// Vaihe 2: Maalintekijä pakollinen, päivitä team_goals, assists ja goal_type
+			if (!goalScorer) {
+				alert('Valitse maalintekijä');
+				return;
+			}
+			
+			try {
+				// Tallenna goal_type (aina vaiheessa 2)
+				// Jos ei NM, tallenna tyhjä plus_points array
+				const plusPointsToSave = goalType === 'NM' ? [] : []; // Tyhjä array jos ei NM (NM:llä plus_points tallennettu jo vaiheessa 1)
+				
+				const response1 = await fetch(`/api/games/${currentGameId}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						plus_points: plusPointsToSave,
+						goal_type: goalType
+					})
+				});
+				
+				if (!response1.ok) {
+					const errorData = await response1.json();
+					console.error('API virhe goal_type tallennuksessa:', errorData);
+					throw new Error('goal_type päivitys epäonnistui');
+				}
+				
+				// Tallenna maalintekijä ja syöttäjä
+				const response = await fetch(`/api/games/${currentGameId}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						team_goals: goalScorer,
+						assists: goalAssist
+					})
+				});
+				
+				if (!response.ok) {
+					const errorData = await response.json();
+					console.error('API virhe:', errorData);
+					throw new Error('Päivitys epäonnistui');
+				}
+				
+				// Päivitä pelin tiedot jotta maalit näkyvät
+				await loadGameData(currentGameId, true);
+				
+				history = [...history, { team: 'own', stat: 'goals', value: ownGoals }];
+				
+				closeGoalModal();
+			} catch (error) {
+				console.error('Virhe tallennettaessa:', error);
+				alert('Tallennus epäonnistui');
+			}
+		}
+	}
+
+	function togglePlayerSelection(playerId: number) {
+		if (modalStep === 'players') {
+			// Vaihe 1: Monivalinta
+			if (selectedPlayers.includes(playerId)) {
+				selectedPlayers = selectedPlayers.filter(id => id !== playerId);
+			} else {
+				selectedPlayers = [...selectedPlayers, playerId];
+			}
+		} else if (modalStep === 'scorer') {
+			// Vaihe 2: Maalintekijä ja syöttäjä
+			if (!goalScorer) {
+				// Ensimmäinen valinta = maalintekijä
+				goalScorer = playerId;
+			} else if (goalScorer === playerId) {
+				// Peruuta maalintekijä
+				goalScorer = null;
+			} else if (!goalAssist) {
+				// Toinen valinta = syöttäjä
+				goalAssist = playerId;
+			} else if (goalAssist === playerId) {
+				// Peruuta syöttäjä
+				goalAssist = null;
+			}
+		}
+	}
+
+	async function increment(team: 'own' | 'opp', stat: string) {
+		// Jos kyseessä on oma maali, avaa modaali
+		if (team === 'own' && stat === 'goals') {
+			openGoalModal(false);
+			return;
+		}
+		
+		// Jos kyseessä on vastustajan maali, avaa modaali
+		if (team === 'opp' && stat === 'goals') {
+			openGoalModal(true);
+			return;
+		}
+		
 		let currentValue = 0;
 		
 		if (team === 'own') {
-			if (stat === 'goals') { currentValue = ownGoals; ownGoals++; }
-			else if (stat === 'blocked') { currentValue = ownBlockedShots; ownBlockedShots++; }
+			if (stat === 'blocked') { currentValue = ownBlockedShots; ownBlockedShots++; }
 			else if (stat === 'missed') { currentValue = ownMissedShots; ownMissedShots++; }
 			else if (stat === 'blocks') { currentValue = ownBlocks; ownBlocks++; }
 			else if (stat === 'saves') { currentValue = ownSaves; ownSaves++; }
 			else if (stat === 'catches') { currentValue = ownCatches; ownCatches++; }
 		} else {
-			if (stat === 'goals') { currentValue = oppGoals; oppGoals++; }
-			else if (stat === 'saves') { currentValue = oppSaves; oppSaves++; }
+			if (stat === 'saves') { currentValue = oppSaves; oppSaves++; }
 			else if (stat === 'missed') { currentValue = oppMissed; oppMissed++; }
 			else if (stat === 'blocks') { currentValue = oppBlocks; oppBlocks++; }
 		}
@@ -758,7 +954,7 @@
 			<div class="stats-row two-cols">
 				<div class="stat-item">
 					<span class="stat-label">Maali meille</span>
-					<button class="stat-button green" onclick={() => increment('own', 'goals')}>
+					<button class="stat-button green" onclick={() => { showGoalModal = true; }}>
 						{ownGoals}
 					</button>
 				</div>
@@ -824,17 +1020,15 @@
 		</section>
 
 		<div class="action-buttons">
-			<button class="undo-button" onclick={undo} disabled={history.length === 0}>Undo</button>
-			<button class="summary-button" onclick={showSummary}>Yhteenveto</button>
-			<button class="reset-button" onclick={resetAllStats}>Tyhjennä</button>
+			   <button class="summary-button" onclick={showSummary}>Lopeta peli</button>
 		</div>
 </div>
 
-<!-- Yhteenveto-modal -->
+<!-- Lopeta peli -modal -->
 {#if showSummaryView}
 	<div class="modal-overlay">
 		<div class="summary-view">
-			<h1>Yhteenveto - {opponentTeamName || 'Vastustaja'}</h1>
+			   <h1>Lopeta peli - {opponentTeamName || 'Vastustaja'}</h1>
 			
 			<!-- Lopputulos -->
 			<div class="final-score">
@@ -1210,6 +1404,153 @@
 					await saveFieldPositions();
 					showFieldPositionsModal = false;
 				}}>Sulje</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Maalin kirjaus -modal -->
+{#if showGoalModal}
+	<div class="modal-overlay">
+		<div class="modal-content goal-modal" onclick={(e) => e.stopPropagation()}>
+			<h2>{isOpponentGoal ? 'Maali vastustajalle' : (modalStep === 'players' ? 'Kirjaa maali' : 'Maalintekijä ja Syöttäjä')}</h2>
+			
+			<!-- Maalityypin valinta (vain vaiheessa 1) -->
+			{#if modalStep === 'players'}
+			<div class="goal-type-section">
+				<div class="goal-type-options">
+					<label class="goal-type-option">
+						<input 
+							type="radio" 
+							name="goalType" 
+							value="NM" 
+							checked={goalType === 'NM'}
+							onchange={() => goalType = 'NM'}
+						/>
+						<span>NM</span>
+					</label>
+					   <label class="goal-type-option">
+						   <input 
+							   type="radio" 
+							   name="goalType" 
+							   value="AV"
+							   checked={goalType === 'AV'}
+							   onchange={() => goalType = 'AV'}
+						   />
+						   <span>AV</span>
+					   </label>
+					   <label class="goal-type-option">
+						   <input 
+							   type="radio" 
+							   name="goalType" 
+							   value="YV"
+							   checked={goalType === 'YV'}
+							   onchange={() => goalType = 'YV'}
+						   />
+						   <span>YV</span>
+					   </label>
+					<label class="goal-type-option">
+						<input 
+							type="radio" 
+							name="goalType" 
+							value="TM"
+							checked={goalType === 'TM'}
+							onchange={() => goalType = 'TM'}
+						/>
+						<span>TM</span>
+					</label>
+					   <label class="goal-type-option">
+						   <input 
+							   type="radio" 
+							   name="goalType" 
+							   value="RL"
+							   checked={goalType === 'RL'}
+							   onchange={() => goalType = 'RL'}
+						   />
+						   <span>RL</span>
+					   </label>
+				</div>
+			</div>
+			{/if}
+			
+			<!-- Kentälliset näkymä (vain vaiheessa 1 tai oman maalin vaiheessa 2) -->
+			{#if modalStep === 'players' || !isOpponentGoal}
+			<div class="field-positions-display">
+				<h3>Kentällä</h3>
+				
+			<!-- Maalivahti -->
+			<div class="goalkeeper-section">
+				<div 
+					class="player-slot" class:disabled={fieldPositions[0] === null} 
+					class:selected={modalStep === 'players' && fieldPositions[0] !== null && selectedPlayers.includes(fieldPositions[0]!)}
+					class:scorer={modalStep === 'scorer' && fieldPositions[0] !== null && goalScorer === fieldPositions[0]}
+					class:assist={modalStep === 'scorer' && fieldPositions[0] !== null && goalAssist === fieldPositions[0]}
+					onclick={() => fieldPositions[0] !== null && togglePlayerSelection(fieldPositions[0]!)}
+				>
+					{#if fieldPositions[0]}
+						{@const player = players.find(p => p.id === fieldPositions[0])}
+						{#if player}
+							<span class="player-number">{player.number}</span>
+							<span class="player-name">{player.nick || player.first_name}</span>
+						{/if}
+					{:else}
+						<span class="empty-slot">Ei pelaajaa</span>
+					{/if}
+				</div>
+			</div>				<!-- Kentät 1-4 -->
+				{#each Array(4) as _, fieldIndex}
+					<div class="field-section">
+						<h4>Kenttä {fieldIndex + 1}</h4>
+						<div class="field-players">
+							<!-- Ylärivipelaajat (3 pelaajaa) -->
+							<div class="field-row">
+								{#each Array(3) as _, playerIndex}
+									{@const slotIndex = 1 + fieldIndex * 5 + playerIndex}
+									<div class="player-slot small" class:disabled={fieldPositions[slotIndex] === null} class:selected={modalStep === 'players' && fieldPositions[slotIndex] !== null && selectedPlayers.includes(fieldPositions[slotIndex]!)} class:scorer={modalStep === 'scorer' && fieldPositions[slotIndex] !== null && goalScorer === fieldPositions[slotIndex]} class:assist={modalStep === 'scorer' && fieldPositions[slotIndex] !== null && goalAssist === fieldPositions[slotIndex]} onclick={() => fieldPositions[slotIndex] && togglePlayerSelection(fieldPositions[slotIndex]!)}>
+										{#if fieldPositions[slotIndex]}
+											{@const player = players.find(p => p.id === fieldPositions[slotIndex])}
+											{#if player}
+												<span class="player-number">{player.number}</span>
+												<span class="player-name">{player.nick || player.first_name}</span>
+											{/if}
+										{:else}
+											<span class="empty-slot">-</span>
+										{/if}
+									</div>
+								{/each}
+							</div>
+							<!-- Alarivipelaajat (2 pelaajaa) -->
+							<div class="field-row">
+								{#each Array(2) as _, playerIndex}
+									{@const slotIndex = 4 + fieldIndex * 5 + playerIndex}
+								<div 
+									class="player-slot small" class:disabled={fieldPositions[slotIndex] === null} 
+									class:selected={modalStep === 'players' && fieldPositions[slotIndex] !== null && selectedPlayers.includes(fieldPositions[slotIndex]!)}
+									class:scorer={modalStep === 'scorer' && fieldPositions[slotIndex] !== null && goalScorer === fieldPositions[slotIndex]}
+									class:assist={modalStep === 'scorer' && fieldPositions[slotIndex] !== null && goalAssist === fieldPositions[slotIndex]}
+									onclick={() => fieldPositions[slotIndex] && togglePlayerSelection(fieldPositions[slotIndex]!)}
+								>
+									{#if fieldPositions[slotIndex]}
+										{@const player = players.find(p => p.id === fieldPositions[slotIndex])}
+										{#if player}
+											<span class="player-number">{player.number}</span>
+											<span class="player-name">{player.nick || player.first_name}</span>
+										{/if}
+									{:else}
+										<span class="empty-slot">-</span>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{/each}
+			</div>
+			{/if}
+			
+			<div class="modal-footer">
+				<button class="btn-cancel" onclick={closeGoalModal}>Peruuta</button>
+				<button class="btn-ok" onclick={confirmGoal}>OK</button>
 			</div>
 		</div>
 	</div>
@@ -2666,4 +3007,214 @@
 			flex: 1;
 		}
 	}
+
+	/* Maalin kirjaus modal */
+	.goal-modal {
+		max-width: 800px;
+		max-height: 90vh;
+		overflow-y: auto;
+		background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+		padding: 30px;
+	}
+
+	.goal-modal h2 {
+		color: #000;
+		font-weight: 700;
+		font-size: 2rem;
+	}
+
+	.field-positions-display {
+		margin-bottom: 30px;
+	}
+
+	.field-positions-display h3 {
+		margin: 0 0 10px 0;
+		font-size: 1.2rem;
+		color: #000;
+		font-weight: 700;
+	}
+
+	.field-positions-display .goalkeeper-section,
+	.field-positions-display .field-section {
+		margin-bottom: 12px;
+	}
+
+	.field-positions-display .field-section h4 {
+		font-size: 1.1rem;
+		margin-bottom: 8px;
+		color: #000;
+		font-weight: 700;
+	}
+
+	.field-positions-display .field-players {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.field-positions-display .field-row {
+		display: flex;
+		gap: 6px;
+		justify-content: center;
+	}
+
+	.player-slot {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 10px 8px;
+		background-color: #5b9bd5;
+		border-radius: 8px;
+		min-width: 120px;
+		gap: 3px;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.player-slot:hover {
+		background-color: #4a8ac5;
+	}
+
+	.player-slot.selected {
+		background-color: #2e7d32;
+		box-shadow: 0 0 0 3px #4caf50;
+	}
+
+	.player-slot.scorer {
+		background-color: #2e7d32;
+		box-shadow: 0 0 0 3px #4caf50;
+	}
+
+	.player-slot.assist {
+		background-color: #f9a825;
+		box-shadow: 0 0 0 3px #fdd835;
+	}
+
+	.player-slot.disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.player-slot.disabled:hover {
+		background-color: #5b9bd5;
+	}
+
+	.player-slot.small {
+		min-width: 100px;
+		padding: 8px 6px;
+	}
+
+	.player-number {
+		font-weight: 700;
+		font-size: 1.2rem;
+		color: #000;
+	}
+
+	.player-slot.small .player-number {
+		font-size: 1rem;
+	}
+
+	.player-name {
+		font-size: 1rem;
+		color: #000;
+		text-align: center;
+		font-weight: 500;
+	}
+
+	.player-slot.small .player-name {
+		font-size: 0.75rem;
+	}
+
+	.empty-slot {
+		color: #666;
+		font-style: normal;
+	}
+
+	.goal-type-section {
+		margin-bottom: 15px;
+	}
+
+	.goal-type-options {
+		display: flex;
+		flex-direction: row;
+		gap: 8px;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.goal-type-option {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 10px;
+		background-color: white;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.goal-type-option:hover {
+		background-color: #f8f9fa;
+	}
+
+	.goal-type-option input[type="radio"] {
+		width: 20px;
+		height: 20px;
+		cursor: pointer;
+	}
+
+	.goal-type-option span {
+		font-size: 1rem;
+		color: #000;
+		font-weight: 500;
+	}
+
+	.btn-ok {
+		flex: 1;
+		padding: 15px 50px;
+		background-color: #5b9bd5;
+		color: #000;
+		border: none;
+		border-radius: 10px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 160px;
+	}
+
+	.btn-ok:hover {
+		background-color: #4a8cc4;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	.goal-modal .modal-footer {
+		display: flex;
+		gap: 20px;
+		justify-content: center;
+		padding: 25px 0 0 0;
+		border-top: none;
+	}
+
+	@media (max-width: 768px) {
+		.goal-modal {
+			max-width: 95%;
+		}
+
+		.player-slot {
+			min-width: 100px;
+		}
+
+		.player-slot.small {
+			min-width: 80px;
+		}
+	}
 </style>
+
+
+
+
+
+
+
