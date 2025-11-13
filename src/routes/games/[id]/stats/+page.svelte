@@ -1,4 +1,10 @@
 <script lang="ts">
+      function openShots(title: string) {
+        const id = $page.data.id ?? $page.params.id;
+        goto(`/games/${id}/stats/shot?title=${encodeURIComponent(title)}`);
+      }
+    let teamGoals: any[] = [];
+    let opponentGoals: any[] = [];
   import { onMount } from 'svelte';
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -17,6 +23,8 @@
     gameLineup.set(data.lineup || []);
     gameFieldPositions.set(data.fieldPositions || []);
     await fetchAndUpdatePlayerNames(data.lineup || []);
+    teamGoals = data.team_goals || [];
+    opponentGoals = data.opponent_goals || [];
     const goalieId = data.fieldPositions?.[0];
     if (goalieId) {
       const names = get(playerNames);
@@ -49,11 +57,11 @@
   <div class="score-row">
     <div class="stat-col">
       <div class="stat-label">Maali meille</div>
-      <button class="stat-btn green">0</button>
+      <button class="stat-btn green" on:click={() => openShots('Maali meille')}>{teamGoals.length}</button>
     </div>
     <div class="stat-col">
       <div class="stat-label">Maali vastustajalle</div>
-      <button class="stat-btn orange">0</button>
+      <button class="stat-btn orange">{opponentGoals.length}</button>
     </div>
   </div>
 
