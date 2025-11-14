@@ -34,6 +34,13 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 					g.created_at as "createdAt",
 					g.team_goals,
 					g.opponent_goals,
+					g.shots_on_goal,
+					g.shots_off_target,
+					g.shots_blocked,
+					g.blocks,
+					g.saves,
+					g.goalie_game_interruption,
+					g.opponent_shots_off,
 					t.name as "ownTeamName"
 				FROM games g
 				LEFT JOIN teams t ON g.own_team_id = t.id
@@ -76,6 +83,18 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 		const currentGame = gameRes[0];
 
 		let updateFields: any = {};
+								if (body.blocks !== undefined) {
+									const currentBlocks = currentGame.blocks || [];
+									updateFields.blocks = [...currentBlocks, ...(Array.isArray(body.blocks) ? body.blocks : [body.blocks])];
+								}
+						if (body.shots_blocked !== undefined) {
+							const currentShotsBlocked = currentGame.shots_blocked || [];
+							updateFields.shots_blocked = [...currentShotsBlocked, ...(Array.isArray(body.shots_blocked) ? body.shots_blocked : [body.shots_blocked])];
+						}
+				if (body.shots_off_target !== undefined) {
+					const currentShotsOffTarget = currentGame.shots_off_target || [];
+					updateFields.shots_off_target = [...currentShotsOffTarget, ...(Array.isArray(body.shots_off_target) ? body.shots_off_target : [body.shots_off_target])];
+				}
 		if (body.plus_points !== undefined) {
 			const currentPlusPoints = currentGame.plus_points || [];
 			updateFields.plus_points = [...currentPlusPoints, ...body.plus_points];
@@ -95,6 +114,10 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 		if (body.opponent_goals !== undefined) {
 			const currentOpponentGoals = currentGame.opponent_goals || [];
 			updateFields.opponent_goals = [...currentOpponentGoals, ...(Array.isArray(body.opponent_goals) ? body.opponent_goals : [body.opponent_goals])];
+		}
+		if (body.shots_on_goal !== undefined) {
+			const currentShotsOnGoal = currentGame.shots_on_goal || [];
+			updateFields.shots_on_goal = [...currentShotsOnGoal, ...(Array.isArray(body.shots_on_goal) ? body.shots_on_goal : [body.shots_on_goal])];
 		}
 		if (body.goal_type !== undefined) {
 			const currentGoalType = currentGame.goal_type || [];
@@ -118,6 +141,10 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 				minus_points = ${updateFields.minus_points !== undefined ? updateFields.minus_points : currentGame.minus_points},
 				team_goals = ${updateFields.team_goals !== undefined ? updateFields.team_goals : currentGame.team_goals},
 				opponent_goals = ${updateFields.opponent_goals !== undefined ? updateFields.opponent_goals : currentGame.opponent_goals},
+				shots_on_goal = ${updateFields.shots_on_goal !== undefined ? updateFields.shots_on_goal : currentGame.shots_on_goal},
+				shots_off_target = ${updateFields.shots_off_target !== undefined ? updateFields.shots_off_target : currentGame.shots_off_target},
+				shots_blocked = ${updateFields.shots_blocked !== undefined ? updateFields.shots_blocked : currentGame.shots_blocked},
+				blocks = ${updateFields.blocks !== undefined ? updateFields.blocks : currentGame.blocks},
 				assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
 				updated_at = NOW()
 			WHERE id = ${gameId}

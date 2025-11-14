@@ -9,6 +9,13 @@
       }
     let teamGoals: any[] = [];
     let opponentGoals: any[] = [];
+    let shotsOnGoal: any[] = [];
+    let shotsOffTarget: any[] = [];
+    let shotsBlocked: any[] = [];
+    let blocks: any[] = [];
+    let saves: any[] = [];
+    let goalieGameInterruption: any[] = [];
+    let opponentShotOff = 0;
   import { onMount } from 'svelte';
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -29,6 +36,13 @@
     await fetchAndUpdatePlayerNames(data.lineup || []);
     teamGoals = data.team_goals || [];
     opponentGoals = data.opponent_goals || [];
+    shotsOnGoal = data.shots_on_goal || [];
+    shotsOffTarget = data.shots_off_target || [];
+    shotsBlocked = data.shots_blocked || [];
+    blocks = data.blocks || [];
+    saves = data.saves || [];
+    goalieGameInterruption = data.goalie_game_interruption || [];
+    opponentShotOff = typeof data.opponent_shot_off === 'number' ? data.opponent_shot_off : 0;
     const goalieId = data.fieldPositions?.[0];
     if (goalieId) {
       const names = get(playerNames);
@@ -72,39 +86,39 @@
   <div class="score-row three-cols" style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem;">
     <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
       <div class="stat-label">Veto maalia kohti</div>
-      <button class="stat-btn green">0</button>
+      <button class="stat-btn green" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-on-goal`)}>{shotsOnGoal.length}</button>
     </div>
     <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-      <div class="stat-label">Veto ohi maalin</div>
-      <button class="stat-btn yellow">0</button>
+      <div class="stat-label">Veto ohi<br />maalin</div>
+      <button class="stat-btn yellow" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-off-target`)}>{shotsOffTarget.length}</button>
     </div>
     <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
       <div class="stat-label" style="text-align:center;">
         Veto<br />blokkiin
       </div>
-      <button class="stat-btn yellow">0</button>
+      <button class="stat-btn yellow" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-blocked`)}>{shotsBlocked.length}</button>
     </div>
   </div>
 
   <div class="score-row">
     <div class="stat-col">
       <div class="stat-label">Vastustajan veto<br />blokattu</div>
-      <button class="stat-btn green">0</button>
+      <button class="stat-btn green" on:click={() => goto(`/games/${get(page).params.id}/stats/block`)}>{blocks.length}</button>
     </div>
     <div class="stat-col">
       <div class="stat-label">Vastustajan veto ohi maalin</div>
-      <button class="stat-btn yellow">0</button>
+      <button class="stat-btn yellow">{opponentShotOff}</button>
     </div>
   </div>
 
   <div class="score-row">
     <div class="stat-col">
       <div class="stat-label">Torjunta</div>
-      <button class="stat-btn green">0</button>
+      <button class="stat-btn green">{saves.length}</button>
     </div>
     <div class="stat-col">
       <div class="stat-label">Maalivahdin katko</div>
-      <button class="stat-btn green">0</button>
+      <button class="stat-btn green">{goalieGameInterruption.length}</button>
     </div>
   </div>
 
