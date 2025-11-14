@@ -42,7 +42,7 @@
     blocks = data.blocks || [];
     saves = data.saves || [];
     goalieGameInterruption = data.goalie_game_interruption || [];
-    opponentShotOff = typeof data.opponent_shot_off === 'number' ? data.opponent_shot_off : 0;
+    opponentShotOff = typeof data.opponent_shots_off === 'number' ? data.opponent_shots_off : 0;
     const goalieId = data.fieldPositions?.[0];
     if (goalieId) {
       const names = get(playerNames);
@@ -59,6 +59,107 @@
   function openKentalliset() {
     const id = $page.data.id ?? $page.params.id;
     goto(`/games/${id}/stats/fp`);
+  }
+
+  async function increaseOpponentShotsOff() {
+    const id = $page.params.id ?? $page.data.id;
+    try {
+      const res = await fetch(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ opponent_shots_off: 1 }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await fetchGameAndPlayers(); // Päivitä näkymä
+      } else {
+        alert('Tallennus epäonnistui');
+      }
+    } catch (e) {
+      alert('Tallennusvirhe: ' + e);
+    }
+  }
+
+  let opponentShotOffPressed = false;
+  let savePressed = false;
+  let goalieInterruptionPressed = false;
+
+  async function handleOpponentShotsOffClick() {
+    opponentShotOffPressed = true;
+    setTimeout(() => { opponentShotOffPressed = false; }, 50);
+    await increaseOpponentShotsOff();
+  }
+
+  async function handleSaveClick() {
+    savePressed = true;
+    setTimeout(() => { savePressed = false; }, 50);
+    // Hae maalivahdin id
+    const id = $page.params.id ?? $page.data.id;
+    const goalieId = gameFieldPositions && get(gameFieldPositions)[0];
+    if (!goalieId) {
+      alert('Maalivahdin id ei löytynyt');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ saves: goalieId }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await fetchGameAndPlayers();
+      } else {
+        alert('Tallennus epäonnistui');
+      }
+    } catch (e) {
+      alert('Tallennusvirhe: ' + e);
+    }
+  }
+
+  async function handleGoalieInterruptionClick() {
+    goalieInterruptionPressed = true;
+    setTimeout(() => { goalieInterruptionPressed = false; }, 50);
+    const id = $page.params.id ?? $page.data.id;
+    const goalieId = gameFieldPositions && get(gameFieldPositions)[0];
+    if (!goalieId) {
+      alert('Maalivahdin id ei löytynyt');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goalie_game_interruption: goalieId }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await fetchGameAndPlayers();
+      } else {
+        alert('Tallennus epäonnistui');
+      }
+    } catch (e) {
+      alert('Tallennusvirhe: ' + e);
+    }
+  }
+
+  async function handleEndGameClick() {
+    const id = $page.params.id ?? $page.data.id;
+    try {
+      const res = await fetch(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Pelattu' }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        goto('/games');
+      } else {
+        alert('Pelin lopetus epäonnistui');
+      }
+    } catch (e) {
+      alert('Pelin lopetusvirhe: ' + e);
+    }
   }
 </script>
 
@@ -107,22 +208,22 @@
     </div>
     <div class="stat-col">
       <div class="stat-label">Vastustajan veto ohi maalin</div>
-      <button class="stat-btn yellow">{opponentShotOff}</button>
+      <button class="stat-btn yellow" class:pressed={opponentShotOffPressed} on:click={handleOpponentShotsOffClick}>{opponentShotOff}</button>
     </div>
   </div>
 
   <div class="score-row">
     <div class="stat-col">
       <div class="stat-label">Torjunta</div>
-      <button class="stat-btn green">{saves.length}</button>
+      <button class="stat-btn green" class:pressed={savePressed} on:click={handleSaveClick}>{saves.length}</button>
     </div>
     <div class="stat-col">
       <div class="stat-label">Maalivahdin katko</div>
-      <button class="stat-btn green">{goalieGameInterruption.length}</button>
+      <button class="stat-btn green" class:pressed={goalieInterruptionPressed} on:click={handleGoalieInterruptionClick}>{goalieGameInterruption.length}</button>
     </div>
   </div>
 
-  <button class="end-btn">Lopeta peli</button>
+  <button class="end-btn" on:click={handleEndGameClick}>Lopeta peli</button>
 </main>
 
 <style>
@@ -200,6 +301,9 @@
   }
   .stat-btn.yellow {
     background: #fbc02d;
+  }
+  .pressed {
+    background: #c4901c !important;
   }
   .end-btn {
     width: 100%;

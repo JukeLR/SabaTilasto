@@ -140,7 +140,7 @@ async function saveShotOnGoal() {
 }
 .fp-btn {
   background: #54a6e3;
-  color: black !important;
+  .fp-btn { width: 100%; font-size: 0.95rem; border-radius: 6px; padding: 7px 0; margin-bottom: 2px; border: 1px solid #ccc; background: #eee; cursor: pointer; }
   border: none;
   border-radius: 12px;
   padding: 0.35rem 1.2rem;
@@ -173,6 +173,9 @@ async function saveShotOnGoal() {
 .fp-actions {
   display: flex;
   justify-content: center;
+  .fp-selected { background: #4caf50; color: #fff; }
+  .fp-save { background: #2196f3; color: #fff; font-weight: bold; }
+  .fp-cancel { background: #aaa; color: #fff; font-weight: bold; margin-top: 8px; }
   gap: 2rem;
   margin-top: 2rem;
 }

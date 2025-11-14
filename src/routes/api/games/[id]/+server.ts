@@ -83,6 +83,22 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 		const currentGame = gameRes[0];
 
 		let updateFields: any = {};
+										if (body.opponent_shots_off !== undefined) {
+											const currentOpponentShotsOff = typeof currentGame.opponent_shots_off === 'number' ? currentGame.opponent_shots_off : 0;
+											updateFields.opponent_shots_off = currentOpponentShotsOff + 1;
+										}
+										if (body.saves !== undefined) {
+											const currentSaves = currentGame.saves || [];
+											updateFields.saves = [...currentSaves, ...(Array.isArray(body.saves) ? body.saves : [body.saves])];
+										}
+										if (body.goalie_game_interruption !== undefined) {
+											const currentGoalieGameInterruption = currentGame.goalie_game_interruption || [];
+											updateFields.goalie_game_interruption = [...currentGoalieGameInterruption, ...(Array.isArray(body.goalie_game_interruption) ? body.goalie_game_interruption : [body.goalie_game_interruption])];
+										}
+										if (body.saves !== undefined) {
+											const currentSaves = currentGame.saves || [];
+											updateFields.saves = [...currentSaves, ...(Array.isArray(body.saves) ? body.saves : [body.saves])];
+										}
 								if (body.blocks !== undefined) {
 									const currentBlocks = currentGame.blocks || [];
 									updateFields.blocks = [...currentBlocks, ...(Array.isArray(body.blocks) ? body.blocks : [body.blocks])];
@@ -145,7 +161,11 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 				shots_off_target = ${updateFields.shots_off_target !== undefined ? updateFields.shots_off_target : currentGame.shots_off_target},
 				shots_blocked = ${updateFields.shots_blocked !== undefined ? updateFields.shots_blocked : currentGame.shots_blocked},
 				blocks = ${updateFields.blocks !== undefined ? updateFields.blocks : currentGame.blocks},
+				opponent_shots_off = ${updateFields.opponent_shots_off !== undefined ? updateFields.opponent_shots_off : currentGame.opponent_shots_off},
+				saves = ${updateFields.saves !== undefined ? updateFields.saves : currentGame.saves},
+				goalie_game_interruption = ${updateFields.goalie_game_interruption !== undefined ? updateFields.goalie_game_interruption : currentGame.goalie_game_interruption},
 				assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
+				status = ${updateFields.status !== undefined ? updateFields.status : currentGame.status},
 				updated_at = NOW()
 			WHERE id = ${gameId}
 			RETURNING id
