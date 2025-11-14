@@ -1,3 +1,26 @@
+export const PUT = async ({ params, request }: RequestEvent) => {
+	const gameId = parseInt(params.id || '0');
+	if (!gameId) {
+		return json({ error: 'Virheellinen peli ID' }, { status: 400 });
+	}
+	const body = await request.json();
+	// Päivitä field_positions, lineup, ownTeamId, opponentName
+	const result = await sql`
+		UPDATE games
+		SET
+			field_positions = ${body.fieldPositions},
+			lineup = ${body.lineup},
+			own_team_id = ${body.ownTeamId},
+			opponent_team_name = ${body.opponentName},
+			updated_at = NOW()
+		WHERE id = ${gameId}
+		RETURNING id
+	`;
+	if (result.length === 0) {
+		return json({ error: 'Peliä ei löytynyt' }, { status: 404 });
+	}
+	return json({ success: true, id: result[0].id, opponentName: body.opponentName });
+};
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { getGameWithStats } from '$lib/game-stats';
 import { sql } from '$lib/db';
@@ -53,7 +76,7 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 		game.blocks = Array.isArray(game.blocks) ? game.blocks : (game.blocks ? [game.blocks] : []);
 		game.saves = Array.isArray(game.saves) ? game.saves : (game.saves ? [game.saves] : []);
 		game.goalie_game_interruption = Array.isArray(game.goalie_game_interruption) ? game.goalie_game_interruption : (game.goalie_game_interruption ? [game.goalie_game_interruption] : []);
-		game.opponent_shots_off = Array.isArray(game.opponent_shots_off) ? game.opponent_shots_off : (game.opponent_shots_off ? [game.opponent_shots_off] : []);
+		game.opponent_shots_off = typeof game.opponent_shots_off === 'number' ? game.opponent_shots_off : 0;
 		return json(game);
 	} catch (error) {
 		console.error('Get game error:', error);
@@ -106,40 +129,60 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 	const updateFields: any = {};
 
 	// Tarkista ja lisää päivitettävät kentät
+	if (body.opponentName !== undefined) {
+		updateFields.opponent_team_name = body.opponentName;
+	}
 	if (body.shots_blocked !== undefined) {
-		const currentShotsBlocked = currentGame.shots_blocked || [];
+		const currentShotsBlocked = Array.isArray(currentGame.shots_blocked) ? currentGame.shots_blocked : [];
 		updateFields.shots_blocked = [...currentShotsBlocked, ...(Array.isArray(body.shots_blocked) ? body.shots_blocked : [body.shots_blocked])];
 	}
 	if (body.shots_off_target !== undefined) {
-		const currentShotsOffTarget = currentGame.shots_off_target || [];
+		const currentShotsOffTarget = Array.isArray(currentGame.shots_off_target) ? currentGame.shots_off_target : [];
 		updateFields.shots_off_target = [...currentShotsOffTarget, ...(Array.isArray(body.shots_off_target) ? body.shots_off_target : [body.shots_off_target])];
 	}
 	if (body.plus_points !== undefined) {
-		const currentPlusPoints = currentGame.plus_points || [];
+		const currentPlusPoints = Array.isArray(currentGame.plus_points) ? currentGame.plus_points : [];
 		updateFields.plus_points = [...currentPlusPoints, ...body.plus_points];
 	}
 	if (body.minus_points !== undefined) {
-		const currentMinusPoints = currentGame.minus_points || [];
+		const currentMinusPoints = Array.isArray(currentGame.minus_points) ? currentGame.minus_points : [];
 		updateFields.minus_points = [...currentMinusPoints, ...body.minus_points];
 	}
 	if (body.team_goals !== undefined) {
-		const currentTeamGoals = currentGame.team_goals || [];
+		const currentTeamGoals = Array.isArray(currentGame.team_goals) ? currentGame.team_goals : [];
 		updateFields.team_goals = [...currentTeamGoals, ...(Array.isArray(body.team_goals) ? body.team_goals : [body.team_goals])];
 	}
 	if (body.assists !== undefined) {
-		const currentAssists = currentGame.assists || [];
+		const currentAssists = Array.isArray(currentGame.assists) ? currentGame.assists : [];
 		updateFields.assists = [...currentAssists, ...(Array.isArray(body.assists) ? body.assists : [body.assists])];
 	}
 	if (body.opponent_goals !== undefined) {
-		const currentOpponentGoals = currentGame.opponent_goals || [];
+		const currentOpponentGoals = Array.isArray(currentGame.opponent_goals) ? currentGame.opponent_goals : [];
 		updateFields.opponent_goals = [...currentOpponentGoals, ...(Array.isArray(body.opponent_goals) ? body.opponent_goals : [body.opponent_goals])];
 	}
 	if (body.shots_on_goal !== undefined) {
-		const currentShotsOnGoal = currentGame.shots_on_goal || [];
+		const currentShotsOnGoal = Array.isArray(currentGame.shots_on_goal) ? currentGame.shots_on_goal : [];
 		updateFields.shots_on_goal = [...currentShotsOnGoal, ...(Array.isArray(body.shots_on_goal) ? body.shots_on_goal : [body.shots_on_goal])];
 	}
+	if (body.saves !== undefined) {
+		const currentSaves = Array.isArray(currentGame.saves) ? currentGame.saves : [];
+		updateFields.saves = [...currentSaves, ...(Array.isArray(body.saves) ? body.saves : [body.saves])];
+	}
+	if (body.goalie_game_interruption !== undefined) {
+		const currentGoalieGameInterruption = Array.isArray(currentGame.goalie_game_interruption) ? currentGame.goalie_game_interruption : [];
+		updateFields.goalie_game_interruption = [...currentGoalieGameInterruption, ...(Array.isArray(body.goalie_game_interruption) ? body.goalie_game_interruption : [body.goalie_game_interruption])];
+	}
+	if (body.blocks !== undefined) {
+		const currentBlocks = Array.isArray(currentGame.blocks) ? currentGame.blocks : [];
+		updateFields.blocks = [...currentBlocks, ...(Array.isArray(body.blocks) ? body.blocks : [body.blocks])];
+	}
+	if (body.opponent_shots_off !== undefined) {
+		// Jos body.opponent_shots_off on numero, kasvatetaan arvoa yhdellä
+		const currentOpponentShotsOff = typeof currentGame.opponent_shots_off === 'number' ? currentGame.opponent_shots_off : 0;
+		updateFields.opponent_shots_off = currentOpponentShotsOff + Number(body.opponent_shots_off);
+	}
 	if (body.goal_type !== undefined) {
-		const currentGoalType = currentGame.goal_type || [];
+		const currentGoalType = Array.isArray(currentGame.goal_type) ? currentGame.goal_type : [];
 		updateFields.goal_type = [...currentGoalType, body.goal_type];
 	}
 	if (body.status) {
@@ -164,11 +207,12 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			shots_off_target = ${updateFields.shots_off_target !== undefined ? updateFields.shots_off_target : currentGame.shots_off_target},
 			shots_blocked = ${updateFields.shots_blocked !== undefined ? updateFields.shots_blocked : currentGame.shots_blocked},
 			blocks = ${updateFields.blocks !== undefined ? updateFields.blocks : currentGame.blocks},
-			opponent_shots_off = ${updateFields.opponent_shots_off !== undefined ? updateFields.opponent_shots_off : currentGame.opponent_shots_off},
+			opponent_shots_off = ${typeof updateFields.opponent_shots_off === 'number' ? updateFields.opponent_shots_off : currentGame.opponent_shots_off},
 			saves = ${updateFields.saves !== undefined ? updateFields.saves : currentGame.saves},
 			goalie_game_interruption = ${updateFields.goalie_game_interruption !== undefined ? updateFields.goalie_game_interruption : currentGame.goalie_game_interruption},
 			assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
 			status = ${updateFields.status !== undefined ? updateFields.status : currentGame.status},
+			opponent_team_name = ${updateFields.opponent_team_name !== undefined ? updateFields.opponent_team_name : currentGame.opponentName},
 			updated_at = NOW()
 		WHERE id = ${gameId}
 		RETURNING id

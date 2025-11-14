@@ -30,6 +30,8 @@
         i++;
       }
     }
+    // Aseta vastustajan nimi pelidatasta
+    opponentName = data.opponentName || '';
   }
   import { onMount } from 'svelte';
   import { page } from '$app/stores';

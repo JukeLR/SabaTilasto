@@ -71,6 +71,7 @@
         credentials: 'include'
       });
       if (res.ok) {
+        await new Promise(r => setTimeout(r, 200)); // pieni viive
         await fetchGameAndPlayers(); // Päivitä näkymä
       } else {
         alert('Tallennus epäonnistui');
@@ -108,6 +109,7 @@
         credentials: 'include'
       });
       if (res.ok) {
+        await new Promise(r => setTimeout(r, 200)); // pieni viive
         await fetchGameAndPlayers();
       } else {
         alert('Tallennus epäonnistui');
@@ -134,6 +136,7 @@
         credentials: 'include'
       });
       if (res.ok) {
+        await new Promise(r => setTimeout(r, 200)); // pieni viive
         await fetchGameAndPlayers();
       } else {
         alert('Tallennus epäonnistui');

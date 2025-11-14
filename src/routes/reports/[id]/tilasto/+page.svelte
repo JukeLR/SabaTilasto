@@ -124,6 +124,7 @@
       <h2>Pelin tilastot</h2>
       <p><strong>Päivämäärä:</strong> {formatDate(game.gameDate)}</p>
       <p><strong>Pelipaikka:</strong> {game.gameLocation}</p>
+      <p><strong>Vastustaja:</strong> {game.opponentName}</p>
       <p><strong>Tulos:</strong> <span class="score"><strong>{game.ownTeamName}</strong></span> <span class="score"><strong>{Array.isArray(game.team_goals) ? game.team_goals.length : 0}</strong></span> <span class="score">-</span> <span class="score"><strong>{Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0}</strong></span> <span class="score"><strong>{game.opponentName}</strong></span></p>
     </div>
     <div class="player-stats">
