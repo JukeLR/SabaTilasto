@@ -67,8 +67,8 @@
 			</button>
 		</form>
 
-		<div class="auth-link">
-			Eikö sinulla ole tiliä? <a href="/register">Rekisteröidy</a>
+		<div class="auth-link" style="display:block; margin-top:1rem;">
+			Eikö sinulla ole tiliä? <a href="/register" style="font-weight:bold; color:#357ab8; text-decoration:underline;">Rekisteröidy</a>
 		</div>
 	</div>
 </div>

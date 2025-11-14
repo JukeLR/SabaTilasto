@@ -92,9 +92,9 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 			const currentAssists = currentGame.assists || [];
 			updateFields.assists = [...currentAssists, ...(Array.isArray(body.assists) ? body.assists : [body.assists])];
 		}
-		if (body.opponent_goal !== undefined) {
+		if (body.opponent_goals !== undefined) {
 			const currentOpponentGoals = currentGame.opponent_goals || [];
-			updateFields.opponent_goals = [...currentOpponentGoals, body.opponent_goal];
+			updateFields.opponent_goals = [...currentOpponentGoals, ...(Array.isArray(body.opponent_goals) ? body.opponent_goals : [body.opponent_goals])];
 		}
 		if (body.goal_type !== undefined) {
 			const currentGoalType = currentGame.goal_type || [];
@@ -115,7 +115,9 @@ export const PATCH = async ({ params, request, cookies }: RequestEvent) => {
 			UPDATE games
 			SET
 				plus_points = ${updateFields.plus_points !== undefined ? updateFields.plus_points : currentGame.plus_points},
+				minus_points = ${updateFields.minus_points !== undefined ? updateFields.minus_points : currentGame.minus_points},
 				team_goals = ${updateFields.team_goals !== undefined ? updateFields.team_goals : currentGame.team_goals},
+				opponent_goals = ${updateFields.opponent_goals !== undefined ? updateFields.opponent_goals : currentGame.opponent_goals},
 				assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
 				updated_at = NOW()
 			WHERE id = ${gameId}

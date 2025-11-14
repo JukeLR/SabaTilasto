@@ -3,6 +3,10 @@
         const id = $page.data.id ?? $page.params.id;
         goto(`/games/${id}/stats/shot?title=${encodeURIComponent(title)}`);
       }
+      function openOpponentShots(title: string) {
+        const id = $page.data.id ?? $page.params.id;
+        goto(`/games/${id}/stats/opponent-shot?title=${encodeURIComponent(title)}`);
+      }
     let teamGoals: any[] = [];
     let opponentGoals: any[] = [];
   import { onMount } from 'svelte';
@@ -61,33 +65,35 @@
     </div>
     <div class="stat-col">
       <div class="stat-label">Maali vastustajalle</div>
-      <button class="stat-btn orange">{opponentGoals.length}</button>
+      <button class="stat-btn orange" on:click={() => openOpponentShots('Maali vastustajalle')}>{opponentGoals.length}</button>
     </div>
   </div>
 
-  <div class="score-row three-cols">
-    <div class="stat-col">
+  <div class="score-row three-cols" style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem;">
+    <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
       <div class="stat-label">Veto maalia kohti</div>
       <button class="stat-btn green">0</button>
     </div>
-    <div class="stat-col">
-      <div class="stat-label">Veto ohi</div>
+    <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+      <div class="stat-label">Veto ohi maalin</div>
       <button class="stat-btn yellow">0</button>
     </div>
-    <div class="stat-col">
-      <div class="stat-label">Torjunta</div>
+    <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+      <div class="stat-label" style="text-align:center;">
+        Veto<br />blokkiin
+      </div>
       <button class="stat-btn yellow">0</button>
     </div>
   </div>
 
   <div class="score-row">
     <div class="stat-col">
-      <div class="stat-label">Blokki</div>
+      <div class="stat-label">Vastustajan veto<br />blokattu</div>
       <button class="stat-btn green">0</button>
     </div>
     <div class="stat-col">
-      <div class="stat-label">Syöttökatko</div>
-      <button class="stat-btn green">0</button>
+      <div class="stat-label">Vastustajan veto ohi maalin</div>
+      <button class="stat-btn yellow">0</button>
     </div>
   </div>
 

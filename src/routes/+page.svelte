@@ -713,6 +713,9 @@
     <!-- Hampurilaisvalikko-komponentti tai nappi tähän -->
   </div>
   <h1 style="text-align:center;margin-top:2rem;">SabaTilastot</h1>
+  <div style="text-align:center;margin-top:2rem;">
+    <a href="/register" style="font-weight:bold;color:#357ab8;text-decoration:underline;font-size:1.2rem;">Luo uusi käyttäjä</a>
+  </div>
 </main>
 
 <style>
