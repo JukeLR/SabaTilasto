@@ -216,7 +216,7 @@
                 {/each}
               </select>
             {:else}
-              <button class="fp-btn" on:click={() => pelaaja.text && editPlayer(i, 'yla', j)}>{pelaaja.text}</button>
+              <button class="fp-btn" on:click={() => editPlayer(i, 'yla', j)}>{pelaaja.text}</button>
             {/if}
           </div>
         {/each}
@@ -232,7 +232,7 @@
                 {/each}
               </select>
             {:else}
-              <button class="fp-btn" on:click={() => pelaaja.text && editPlayer(i, 'ala', j)}>{pelaaja.text}</button>
+              <button class="fp-btn" on:click={() => editPlayer(i, 'ala', j)}>{pelaaja.text}</button>
             {/if}
           </div>
         {/each}
