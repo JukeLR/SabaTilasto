@@ -359,12 +359,6 @@
   align-items: center;
   flex: 1;
 }
-.fp-label {
-  font-size: 1rem;
-  color: #222;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
 .fp-btn {
   background: #56a0e3;
   color: #fff;
