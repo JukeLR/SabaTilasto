@@ -140,7 +140,7 @@ async function saveShotOnGoal() {
 }
 .fp-btn {
   background: #54a6e3;
-  .fp-btn { width: 100%; font-size: 0.95rem; border-radius: 6px; padding: 7px 0; margin-bottom: 2px; border: 1px solid #ccc; background: #eee; cursor: pointer; }
+  color: black;
   border: none;
   border-radius: 12px;
   padding: 0.35rem 1.2rem;
