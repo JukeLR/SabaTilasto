@@ -104,86 +104,16 @@ async function saveShotOnGoal() {
       </div>
     </div>
   {/each}
-  <div class="fp-grid fp-actions">
-    <div class="fp-col">
-      <button class="fp-btn fp-cancel" on:click={() => goto(`/games/${$page.params.id}/stats`)}>Takaisin</button>
-    </div>
-    <div class="fp-col">
-      <button class="fp-btn fp-blue-bold" on:click={saveShotOnGoal}><b>Tallenna</b></button>
-    </div>
-  </div>
+  <button class="fp-btn fp-cancel" on:click={() => goto(`/games/${$page.params.id}/stats`)}>Takaisin</button>
+  <button class="fp-btn fp-save" on:click={saveShotOnGoal}><b>Tallenna</b></button>    
 </main>
 
 <style>
-.fp-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 2rem;
-}
-.fp-grid {
-  display: flex;
-  justify-content: center;
-  gap: 0.7rem;
-  margin-bottom: 0.7rem;
-}
-.fp-row-maalivahti {
-  margin-bottom: 1.2rem;
-}
-.fp-row-yla, .fp-row-ala {
-  margin-bottom: 0.2rem;
-}
-.fp-col {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-.fp-btn {
-  background: #54a6e3;
-  color: black;
-  border: none;
-  border-radius: 12px;
-  padding: 0.35rem 1.2rem;
-  font-size: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  cursor: pointer;
-  margin: 0.1rem;
-  transition: background 0.2s;
-  min-width: 120px;
-}
-.fp-btn:active {
-  background: #357ab8;
-}
-.fp-kentta {
-  margin-bottom: 0.7rem;
-}
-.fp-kentta-title {
-  font-weight: 500;
-  margin-bottom: 0.1rem;
-  margin-left: 0.5rem;
-}
-.fp-row-maalivahti .fp-btn {
-  min-width: 120px;
-}
-.fp-blue-bold {
-  background: #54a6e3 !important;
-  color: #fff;
-  font-weight: bold;
-}
-.fp-actions {
-  display: flex;
-  justify-content: center;
-  .fp-selected { background: #4caf50; color: #fff; }
-  .fp-save { background: #2196f3; color: #fff; font-weight: bold; }
-  .fp-cancel { background: #aaa; color: #fff; font-weight: bold; margin-top: 8px; }
-  gap: 2rem;
-  margin-top: 2rem;
-}
-.fp-actions .fp-btn {
-  background: #888;
-}
-.fp-selected {
-  background: #3bb54a !important;
-  border: 2px solid #217a2b;
-}
+.fp-main { max-width: 400px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+.fp-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.fp-col { flex: 1; min-width: 100px; }
+.fp-btn { width: 100%; font-size: 0.95rem; border-radius: 6px; padding: 7px 0; margin-bottom: 2px; border: 1px solid #ccc; background: #eee; cursor: pointer; }
+.fp-selected { background: #4caf50; color: #fff; }
+.fp-save { background: #2196f3; color: #fff; font-weight: bold; }
+.fp-cancel { background: #aaa; color: #fff; font-weight: bold; margin-top: 8px; }
 </style>
