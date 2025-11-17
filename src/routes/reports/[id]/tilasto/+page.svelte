@@ -178,15 +178,37 @@
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 30px;
+      overflow: auto;
+      display: block;
+      max-height: 500px;
     }
     .stats-table th, .stats-table td {
       border: 1px solid #ddd;
       padding: 8px;
-      text-align: left;
+      text-align: center;
+      vertical-align: middle;
+      background: #fff;
+    }
+    .stats-table td {
+      font-size: 1.25rem;
+    }
+    .stats-table th,
+    .stats-table td:first-child,
+    .stats-table th:first-child {
+      font-size: 1rem;
     }
     .stats-table th {
       background: #f2f2f2;
       font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .stats-table td:first-child, .stats-table th:first-child {
+      position: sticky;
+      left: 0;
+      background: #e9e9e9;
+      z-index: 3;
     }
   h1 {
     color: #1a1a1a;
