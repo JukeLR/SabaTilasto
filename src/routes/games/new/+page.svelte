@@ -495,7 +495,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								{#each teamPlayers as player}
+								{#each [...teamPlayers].sort((a, b) => a.last_name.localeCompare(b.last_name)) as player}
 									<tr>
 										<td>
 											<input 

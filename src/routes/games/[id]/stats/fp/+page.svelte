@@ -216,7 +216,7 @@
                 {/each}
               </select>
             {:else}
-              <button class="fp-btn" on:click={() => editPlayer(i, 'yla', j)}>{pelaaja.text}</button>
+              <button class="fp-btn" on:click={() => editPlayer(i, 'yla', j)}>{pelaaja.id !== null ? (lineupPlayers.find(p => p.id === pelaaja.id)?.nick ?? '') : ''}</button>
             {/if}
           </div>
         {/each}
@@ -232,157 +232,24 @@
                 {/each}
               </select>
             {:else}
-              <button class="fp-btn" on:click={() => editPlayer(i, 'ala', j)}>{pelaaja.text}</button>
+              <button class="fp-btn" on:click={() => editPlayer(i, 'ala', j)}>{pelaaja.id !== null ? (lineupPlayers.find(p => p.id === pelaaja.id)?.nick ?? '') : ''}</button>
             {/if}
           </div>
         {/each}
       </div>
     </div>
   {/each}
-  <div class="fp-grid fp-actions">
-    <div class="fp-col">
-      <button class="fp-btn fp-cancel" on:click={goBack}>Peruuta</button>
-    </div>
-    <div class="fp-col">
-      <button class="fp-btn fp-save" on:click={saveFieldPositions}>Tallenna</button>
-    </div>
-  </div>
+  <button class="fp-btn fp-cancel" on:click={goBack}>Peruuta</button>
+   <button class="fp-btn fp-save" on:click={saveFieldPositions}>Tallenna</button>
+    
+  
 
+  </main>
 <style>
-  .fp-main {
-    padding: 1rem;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  .fp-row-maalivahti {
-    margin-top: 24px;
-    margin-bottom: 24px;
-  }
-  .fp-btn {
-    background: #56a0e3;
-    color: #222;
-    border: none;
-    border-radius: 10px;
-    padding: 0;
-    min-width: 80px;
-    height: 24px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-      goto(`/games/${id}/stats`);
-    }
-    height: 28px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-  }
-  .fp-label {
-    font-size: 0.85rem;
-    color: #222;
-    margin-bottom: 2px;
-    font-weight: 500;
-  }
-  .fp-btn {
-    background: #56a0e3;
-    color: black !important;
-    border: none;
-    border-radius: 12px;
-    padding: 16px 0;
-    min-width: 120px;
-    font-size: 1.1rem;
-    font-weight: 500;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: background 0.2s;
-  }
-  .fp-btn:active {
-    background: #357ab8;
-  }
-  .fp-actions {
-    gap: 24px;
-    margin-top: 32px;
-  }
-  .fp-cancel {
-    background: #999;
-  }
-  .fp-save {
-    background: #56a0e3;
-  }
-</style>
-  <!-- Peruuta/Tallenna napit ovat jo mainin sisällä, poistetaan duplikaatti -->
-</main>
-
-<style>
-.fp-main {
-  padding: 1rem;
-  max-width: 400px;
-  margin: 0 auto;
-}
-.fp-row-maalivahti {
-  margin-top: 24px;
-  margin-bottom: 24px;
-}
-.fp-kentta {
-  margin-bottom: 24px;
-}
-.fp-grid {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  gap: 16px;
-}
-.fp-row-yla {
-  margin-bottom: 8px;
-}
-.fp-row-ala {
-  margin-bottom: 0;
-}
-.fp-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-.fp-btn {
-  background: #56a0e3;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 16px 0;
-  min-width: 120px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  transition: background 0.2s;
-}
-.fp-btn:active {
-  background: #357ab8;
-}
-.fp-actions {
-  gap: 24px;
-  margin-top: 32px;
-}
-.fp-cancel {
-  background: #999;
-}
-.fp-save {
-  background: #56a0e3;
-}
+.fp-main { max-width: 400px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+.fp-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.fp-col { flex: 1; min-width: 100px; }
+.fp-btn { width: 100%; font-size: 0.95rem; border-radius: 6px; padding: 7px 0; margin-bottom: 2px; border: 1px solid #ccc; background: #eee; cursor: pointer; min-height: 32px; }
+.fp-save { background: #2196f3; color: #fff; font-weight: bold; }
+.fp-cancel { background: #aaa; color: #fff; font-weight: bold; margin-top: 8px; }
 </style>

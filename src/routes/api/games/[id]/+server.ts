@@ -116,6 +116,8 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			g.saves,
 			g.goalie_game_interruption,
 			g.opponent_shots_off
+            ,g.plus_points
+            ,g.minus_points
 		FROM games g
 		WHERE g.id = ${gameId}
 	`;
@@ -141,8 +143,23 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 		updateFields.shots_off_target = [...currentShotsOffTarget, ...(Array.isArray(body.shots_off_target) ? body.shots_off_target : [body.shots_off_target])];
 	}
 	if (body.plus_points !== undefined) {
-		const currentPlusPoints = Array.isArray(currentGame.plus_points) ? currentGame.plus_points : [];
+		let currentPlusPoints = currentGame.plus_points;
+		// Varmista että plus_points on array myös SQL-tasolla
+		if (!Array.isArray(currentPlusPoints)) {
+			if (currentPlusPoints == null) currentPlusPoints = [];
+			else if (typeof currentPlusPoints === 'string') {
+				// Jos string, yritä muuntaa arrayksi
+				try {
+					currentPlusPoints = JSON.parse(currentPlusPoints);
+				} catch {
+					currentPlusPoints = [currentPlusPoints];
+				}
+			} else {
+				currentPlusPoints = [currentPlusPoints];
+			}
+		}
 		updateFields.plus_points = [...currentPlusPoints, ...body.plus_points];
+		console.log('updateFields.plus_points:', updateFields.plus_points);
 	}
 	if (body.minus_points !== undefined) {
 		const currentMinusPoints = Array.isArray(currentGame.minus_points) ? currentGame.minus_points : [];

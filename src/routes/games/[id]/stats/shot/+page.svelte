@@ -17,7 +17,12 @@ async function saveStats() {
     alert('Valinta merkitty!');
     return;
   }
-  if (plusmiinusIds.length > 0) payload.plus_points = plusmiinusIds;
+  // Lähetä PATCHissa vain uudet plussat, ei vanhoja
+  if (plusmiinusIds.length > 0) {
+    payload.plus_points = [...plusmiinusIds]; // vain uudet valinnat
+  }
+  // minus_points lähetetään vain jos niitä on valittu
+  // (tällä sivulla ei ilmeisesti ole miinus-pelaajien valintaa, joten jätetään pois)
   if (goalAssist.scorer !== null && goalAssist.scorer !== undefined) {
     payload.team_goals = [goalAssist.scorer.toString()];
     if (goalAssist.assister !== null && goalAssist.assister !== undefined) {
@@ -36,6 +41,9 @@ async function saveStats() {
       credentials: 'include'
     });
     if (res.ok) {
+      // Tyhjennä plusmiinusIds ja selectedPlayers PATCHin jälkeen, jotta vain uudet plussat tallennetaan
+      plusmiinusIds = [];
+      selectedPlayers.set([]);
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');
