@@ -45,6 +45,12 @@ function handlePlusMiinus() {
   minusPlayers = [...$selectedPlayers];
   selectionPhase.set('maali');
   selectedPlayers.set([]);
+  // Oletuksena valitse maalivahti, jos sellainen on kentällä
+  if ($fieldPositions && $fieldPositions[0] !== null && $fieldPositions[0] !== undefined) {
+    selectedGoal = $fieldPositions[0];
+  } else {
+    selectedGoal = null;
+  }
   // Jos ei valittu yhtään miinuspelaajaa, näytä vihreä nappi
   if (minusPlayers.length === 0) {
     showPlusSelected = true;
