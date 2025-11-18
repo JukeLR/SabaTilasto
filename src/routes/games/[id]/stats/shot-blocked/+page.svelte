@@ -1,4 +1,6 @@
 <script lang="ts">
+import { shotsBlocked } from '$lib/stores/shotsBlocked';
+import { get as getStore } from 'svelte/store';
 import { writable, get } from 'svelte/store';
 import { page } from '$app/stores';
 import { goto } from '$app/navigation';
@@ -32,6 +34,11 @@ async function saveShotBlocked() {
       credentials: 'include'
     });
     if (res.ok) {
+      // Päivitä shotsBlocked-store heti, jotta stats-nappi päivittyy nopeasti
+      if (payload.shots_blocked) {
+        const prevShots = getStore(shotsBlocked);
+        shotsBlocked.set([...prevShots, ...payload.shots_blocked]);
+      }
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');

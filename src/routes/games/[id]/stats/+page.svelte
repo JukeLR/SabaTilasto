@@ -1,4 +1,8 @@
 <script lang="ts">
+      import { blocks } from '$lib/stores/blocks';
+      import { shotsBlocked } from '$lib/stores/shotsBlocked';
+      import { shotsOffTarget } from '$lib/stores/shotsOffTarget';
+      import { shotsOnGoal } from '$lib/stores/shotsOnGoal';
       function openShots(title: string) {
         const id = $page.data.id ?? $page.params.id;
         goto(`/games/${id}/stats/shot?title=${encodeURIComponent(title)}`);
@@ -7,12 +11,10 @@
         const id = $page.data.id ?? $page.params.id;
         goto(`/games/${id}/stats/opponent-shot?title=${encodeURIComponent(title)}`);
       }
-    let teamGoals: any[] = [];
-    let opponentGoals: any[] = [];
-    let shotsOnGoal: any[] = [];
-    let shotsOffTarget: any[] = [];
-    let shotsBlocked: any[] = [];
-    let blocks: any[] = [];
+    import { teamGoals } from '$lib/stores/teamGoals';
+    import { opponentGoals } from '$lib/stores/opponentGoals';
+    import { get as getStore } from 'svelte/store';
+    let teamGoalsArr: any[] = [];
     let saves: any[] = [];
     let goalieGameInterruption: any[] = [];
     let opponentShotOff = 0;
@@ -34,12 +36,18 @@
     gameLineup.set(data.lineup || []);
     gameFieldPositions.set(data.fieldPositions || []);
     await fetchAndUpdatePlayerNames(data.lineup || []);
-    teamGoals = data.team_goals || [];
-    opponentGoals = data.opponent_goals || [];
-    shotsOnGoal = data.shots_on_goal || [];
-    shotsOffTarget = data.shots_off_target || [];
-    shotsBlocked = data.shots_blocked || [];
-    blocks = data.blocks || [];
+    teamGoalsArr = data.team_goals || [];
+    teamGoals.set(teamGoalsArr);
+    let opponentGoalsArr = data.opponent_goals || [];
+    opponentGoals.set(opponentGoalsArr);
+    let shotsOnGoalArr = data.shots_on_goal || [];
+    shotsOnGoal.set(shotsOnGoalArr);
+    let shotsOffTargetArr = data.shots_off_target || [];
+    shotsOffTarget.set(shotsOffTargetArr);
+    let shotsBlockedArr = data.shots_blocked || [];
+    shotsBlocked.set(shotsBlockedArr);
+    let blocksArr = data.blocks || [];
+    blocks.set(blocksArr);
     saves = data.saves || [];
     goalieGameInterruption = data.goalie_game_interruption || [];
     opponentShotOff = typeof data.opponent_shots_off === 'number' ? data.opponent_shots_off : 0;
@@ -71,6 +79,7 @@
         credentials: 'include'
       });
       if (res.ok) {
+        opponentShotOff++;
         await new Promise(r => setTimeout(r, 200)); // pieni viive
         await fetchGameAndPlayers(); // Päivitä näkymä
       } else {
@@ -109,6 +118,7 @@
         credentials: 'include'
       });
       if (res.ok) {
+        saves = [...saves, goalieId];
         await new Promise(r => setTimeout(r, 200)); // pieni viive
         await fetchGameAndPlayers();
       } else {
@@ -136,6 +146,7 @@
         credentials: 'include'
       });
       if (res.ok) {
+        goalieGameInterruption = [...goalieGameInterruption, goalieId];
         await new Promise(r => setTimeout(r, 200)); // pieni viive
         await fetchGameAndPlayers();
       } else {
@@ -179,35 +190,35 @@
   <div class="score-row">
     <div class="stat-col">
       <div class="stat-label">Maali meille</div>
-      <button class="stat-btn green" on:click={() => openShots('Maali meille')}>{teamGoals.length}</button>
+      <button class="stat-btn green" on:click={() => openShots('Maali meille')}>{$teamGoals.length}</button>
     </div>
     <div class="stat-col">
       <div class="stat-label">Maali vastustajalle</div>
-      <button class="stat-btn orange" on:click={() => openOpponentShots('Maali vastustajalle')}>{opponentGoals.length}</button>
+      <button class="stat-btn orange" on:click={() => openOpponentShots('Maali vastustajalle')}>{$opponentGoals.length}</button>
     </div>
   </div>
 
   <div class="score-row three-cols" style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem;">
     <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
       <div class="stat-label">Veto maalia kohti</div>
-      <button class="stat-btn green" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-on-goal`)}>{shotsOnGoal.length}</button>
+      <button class="stat-btn green" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-on-goal`)}>{$shotsOnGoal.length}</button>
     </div>
     <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
       <div class="stat-label">Veto ohi<br />maalin</div>
-      <button class="stat-btn yellow" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-off-target`)}>{shotsOffTarget.length}</button>
+      <button class="stat-btn yellow" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-off-target`)}>{$shotsOffTarget.length}</button>
     </div>
     <div class="stat-col" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
       <div class="stat-label" style="text-align:center;">
         Veto<br />blokkiin
       </div>
-      <button class="stat-btn yellow" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-blocked`)}>{shotsBlocked.length}</button>
+      <button class="stat-btn yellow" on:click={() => goto(`/games/${get(page).params.id}/stats/shot-blocked`)}>{$shotsBlocked.length}</button>
     </div>
   </div>
 
   <div class="score-row">
     <div class="stat-col">
       <div class="stat-label">Vastustajan veto<br />blokattu</div>
-      <button class="stat-btn green" on:click={() => goto(`/games/${get(page).params.id}/stats/block`)}>{blocks.length}</button>
+      <button class="stat-btn green" on:click={() => goto(`/games/${get(page).params.id}/stats/block`)}>{$blocks.length}</button>
     </div>
     <div class="stat-col">
       <div class="stat-label">Vastustajan veto ohi maalin</div>

@@ -1,4 +1,6 @@
 <script lang="ts">
+import { opponentGoals } from '$lib/stores/opponentGoals';
+import { get as getStore } from 'svelte/store';
 import { writable, get, derived } from 'svelte/store';
 import { page } from '$app/stores';
 import { goto } from '$app/navigation';
@@ -70,6 +72,11 @@ async function saveOpponentGoal() {
       credentials: 'include'
     });
     if (res.ok) {
+      // Päivitä opponentGoals-store heti, jotta stats-nappi päivittyy nopeasti
+      if (payload.opponent_goals) {
+        const prevGoals = getStore(opponentGoals);
+        opponentGoals.set([...prevGoals, ...payload.opponent_goals]);
+      }
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');

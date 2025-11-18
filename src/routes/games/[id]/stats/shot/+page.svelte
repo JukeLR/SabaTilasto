@@ -1,4 +1,6 @@
 <script lang="ts">
+import { teamGoals } from '$lib/stores/teamGoals';
+import { get as getStore } from 'svelte/store';
 let showGoalAssistSelected = false;
 // Näytetään vihreä nappi kun plussia ei ole valittu mutta valinta merkitty
 let showPlusSelected = false;
@@ -44,6 +46,11 @@ async function saveStats() {
       // Tyhjennä plusmiinusIds ja selectedPlayers PATCHin jälkeen, jotta vain uudet plussat tallennetaan
       plusmiinusIds = [];
       selectedPlayers.set([]);
+      // Päivitä teamGoals-store heti, jotta stats-nappi päivittyy nopeasti
+      if (payload.team_goals) {
+        const prevGoals = getStore(teamGoals);
+        teamGoals.set([...prevGoals, ...payload.team_goals]);
+      }
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');

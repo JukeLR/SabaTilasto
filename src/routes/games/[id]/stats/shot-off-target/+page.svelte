@@ -1,4 +1,6 @@
 <script lang="ts">
+import { shotsOffTarget } from '$lib/stores/shotsOffTarget';
+import { get as getStore } from 'svelte/store';
 import { writable, get } from 'svelte/store';
 import { page } from '$app/stores';
 import { goto } from '$app/navigation';
@@ -32,6 +34,11 @@ async function saveShotOffTarget() {
       credentials: 'include'
     });
     if (res.ok) {
+      // Päivitä shotsOffTarget-store heti, jotta stats-nappi päivittyy nopeasti
+      if (payload.shots_off_target) {
+        const prevShots = getStore(shotsOffTarget);
+        shotsOffTarget.set([...prevShots, ...payload.shots_off_target]);
+      }
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');

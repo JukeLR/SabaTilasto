@@ -1,4 +1,6 @@
 <script lang="ts">
+import { shotsOnGoal } from '$lib/stores/shotsOnGoal';
+import { get as getStore } from 'svelte/store';
 import { writable, get } from 'svelte/store';
 import { page } from '$app/stores';
 import { goto } from '$app/navigation';
@@ -32,6 +34,11 @@ async function saveShotOnGoal() {
       credentials: 'include'
     });
     if (res.ok) {
+      // Päivitä shotsOnGoal-store heti, jotta stats-nappi päivittyy nopeasti
+      if (payload.shots_on_goal) {
+        const prevShots = getStore(shotsOnGoal);
+        shotsOnGoal.set([...prevShots, ...payload.shots_on_goal]);
+      }
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');

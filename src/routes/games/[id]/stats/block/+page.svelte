@@ -1,4 +1,6 @@
 <script lang="ts">
+import { blocks } from '$lib/stores/blocks';
+import { get as getStore } from 'svelte/store';
 import { writable, get } from 'svelte/store';
 import { page } from '$app/stores';
 import { goto } from '$app/navigation';
@@ -32,6 +34,11 @@ async function saveBlock() {
       credentials: 'include'
     });
     if (res.ok) {
+      // Päivitä blocks-store heti, jotta stats-nappi päivittyy nopeasti
+      if (payload.blocks) {
+        const prevBlocks = getStore(blocks);
+        blocks.set([...prevBlocks, ...payload.blocks]);
+      }
       goto(`/games/${gameId}/stats`);
     } else {
       alert('Tallennus epäonnistui');
