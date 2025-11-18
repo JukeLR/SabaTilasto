@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { teamsStore, fetchTeams } from '$lib/stores/teams';
 	import { goto } from '$app/navigation';
 
 	interface Game {
@@ -25,6 +26,7 @@
 
 	onMount(async () => {
 		await fetchGames();
+		await fetchTeams();
 	});
 
 	async function fetchGames() {
@@ -65,9 +67,9 @@
 				goto(`/games/new?edit=${gameId}`);
 			}
 		} else {
-			// Käynnissä ja Pelattu pelit avataan katselutilassa
+			// Käynnissä ja Pelattu pelit avataan raporttinäkymässä
 			if (typeof window !== 'undefined') {
-				goto(`/games/${gameId}/start`);
+				goto(`/reports/${gameId}/tilasto`);
 			}
 		}
 	}
@@ -106,6 +108,9 @@
 
 <div class="games-container">
 	<h1>Pelit</h1>
+	<button class="btn-create" style="margin-bottom: 24px;" onclick={() => goto('/games/new')}>
+		Luo Peli
+	</button>
 
 	{#if isLoading}
 		<div class="loading">Ladataan pelejä...</div>
@@ -124,6 +129,7 @@
 						<thead>
 							<tr>
 								<th>Päivämäärä</th>
+								<th>Oma joukkue</th>
 								<th>Vastustaja</th>
 								<th>Pelipaikka</th>
 								<th>Toiminnot</th>
@@ -133,6 +139,7 @@
 							{#each createdGames as game}
 								<tr>
 									<td>{formatDate(game.game_date)}</td>
+									<td>{$teamsStore[game.own_team_id] || game.own_team_id}</td>
 									<td>{game.opponent_team_name}</td>
 									<td>{game.game_location || '-'}</td>
 									<td class="actions">
@@ -163,6 +170,7 @@
 						<thead>
 							<tr>
 								<th>Päivämäärä</th>
+								<th>Oma joukkue</th>
 								<th>Vastustaja</th>
 								<th>Pelipaikka</th>
 								<th>Toiminnot</th>
@@ -172,11 +180,12 @@
 							{#each ongoingGames as game}
 								<tr>
 									<td>{formatDate(game.game_date)}</td>
+									<td>{$teamsStore[game.own_team_id] || game.own_team_id}</td>
 									<td>{game.opponent_team_name}</td>
 									<td>{game.game_location || '-'}</td>
 									<td class="actions">
 										<button class="btn-view" onclick={() => viewGame(game.id, game.status)}>
-											Näytä
+											Näytä raportti
 										</button>
 										<button class="btn-continue" onclick={() => startGame(game.id)}>
 											Jatka tilastointia
@@ -202,6 +211,7 @@
 						<thead>
 							<tr>
 								<th>Päivämäärä</th>
+								<th>Oma joukkue</th>
 								<th>Vastustaja</th>
 								<th>Pelipaikka</th>
 								<th>Toiminnot</th>
@@ -211,11 +221,12 @@
 							{#each completedGames as game}
 								<tr>
 									<td>{formatDate(game.game_date)}</td>
+									<td>{$teamsStore[game.own_team_id] || game.own_team_id}</td>
 									<td>{game.opponent_team_name}</td>
 									<td>{game.game_location || '-'}</td>
 									<td class="actions">
 										<button class="btn-view" onclick={() => viewGame(game.id, game.status)}>
-											Näytä
+											Näytä raportti
 										</button>
 									</td>
 								</tr>
@@ -229,6 +240,18 @@
 </div>
 
 <style>
+	.btn-create {
+		padding: 15px 50px;
+		background-color: #5b9bd5;
+		color: white;
+		border: none;
+		border-radius: 10px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 160px;
+	}
 	.games-container {
 		max-width: 1200px;
 		margin: 0 auto;

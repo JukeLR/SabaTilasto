@@ -162,14 +162,8 @@
 					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
 						Pelaajat
 					</button>
-					<button class="menu-item" onclick={() => navigateTo('/games/new')}>
-						Luo peli
-					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
 						Kaikki tilastot
-					</button>
-					<button class="menu-item" onclick={() => navigateTo('/stats')}>
-						Stats-sivusto
 					</button>
 				{/if}
 				

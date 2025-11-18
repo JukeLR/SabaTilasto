@@ -102,12 +102,25 @@
 
   async function saveFieldPositions() {
     const id = $page.params.id;
+    // Varmista että ownTeamId ei ole null
+    let safeOwnTeamId = ownTeamId;
+    if (!safeOwnTeamId) {
+      // Hae vanha arvo pelidatasta
+      const res = await fetch(`/api/games/${id}?basic=true`);
+      const data = await res.json();
+      if (data && data.own_team_id) {
+        safeOwnTeamId = data.own_team_id;
+      } else {
+        alert('Joukkueen valinta puuttuu!');
+        return;
+      }
+    }
     await fetch(`/api/games/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fieldPositions,
-        ownTeamId,
+        ownTeamId: safeOwnTeamId,
         opponentName,
         lineup // lisätty
       })

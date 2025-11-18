@@ -49,7 +49,7 @@
   }
 
   function goBackToReports() {
-    window.location.href = "/reports";
+    window.location.href = "/games";
   }
 
   function formatDate(dateStr: string) {
@@ -184,6 +184,21 @@
               <td>{getPlayerSavePercentage(p.id)}</td>
             </tr>
           {/each}
+          <tr style="font-weight: bold; background: #f2f2f2;">
+            <td>Yhteensä</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerGoals(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerAssists(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerShotsOnGoal(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerShotsOffTarget(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerShotsBlocked(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerBlocks(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerPlusses(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerMinuses(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerSaves(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerGoalsAgainst(p.id), 0)}</td>
+            <td>{players.reduce((sum, p) => sum + getPlayerGoalieInterruptions(p.id), 0)}</td>
+            <td></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -191,6 +206,18 @@
 </div>
 
 <style>
+  .btn-back {
+    padding: 15px 50px;
+		background-color: #5b9bd5;
+		color: white;
+		border: none;
+		border-radius: 10px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 160px;
+  }
   .container {
     max-width: 800px;
     margin: 0 auto;

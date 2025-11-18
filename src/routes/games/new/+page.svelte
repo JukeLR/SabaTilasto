@@ -359,9 +359,21 @@
 				...fieldPositions.field4.row2
 			];
 			
+			// Varmista että ownTeamId ei ole null
+			let safeHomeTeamId = homeTeamId;
+			if (!safeHomeTeamId) {
+				// Jos muokkaustilassa, käytä vanhaa arvoa
+				if (isEditMode && data && data.game && data.game.own_team_id) {
+					safeHomeTeamId = data.game.own_team_id;
+				} else {
+					error = 'Joukkueen valinta puuttuu!';
+					isSaving = false;
+					return;
+				}
+			}
 			const gameData = {
 				seriesId: seriesId,
-				ownTeamId: homeTeamId,
+				ownTeamId: safeHomeTeamId,
 				opponentName: opponentName.trim(),
 				gameLocation: location.trim() || null,
 				gameDate: gameDate,
