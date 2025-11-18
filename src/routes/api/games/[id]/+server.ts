@@ -55,6 +55,8 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 				g.saves,
 				g.goalie_game_interruption,
 				g.opponent_shots_off,
+				g.plus_points,
+				g.minus_points,
 				t.name as "ownTeamName"
 			FROM games g
 			LEFT JOIN teams t ON g.own_team_id = t.id

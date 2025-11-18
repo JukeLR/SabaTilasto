@@ -1,15 +1,19 @@
 <script lang="ts">
+    function getPlayerMinuses(playerId: number) {
+      if (!game || !Array.isArray(game.minus_points)) return 0;
+      return game.minus_points.filter((id: any) => Number(id) === playerId).length;
+    }
   import { page } from "$app/stores";
   import { onMount } from "svelte";
 
-  let gameId: string = "";
+  let gameId = "";
   let game: any = null;
   let players: any[] = [];
   let isLoading: boolean = true;
   let error: string = "";
 
   onMount(async () => {
-    gameId = $page.params.id;
+    gameId = $page.params.id ? $page.params.id : "";
     await fetchGame();
     await fetchPlayers();
   });
@@ -82,6 +86,19 @@
     return game.blocks.filter((id: number) => id === playerId).length;
   }
 
+  function getPlayerPlusses(playerId: number) {
+    if (!game || !Array.isArray(game.plus_points)) return 0;
+    return game.plus_points.filter((id: any) => Number(id) === playerId).length;
+  }
+
+  function getPlusNames() {
+    if (!game || !Array.isArray(game.plus_points) || !Array.isArray(players)) return [];
+    return game.plus_points.map((id: number) => {
+      const player = players.find(p => p.id === id);
+      return player ? `${player.last_name} ${player.first_name}` : id;
+    });
+  }
+
   function getPlayerAssists(playerId: number) {
     if (!game || !Array.isArray(game.assists)) return 0;
     return game.assists.filter((id: number) => id === playerId).length;
@@ -112,7 +129,7 @@
   }
 </script>
 
-<div class="container">
+<div class="container">    
   <h1>Pelin tilasto</h1>
   <button class="btn-back" on:click={goBackToReports}>← Takaisin</button>
   {#if isLoading}
@@ -120,11 +137,13 @@
   {:else if error}
     <div class="error-message">{error}</div>
   {:else if game}
-    <div class="game-stats">
+    <div class="game-stats">        
       <h2>Pelin tilastot</h2>
       <p><strong>Päivämäärä:</strong> {formatDate(game.gameDate)}</p>
       <p><strong>Pelipaikka:</strong> {game.gameLocation}</p>
       <p><strong>Vastustaja:</strong> {game.opponentName}</p>
+      <p><strong>Vastustajan maalivahdin torjunnat:</strong> {Array.isArray(game.shots_on_goal) ? game.shots_on_goal.length : 0}</p>
+      <p><strong>Vastustajan vedot ohi maalin:</strong> {typeof game.opponent_shots_off === 'number' ? game.opponent_shots_off : 0}</p>
       <p><strong>Tulos:</strong> <span class="score"><strong>{game.ownTeamName}</strong></span> <span class="score"><strong>{Array.isArray(game.team_goals) ? game.team_goals.length : 0}</strong></span> <span class="score">-</span> <span class="score"><strong>{Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0}</strong></span> <span class="score"><strong>{game.opponentName}</strong></span></p>
     </div>
     <div class="player-stats">
@@ -139,6 +158,8 @@
             <th>Vedot ohi maalin</th>
             <th>Vedot blokkiin</th>
             <th>Blokit</th>
+            <th>Plussat</th>
+            <th>Miinukset</th>
             <th>Torjunnat</th>
             <th>Päästetyt maalit</th>
             <th>Maalivahdin katkot</th>
@@ -155,6 +176,8 @@
               <td>{getPlayerShotsOffTarget(p.id)}</td>
               <td>{getPlayerShotsBlocked(p.id)}</td>
               <td>{getPlayerBlocks(p.id)}</td>
+              <td>{getPlayerPlusses(p.id)}</td>
+              <td>{getPlayerMinuses(p.id)}</td>
               <td>{getPlayerSaves(p.id)}</td>
               <td>{getPlayerGoalsAgainst(p.id)}</td>
               <td>{getPlayerGoalieInterruptions(p.id)}</td>
