@@ -144,7 +144,7 @@
       <p><strong>Vastustaja:</strong> {game.opponentName}</p>
       <p><strong>Vastustajan maalivahdin torjunnat:</strong> {Array.isArray(game.shots_on_goal) ? game.shots_on_goal.length : 0}</p>
       <p><strong>Vastustajan vedot ohi maalin:</strong> {typeof game.opponent_shots_off === 'number' ? game.opponent_shots_off : 0}</p>
-      <p><strong>Tulos:</strong> <span class="score"><strong>{game.ownTeamName}</strong></span> <span class="score"><strong>{Array.isArray(game.team_goals) ? game.team_goals.length : 0}</strong></span> <span class="score">-</span> <span class="score"><strong>{Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0}</strong></span> <span class="score"><strong>{game.opponentName}</strong></span></p>
+      <p><strong>Tulos:</strong> <span class="score"><strong>{game.ownTeamName}</strong></span> <span class="score"><strong>{Array.isArray(game.team_goals) ? game.team_goals.length : 0}</strong></span><span class="score">-</span><span class="score"><strong>{Array.isArray(game.opponent_goals) ? game.opponent_goals.length:0}</strong></span> <span class="score"><strong>{game.opponentName}</strong></span></p>
     </div>
     <div class="player-stats">
       <h2>Pelaajatilastot</h2>
@@ -268,7 +268,7 @@
   .score {
     font-size: 1.5rem;
     font-weight: bold;
-    margin: 0 8px;
+    margin: 0 0px;
     color: #1a1a1a;
     vertical-align: middle;
   }

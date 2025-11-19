@@ -153,6 +153,9 @@
 					<button class="menu-item" onclick={() => navigateTo('/games')}>
 						Pelit
 					</button>
+					<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
+						Tilastot
+					</button>
 				{/if}
 				
 				{#if userRole === 'admin'}
@@ -161,9 +164,6 @@
 					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
 						Pelaajat
-					</button>
-					<button class="menu-item" onclick={() => navigateTo('/admin/stats')}>
-						Kaikki tilastot
 					</button>
 				{/if}
 				
