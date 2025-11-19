@@ -11,6 +11,6 @@ export async function fetchLineupPlayers(ids: number[]) {
   // Hae kaikki pelaajat yhdellä kutsulla, esim. /api/players?ids=1,2,3
   const res = await fetch(`/api/players?ids=${ids.join(',')}`);
   const data = await res.json();
-  // Oletetaan että data on [{id, nick}, ...]
-  lineupPlayersStore.set(data);
+  // Oletetaan että data on { players: [...] }
+  lineupPlayersStore.set(Array.isArray(data.players) ? data.players : []);
 }

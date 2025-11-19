@@ -1,4 +1,31 @@
 <script lang="ts">
+    let goalieNames: string[] = [];
+    let playerNames: string[] = [];
+
+    async function fetchStats() {
+      if (!selectedTeam) {
+        alert('Valitse joukkue ennen hakua!');
+        return;
+      }
+      // Hae maalivahdit
+      const goaliesRes = await fetch(`/api/players?team_id=${selectedTeam}&position=Maalivahti`);
+      const goaliesData = await goaliesRes.json();
+      goalieNames = Array.isArray(goaliesData.players)
+        ? goaliesData.players
+            .slice()
+            .sort((a, b) => a.last_name.localeCompare(b.last_name))
+            .map(p => `${p.first_name} ${p.last_name}`)
+        : [];
+      // Hae kenttäpelaajat
+      const playersRes = await fetch(`/api/players?team_id=${selectedTeam}&not_position=Maalivahti`);
+      const playersData = await playersRes.json();
+      playerNames = Array.isArray(playersData.players)
+        ? playersData.players
+            .slice()
+            .sort((a, b) => a.last_name.localeCompare(b.last_name))
+            .map(p => `${p.first_name} ${p.last_name}`)
+        : [];
+    }
   import { onMount } from 'svelte';
   let teams: any[] = [];
   let competitions: any[] = [];
@@ -11,17 +38,23 @@
     // Hae joukkueet
     const teamsRes = await fetch('/api/admin/teams');
     const teamsData = await teamsRes.json();
-    teams = Array.isArray(teamsData) ? teamsData : teamsData.teams || [];
+    if (Array.isArray(teamsData)) {
+      teams = teamsData;
+    } else if (Array.isArray(teamsData.teams)) {
+      teams = teamsData.teams;
+    } else {
+      teams = [];
+    }
     // Hae sarjat
     const compRes = await fetch('/api/competitions');
     const compData = await compRes.json();
-    competitions = Array.isArray(compData) ? compData : compData.competitions || [];
+    competitions = Array.isArray(compData.series) ? compData.series : [];
   });
 </script>
 
 <main class="stats-main">
   <h1>Tilastot</h1>
-  <div class="stats-filters">
+    <div class="stats-filters">
     <div class="filter-row">
       <label for="team-select">Valitse joukkue:</label>
       <select id="team-select" bind:value={selectedTeam}>
@@ -40,14 +73,16 @@
         {/each}
       </select>
     </div>
+    
+    
     <div class="filter-row">
       <label for="start-date">Alkaen:</label>
       <input type="date" id="start-date" bind:value={startDate} />
       <label for="end-date" style="margin-left:16px;">Päättyen:</label>
       <input type="date" id="end-date" bind:value={endDate} />
     </div>
-    <div class="filter-row" style="justify-content: flex-end;">
-      <button class="btn-fetch">Hae tilastot</button>
+    <div class="filter-row">
+      <button class="btn-fetch" on:click={fetchStats}>Hae tilastot</button>
     </div>
     <div class="stats-headings">
       <h2>Maalivahtitilastot</h2>
@@ -63,22 +98,58 @@
             <th>Torjunnat</th>
             <th>Päästetyt</th>
             <th>Torjunta-%</th>
-            <th>Päästettyjä maaleja/pelit</th>
+            <th>Päästettyjä <br/>maaleja/peli</th>
             <th>Katkot</th>
             <th>Katkot/peli</th>
           </tr>
         </thead>
         <tbody>
-          <!-- Täytä datalla jatkossa -->
+          {#each goalieNames as name}
+            <tr>
+              <td>{name}</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+          {/each}
         </tbody>
       </table>
       <h2>Pelaajatilastot</h2>
+          <table class="player-table">
+            <thead>
+              <tr>
+                <th>Nimi</th>
+                <th>Pelit</th>
+                <th>Voitot</th>
+                <th>Tasapelit</th>
+                <th>Tappiot</th>
+                <th>Maalit</th>
+                <th>Syötöt</th>
+                <th>Pisteet</th>
+                <th>Pistettä/peli</th>
+                <th>Blokit</th>
+                <th>Blokit/peli</th>
+                <th>Vedot <br/>maalia kohti</th>
+                <th>Vedot <br/>maalia kohti/peli</th>
+                <th>Vedot <br/>blokkiin</th>
+                <th>Vedot <br/>blokkiin/peli</th>
+                <th>Vedot <br/>ohi maalin</th>
+                <th>Vedot <br/>ohi maalin/peli</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each playerNames as name}
+                <tr>
+                  <td>{name}</td>
+                  <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
     </div>
   </div>
 </main>
 
 <style>
-.goalie-table {
+main.stats-main .player-table {
   width: 100%;
   border-collapse: collapse;
   margin: 24px 0 32px 0;
@@ -86,68 +157,86 @@
   background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
-.goalie-table th, .goalie-table td {
+main.stats-main .player-table th,
+main.stats-main .player-table td {
   border: 1px solid #b5c6d6;
   padding: 12px 10px;
   text-align: center;
 }
-.goalie-table th {
+main.stats-main .player-table th {
   background: #e3f0fa;
   font-weight: 600;
   font-size: 1.1rem;
 }
-.goalie-table tbody tr {
+main.stats-main .player-table tbody tr {
   transition: background 0.2s;
 }
-.goalie-table tbody tr:hover {
+main.stats-main .player-table tbody tr:hover {
   background: #f5faff;
 }
-h1 {
+main.stats-main {
+  padding-left: 32px;
+}
+main.stats-main h1 {
   font-size: 2rem;
   color: #1a1a1a;
   margin-bottom: 24px;
 }
-.stats-filters {
+main.stats-main .stats-filters {
   margin-bottom: 32px;
   text-align: left;
 }
-.stats-headings {
-}
-h1 {
-  font-size: 2rem;
-  color: #1a1a1a;
-  margin-bottom: 24px;
-}
-.stats-filters {
-  margin: 0 auto 32px auto;
-  text-align: left;
-  max-width: 400px;
-}
-.filter-row {
+main.stats-main .filter-row {
   margin-bottom: 18px;
   display: flex;
   align-items: center;
 }
-label {
+main.stats-main label {
   min-width: 120px;
   font-weight: 500;
 }
-select, input[type="date"] {
+main.stats-main select,
+main.stats-main input[type="date"] {
   padding: 6px 10px;
   font-size: 1rem;
   border-radius: 6px;
   border: 1px solid #ccc;
   margin-left: 8px;
 }
-  .btn-fetch {
-    padding: 10px 32px;
-    background: #2196f3;
-    color: #fff;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 8px;
-  }
+main.stats-main .btn-fetch {
+  padding: 10px 32px;
+  background: #2196f3;
+  color: #fff;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+main.stats-main .goalie-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0 32px 0;
+  font-size: 1.05rem;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+main.stats-main .goalie-table th,
+main.stats-main .goalie-table td {
+  border: 1px solid #b5c6d6;
+  padding: 12px 10px;
+  text-align: center;
+}
+main.stats-main .goalie-table th {
+  background: #e3f0fa;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+main.stats-main .goalie-table tbody tr {
+  transition: background 0.2s;
+}
+main.stats-main .goalie-table tbody tr:hover {
+  background: #f5faff;
+}
 </style>

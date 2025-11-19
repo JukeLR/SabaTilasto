@@ -133,6 +133,9 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 	const updateFields: any = {};
 
 	// Tarkista ja lisää päivitettävät kentät
+	if (body.goalie_change !== undefined) {
+		updateFields.goalie_change = body.goalie_change;
+	}
 	if (body.opponentName !== undefined) {
 		updateFields.opponent_team_name = body.opponentName;
 	}
@@ -232,6 +235,7 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
 			status = ${updateFields.status !== undefined ? updateFields.status : currentGame.status},
 			opponent_team_name = ${updateFields.opponent_team_name !== undefined ? updateFields.opponent_team_name : currentGame.opponentName},
+			goalie_change = ${updateFields.goalie_change !== undefined ? updateFields.goalie_change : currentGame.goalie_change},
 			updated_at = NOW()
 		WHERE id = ${gameId}
 		RETURNING id

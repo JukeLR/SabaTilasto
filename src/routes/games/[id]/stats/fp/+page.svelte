@@ -1,4 +1,34 @@
 <script lang="ts">
+    function vaihdaMaalivahti() {
+      // Etsi ei-pelaava maalivahti
+      const pelaavat = [maalivahti.id];
+      for (const k of kentat) {
+        for (const p of k.yla) pelaavat.push(p.id);
+        for (const p of k.ala) pelaavat.push(p.id);
+      }
+      const eiPelaavat = lineup.filter(pid => !pelaavat.includes(pid));
+      // Etsi maalivahti, joka ei pelaa
+      const eiPelaavaMaalivahti = lineupPlayers.find(p => eiPelaavat.includes(p.id) && p.position === 'Maalivahti');
+      if (eiPelaavaMaalivahti) {
+        previousGoalieId = eiPelaavaMaalivahti.id;
+        console.log('Ei pelaava maalivahti id:', previousGoalieId);
+        // Päivitä games-taulun goalie_change
+        const gameId = get(page).params.id;
+        fetch(`/api/games/${gameId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goalie_change: previousGoalieId })
+        })
+        .then(res => {
+          if (!res.ok) {
+            console.error('Maalivahdin vaihto PATCH epäonnistui');
+          }
+        });
+      } else {
+        previousGoalieId = null;
+        console.log('Ei pelaavaa maalivahtia ei löytynyt');
+      }
+    }
   import { lineupPlayersStore, fetchLineupPlayers } from '$lib/stores/lineupPlayers';
   import type { LineupPlayer } from '$lib/stores/lineupPlayers.d';
   import { get } from 'svelte/store';
@@ -56,6 +86,7 @@
   let isDirty = false;
   let ownTeamId: number | null = null;
   let opponentName: string = "";
+  let previousGoalieId: number | null = null;
 
   // Player names are now only updated via the playerNames store
 
@@ -115,6 +146,10 @@
         return;
       }
     }
+    let goalieChange = null;
+    if (previousGoalieId !== null && maalivahti.id !== null && previousGoalieId !== maalivahti.id) {
+      goalieChange = previousGoalieId;
+    }
     await fetch(`/api/games/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -122,7 +157,8 @@
         fieldPositions,
         ownTeamId: safeOwnTeamId,
         opponentName,
-        lineup // lisätty
+        lineup,
+        ...(goalieChange !== null ? { goalie_change: goalieChange } : {})
       })
     });
     isDirty = false;
@@ -252,6 +288,7 @@
       </div>
     </div>
   {/each}
+  <button class="fp-btn {previousGoalieId !== null ? 'fp-goalie-swapped' : ''}" on:click={vaihdaMaalivahti}>Maalivahdin vaihto</button>
   <button class="fp-btn fp-cancel" on:click={goBack}>Peruuta</button>
    <button class="fp-btn fp-save" on:click={saveFieldPositions}>Tallenna</button>
     
@@ -259,6 +296,11 @@
 
   </main>
 <style>
+ .fp-goalie-swapped {
+   background: #4caf50 !important;
+   color: #fff !important;
+   font-weight: bold;
+ }
 .fp-main { max-width: 400px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; align-items: center; }
 .fp-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .fp-col { flex: 1; min-width: 100px; }
