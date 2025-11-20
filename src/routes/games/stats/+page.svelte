@@ -51,8 +51,18 @@
           }
         }
 
-      // Hae kaikki pelit tälle joukkueelle ja laske maalivahtien pelit
-      const gamesRes = await fetch(`/api/games?team_id=${selectedTeam}`);
+      // Hae kaikki pelit tälle joukkueelle ja sarjalle (jos valittu)
+      let gamesUrl = `/api/games?team_id=${selectedTeam}`;
+      if (selectedCompetition) {
+        gamesUrl += `&series_id=${selectedCompetition}`;
+      }
+      if (startDate) {
+        gamesUrl += `&start_date=${encodeURIComponent(startDate)}`;
+      }
+      if (endDate) {
+        gamesUrl += `&end_date=${encodeURIComponent(endDate)}`;
+      }
+      const gamesRes = await fetch(gamesUrl);
       const gamesData = await gamesRes.json();
 
         // Pelaajien pelatut pelit, voitot, tasapelit, tappiot, maalit, syötöt, pisteet, pistettä/peli, blokit, blokit/peli, vedot kohti maalia, vedot maaliakohti/peli, vedot blokkiin, vedot blokkiin/peli, vedot ohi maalin ja vedot ohi maalin/peli

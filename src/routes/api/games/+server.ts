@@ -1,24 +1,38 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { sql } from '$lib/db';
 
-export const GET = async ({ cookies }: RequestEvent) => {
+export const GET = async ({ url, cookies }: RequestEvent) => {
 	try {
 		const userId = cookies.get('user_id');
 		if (!userId) {
 			return json({ error: 'Ei kirjautunut' }, { status: 401 });
 		}
 
-		// Hae kaikki pelit (ei käyttäjäkohtaisia)
-		const games = await sql`
-			SELECT *
-			FROM games
-			ORDER BY game_date DESC, created_at DESC
-		`;
-
+		// Suodatus parametreilla
+		const teamId = url.searchParams.get('team_id');
+		const seriesId = url.searchParams.get('series_id');
+		let whereClauses = [];
+		if (teamId) {
+			whereClauses.push(`own_team_id = ${parseInt(teamId)}`);
+		}
+		if (seriesId) {
+			whereClauses.push(`series_id = ${parseInt(seriesId)}`);
+		}
+			if (url.searchParams.get('start_date')) {
+				whereClauses.push(`game_date >= '${url.searchParams.get('start_date')}'`);
+			}
+			if (url.searchParams.get('end_date')) {
+				whereClauses.push(`game_date <= '${url.searchParams.get('end_date')}'`);
+			}
+		let sqlQuery = 'SELECT * FROM games';
+		if (whereClauses.length > 0) {
+			sqlQuery += ' WHERE ' + whereClauses.join(' AND ');
+		}
+		sqlQuery += ' ORDER BY game_date DESC, created_at DESC';
+		const result = await sql.query(sqlQuery);
+		const games = Array.isArray(result) ? result : [];
 		return json({ games });
-
 	} catch (error) {
-		console.error('Get games error:', error);
 		console.error('Get games error:', error);
 		return json({ error: 'Pelien haku epäonnistui' }, { status: 500 });
 	}
