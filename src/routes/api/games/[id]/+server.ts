@@ -1,26 +1,3 @@
-export const PUT = async ({ params, request }: RequestEvent) => {
-	const gameId = parseInt(params.id || '0');
-	if (!gameId) {
-		return json({ error: 'Virheellinen peli ID' }, { status: 400 });
-	}
-	const body = await request.json();
-	// Päivitä field_positions, lineup, ownTeamId, opponentName
-	const result = await sql`
-		UPDATE games
-		SET
-			field_positions = ${body.fieldPositions},
-			lineup = ${body.lineup},
-			own_team_id = ${body.ownTeamId},
-			opponent_team_name = ${body.opponentName},
-			updated_at = NOW()
-		WHERE id = ${gameId}
-		RETURNING id
-	`;
-	if (result.length === 0) {
-		return json({ error: 'Peliä ei löytynyt' }, { status: 404 });
-	}
-	return json({ success: true, id: result[0].id, opponentName: body.opponentName });
-};
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { getGameWithStats } from '$lib/game-stats';
 import { sql } from '$lib/db';
@@ -87,13 +64,54 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 	}
 };
 
+export const PUT = async ({ params, request }: RequestEvent) => {
+	const gameId = parseInt(params.id || '0');
+	if (!gameId) {
+		return json({ error: 'Virheellinen peli ID' }, { status: 400 });
+	}
+	const body = await request.json();
+	console.log('PUT payload:', body);
+	// Päivitä field_positions, lineup, ownTeamId, opponentName
+	// Hae nykyinen goalie_change
+	const currentRes = await sql`SELECT goalie_change FROM games WHERE id = ${gameId}`;
+	const currentGoalieChange = currentRes.length > 0 ? currentRes[0].goalie_change : null;
+	let newGoalieChange = currentGoalieChange;
+	if (
+	  body.goalie_change !== undefined &&
+	  body.goalie_change !== null &&
+	  typeof body.goalie_change === 'number' &&
+	  body.goalie_change > 0
+	) {
+	  newGoalieChange = body.goalie_change;
+	}
+	const result = await sql`
+		UPDATE games
+		SET
+			field_positions = ${body.fieldPositions},
+			lineup = ${body.lineup},
+			own_team_id = ${body.ownTeamId},
+			opponent_team_name = ${body.opponentName},
+			goalie_change = ${newGoalieChange},
+			updated_at = NOW()
+		WHERE id = ${gameId}
+		RETURNING id
+	`;
+	if (result.length === 0) {
+		return json({ error: 'Peliä ei löytynyt' }, { status: 404 });
+	}
+	return json({ success: true, id: result[0].id, opponentName: body.opponentName });
+};
 export const PATCH = async ({ params, request }: RequestEvent) => {
 	const gameId = parseInt(params.id || '0');
 	if (!gameId) {
 		return json({ error: 'Virheellinen peli ID' }, { status: 400 });
 	}
 
-	const body = await request.json();
+		const body = await request.json();
+		console.log('PATCH payload:', body);
+		if ('goalie_change' in body && (body.goalie_change === null || body.goalie_change === undefined || body.goalie_change === 0)) {
+			delete body.goalie_change;
+		}
 
 	// Hae nykyiset pelitiedot tietokannasta
 	const gameRes = await sql`
@@ -134,9 +152,14 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 	const updateFields: any = {};
 
 	// Tarkista ja lisää päivitettävät kentät
-	if (body.goalie_change !== undefined) {
-		updateFields.goalie_change = body.goalie_change;
-	}
+		if (
+			body.goalie_change !== undefined &&
+			body.goalie_change !== null &&
+			typeof body.goalie_change === 'number' &&
+			body.goalie_change > 0
+		) {
+			updateFields.goalie_change = body.goalie_change;
+		}
 	if (body.opponentName !== undefined) {
 		updateFields.opponent_team_name = body.opponentName;
 	}

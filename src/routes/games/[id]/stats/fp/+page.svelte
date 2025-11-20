@@ -146,9 +146,18 @@
         return;
       }
     }
+    // Hae nykyinen goalie_change pelidatasta jos ei vaihdettu
     let goalieChange = null;
+    let currentGoalieChange = null;
+    const res = await fetch(`/api/games/${id}?basic=true`);
+    const data = await res.json();
+    if (data && typeof data.goalie_change === 'number' && data.goalie_change > 0) {
+      currentGoalieChange = data.goalie_change;
+    }
     if (previousGoalieId !== null && maalivahti.id !== null && previousGoalieId !== maalivahti.id) {
       goalieChange = previousGoalieId;
+    } else if (currentGoalieChange !== null) {
+      goalieChange = currentGoalieChange;
     }
     await fetch(`/api/games/${id}`, {
       method: 'PUT',
@@ -158,7 +167,7 @@
         ownTeamId: safeOwnTeamId,
         opponentName,
         lineup,
-        ...(goalieChange !== null ? { goalie_change: goalieChange } : {})
+        ...(typeof goalieChange === 'number' ? { goalie_change: goalieChange } : {})
       })
     });
     isDirty = false;

@@ -35,6 +35,10 @@ async function saveStats() {
     // Jos maalintekijää ei ole, merkitään "OM" (oma maali) eikä syöttäjää
     payload.team_goals = ['OM'];
   }
+  // Varmista ettei goalie_change koskaan lähde PATCHissa tältä sivulta
+  if ('goalie_change' in payload) {
+    delete payload.goalie_change;
+  }
   try {
     const res = await fetch(`/api/games/${gameId}`, {
       method: 'PATCH',
