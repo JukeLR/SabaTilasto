@@ -1,6 +1,7 @@
 <script lang="ts">
     let goalieNames: string[] = [];
     let playerNames: string[] = [];
+    let goalieStats: Record<string, { name: string; games: number; wins: number; draws: number; losses: number }> = {};
 
     async function fetchStats() {
       if (!selectedTeam) {
@@ -25,6 +26,46 @@
             .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
             .map((p: any) => `${p.first_name} ${p.last_name}`)
         : [];
+
+      // Hae kaikki pelit tälle joukkueelle ja laske maalivahtien pelit
+      const gamesRes = await fetch(`/api/games?team_id=${selectedTeam}`);
+      const gamesData = await gamesRes.json();
+      // Rakennetaan id->nimi map maalivahdeille
+      const goalieIdMap: Record<number, string> = {};
+      if (Array.isArray(goaliesData.players)) {
+        for (const g of goaliesData.players) {
+          goalieIdMap[g.id] = `${g.first_name} ${g.last_name}`;
+        }
+      }
+      // Laske pelit
+      goalieStats = {};
+      if (Array.isArray(gamesData.games)) {
+        for (const game of gamesData.games) {
+          let goalieIds: number[] = [];
+          if (Array.isArray(game.field_positions)) {
+            goalieIds = goalieIds.concat(game.field_positions.filter((id: number) => goalieIdMap[id]));
+          }
+          if (game.goalie_change && goalieIdMap[game.goalie_change]) {
+            goalieIds.push(game.goalie_change);
+          }
+          const uniqueGoalies = Array.from(new Set(goalieIds));
+          const teamGoals = Array.isArray(game.team_goals) ? game.team_goals.length : 0;
+          const opponentGoals = Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0;
+          const isWin = teamGoals > opponentGoals;
+          const isDraw = teamGoals === opponentGoals;
+          const isLoss = teamGoals < opponentGoals;
+          for (const gid of uniqueGoalies) {
+            const name = goalieIdMap[gid];
+            if (!goalieStats[name]) {
+              goalieStats[name] = { name, games: 0, wins: 0, draws: 0, losses: 0 };
+            }
+            goalieStats[name].games += 1;
+            if (isWin) goalieStats[name].wins += 1;
+            if (isDraw) goalieStats[name].draws += 1;
+            if (isLoss) goalieStats[name].losses += 1;
+          }
+        }
+      }
     }
   import { onMount } from 'svelte';
   let teams: any[] = [];
@@ -105,7 +146,11 @@
           {#each goalieNames as name}
             <tr>
               <td class="name-col">{name}</td>
-              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+              <td>{goalieStats[name]?.games ?? 0}</td>
+              <td>{goalieStats[name]?.wins ?? 0}</td>
+              <td>{goalieStats[name]?.draws ?? 0}</td>
+              <td>{goalieStats[name]?.losses ?? 0}</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
             </tr>
           {/each}
         </tbody>

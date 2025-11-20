@@ -42,6 +42,18 @@
       const data = await response.json();
       if (response.ok) {
         players = data.players || [];
+        // Lisää goalie_change-pelaaja listaan jos löytyy ja ei jo mukana
+        if (game && typeof game.goalie_change === 'number' && game.goalie_change > 0) {
+          const goalieId = game.goalie_change;
+          if (!players.find(p => p.id === goalieId)) {
+            // Hae maalivahti id:llä
+            const res = await fetch(`/api/players/${goalieId}`);
+            const playerData = await res.json();
+            if (res.ok && playerData && playerData.id) {
+              players = [...players, playerData];
+            }
+          }
+        }
       }
     } catch (err) {
       // Ei virheilmoitusta pelaajille
