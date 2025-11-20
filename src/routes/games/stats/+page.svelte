@@ -13,8 +13,8 @@
       goalieNames = Array.isArray(goaliesData.players)
         ? goaliesData.players
             .slice()
-            .sort((a, b) => a.last_name.localeCompare(b.last_name))
-            .map(p => `${p.first_name} ${p.last_name}`)
+            .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
+            .map((p: any) => `${p.first_name} ${p.last_name}`)
         : [];
       // Hae kenttäpelaajat
       const playersRes = await fetch(`/api/players?team_id=${selectedTeam}&not_position=Maalivahti`);
@@ -22,8 +22,8 @@
       playerNames = Array.isArray(playersData.players)
         ? playersData.players
             .slice()
-            .sort((a, b) => a.last_name.localeCompare(b.last_name))
-            .map(p => `${p.first_name} ${p.last_name}`)
+            .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
+            .map((p: any) => `${p.first_name} ${p.last_name}`)
         : [];
     }
   import { onMount } from 'svelte';
@@ -72,9 +72,7 @@
           <option value={comp.id}>{comp.name}</option>
         {/each}
       </select>
-    </div>
-    
-    
+    </div> 
     <div class="filter-row">
       <label for="start-date">Alkaen:</label>
       <input type="date" id="start-date" bind:value={startDate} />
@@ -86,10 +84,10 @@
     </div>
     <div class="stats-headings">
       <h2>Maalivahtitilastot</h2>
-      <table class="goalie-table">
+      <table class="player-table">
         <thead>
           <tr>
-            <th>Nimi</th>
+            <th class="name-col">Nimi</th>
             <th>Pelit</th>
             <th>Voitot</th>
             <th>Tasapelit</th>
@@ -106,7 +104,7 @@
         <tbody>
           {#each goalieNames as name}
             <tr>
-              <td>{name}</td>
+              <td class="name-col">{name}</td>
               <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
             </tr>
           {/each}
@@ -116,7 +114,7 @@
           <table class="player-table">
             <thead>
               <tr>
-                <th>Nimi</th>
+                <th class="name-col">Nimi</th>
                 <th>Pelit</th>
                 <th>Voitot</th>
                 <th>Tasapelit</th>
@@ -138,7 +136,7 @@
             <tbody>
               {#each playerNames as name}
                 <tr>
-                  <td>{name}</td>
+                  <td class="name-col">{name}</td>
                   <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
                 </tr>
               {/each}
@@ -162,6 +160,13 @@ main.stats-main .player-table td {
   border: 1px solid #b5c6d6;
   padding: 12px 10px;
   text-align: center;
+}
+main.stats-main .player-table td.name-col,
+main.stats-main .player-table th.name-col {
+  text-align: left;
+  width: max-content;
+  white-space: nowrap;
+  padding-right: 0;
 }
 main.stats-main .player-table th {
   background: #e3f0fa;
@@ -213,30 +218,5 @@ main.stats-main .btn-fetch {
   font-weight: 600;
   cursor: pointer;
   margin-top: 8px;
-}
-main.stats-main .goalie-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 24px 0 32px 0;
-  font-size: 1.05rem;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
-main.stats-main .goalie-table th,
-main.stats-main .goalie-table td {
-  border: 1px solid #b5c6d6;
-  padding: 12px 10px;
-  text-align: center;
-}
-main.stats-main .goalie-table th {
-  background: #e3f0fa;
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-main.stats-main .goalie-table tbody tr {
-  transition: background 0.2s;
-}
-main.stats-main .goalie-table tbody tr:hover {
-  background: #f5faff;
 }
 </style>

@@ -1655,14 +1655,6 @@
 			font-size: 0.75rem;
 		}
 		
-		.field-actions {
-			padding: 10px 8px;
-			gap: 8px;
-		}
 		
-		.field-actions button {
-			padding: 10px 16px;
-			font-size: 0.9rem;
-		}
 	}
 </style>
