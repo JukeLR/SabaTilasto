@@ -4,6 +4,8 @@
     let goalieStats: Record<string, { name: string; games: number; wins: number; draws: number; losses: number }> = {};
 
     async function fetchStats() {
+      // ...existing code...
+      // ...existing code...
       if (!selectedTeam) {
         alert('Valitse joukkue ennen hakua!');
         return;
@@ -57,13 +59,40 @@
           for (const gid of uniqueGoalies) {
             const name = goalieIdMap[gid];
             if (!goalieStats[name]) {
-              goalieStats[name] = { name, games: 0, wins: 0, draws: 0, losses: 0 };
+              goalieStats[name] = { name, games: 0, wins: 0, draws: 0, losses: 0, assists: 0, saves: 0, opponentGoals: 0, interruptions: 0 };
             }
             goalieStats[name].games += 1;
             if (isWin) goalieStats[name].wins += 1;
             if (isDraw) goalieStats[name].draws += 1;
             if (isLoss) goalieStats[name].losses += 1;
+            // Laske syötöt
+            if (Array.isArray(game.assists)) {
+              goalieStats[name].assists += game.assists.filter((aid: number) => aid === gid).length;
+            }
+            // Laske torjunnat
+            if (Array.isArray(game.saves)) {
+              goalieStats[name].saves += game.saves.filter((sid: number) => sid === gid).length;
+            }
+            // Laske päästetyt maalit
+            if (Array.isArray(game.opponent_goals)) {
+              goalieStats[name].opponentGoals += game.opponent_goals.filter((oid: string) => String(gid) === oid).length;
+            }
+            // Laske katkot
+            if (Array.isArray(game.goalie_game_interruption)) {
+              goalieStats[name].interruptions += game.goalie_game_interruption.filter((iid: number) => iid === gid).length;
+            }
           }
+        }
+        // Laske torjunta-%, päästetyt/peli ja katkot/peli kaikille maalivahdeille
+        for (const name in goalieStats) {
+          const saves = Number(goalieStats[name].saves) || 0;
+          const opponentGoals = Number(goalieStats[name].opponentGoals) || 0;
+          const interruptions = Number(goalieStats[name].interruptions) || 0;
+          const games = Number(goalieStats[name].games) || 0;
+          const totalShots = saves + opponentGoals;
+          goalieStats[name].savePct = totalShots > 0 ? ((saves / totalShots) * 100).toFixed(1) : '0.0';
+          goalieStats[name].goalsPerGame = games > 0 ? (opponentGoals / games).toFixed(2) : '0.00';
+          goalieStats[name].interruptionsPerGame = games > 0 ? (interruptions / games).toFixed(2) : '0.00';
         }
       }
     }
@@ -133,7 +162,7 @@
             <th>Voitot</th>
             <th>Tasapelit</th>
             <th>Tappiot</th>
-            <th>Syötöt</th>
+              <th>Syötöt</th>
             <th>Torjunnat</th>
             <th>Päästetyt</th>
             <th>Torjunta-%</th>
@@ -143,16 +172,22 @@
           </tr>
         </thead>
         <tbody>
-          {#each goalieNames as name}
-            <tr>
-              <td class="name-col">{name}</td>
-              <td>{goalieStats[name]?.games ?? 0}</td>
-              <td>{goalieStats[name]?.wins ?? 0}</td>
-              <td>{goalieStats[name]?.draws ?? 0}</td>
-              <td>{goalieStats[name]?.losses ?? 0}</td>
-              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-            </tr>
-          {/each}
+            {#each goalieNames as name}
+              <tr>
+                <td class="name-col">{name}</td>
+                <td>{goalieStats[name]?.games ?? 0}</td>
+                <td>{goalieStats[name]?.wins ?? 0}</td>
+                <td>{goalieStats[name]?.draws ?? 0}</td>
+                <td>{goalieStats[name]?.losses ?? 0}</td>
+                <td>{goalieStats[name]?.assists ?? 0}</td>
+                <td>{goalieStats[name]?.saves ?? 0}</td>
+                <td>{goalieStats[name]?.opponentGoals ?? 0}</td>
+                <td>{goalieStats[name]?.savePct ?? '0.0'}%</td>
+                <td>{goalieStats[name]?.goalsPerGame ?? '0.00'}</td>
+                <td>{goalieStats[name]?.interruptions ?? 0}</td>
+                <td>{goalieStats[name]?.interruptionsPerGame ?? '0.00'}</td>
+              </tr>
+            {/each}
         </tbody>
       </table>
       <h2>Pelaajatilastot</h2>
