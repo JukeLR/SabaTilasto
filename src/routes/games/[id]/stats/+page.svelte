@@ -93,6 +93,18 @@
   let opponentShotOffPressed = false;
   let savePressed = false;
   let goalieInterruptionPressed = false;
+  let goalieSwappedPressed = false;
+
+  function handleGoalieSwappedClick() {
+    goalieSwappedPressed = true;
+    // Tulosta maalivahtinimi ja id terminaaliin
+    const goalieId = gameFieldPositions && get(gameFieldPositions)[0];
+    const names = get(playerNames);
+    const goalieName = names[goalieId] || "";
+    console.log("Maalivahti:", goalieName, "ID:", goalieId);
+    console.log("vaihdettu maalivahti:", vaihdettuMaalivahti);
+    // Tähän voi lisätä tallennuslogiikkaa jos halutaan
+  }
 
   async function handleOpponentShotsOffClick() {
     opponentShotOffPressed = true;
@@ -175,6 +187,8 @@
       alert('Pelin lopetusvirhe: ' + e);
     }
   }
+  import { vaihdettuMaalivahtiStore } from '$lib/stores/vaihdettuMaalivahti';
+  $: vaihdettuMaalivahti = $vaihdettuMaalivahtiStore;
 </script>
 
 <main class="stats-main">
@@ -238,9 +252,28 @@
   </div>
 
   <button class="end-btn" on:click={handleEndGameClick}>Lopeta peli</button>
+  <button class="fp-goalie-btn" class:fp-goalie-swapped={goalieSwappedPressed} on:click={handleGoalieSwappedClick}>
+    Jos maalivahti on vaihdettu<br/>pelissä, valitse tämä ennenkuin<br/>lopetat pelin
+  </button>
 </main>
 
 <style>
+  .fp-goalie-btn { 
+    width: 100%;
+    font-size: 1.05rem;
+    border-radius: 6px;
+    padding: 7px 0;
+    margin-bottom: 2px;
+    border: 1px solid #ccc;
+    background: #eee;
+    cursor: pointer;
+    min-height: 32px;
+  }
+  .fp-goalie-swapped {
+    background: #4caf50 !important;
+    color: #fff !important;
+    font-weight: bold;
+ }
   .stats-main {
     max-width: 400px;
     margin: 0 auto;
