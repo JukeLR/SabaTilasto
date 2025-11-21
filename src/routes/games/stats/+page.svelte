@@ -15,7 +15,8 @@
         goalsPerGame?: string;
         interruptionsPerGame?: string;
       }> = {};
-      let playerStats: Record<string, { name: string; games: number; wins: number; draws: number; losses: number; goals: number; assists: number; points: number; pointsPerGame: string; blocks: number; blocksPerGame: string; shotsOnGoal: number; shotsOnGoalPerGame: string; shotsBlocked: number; shotsBlockedPerGame: string; shotsOffTarget: number; shotsOffTargetPerGame: string }> = {};
+let playerStats: Record<number, { id: number; name: string; games: number; wins: number; draws: number; losses: number; goals: number; assists: number; points: number; pointsPerGame: string; blocks: number; blocksPerGame: string; shotsOnGoal: number; shotsOnGoalPerGame: string; shotsBlocked: number; shotsBlockedPerGame: string; shotsOffTarget: number; shotsOffTargetPerGame: string; plus?: number; minus?: number }> = {};
+let playerList: Array<{ id: number; name: string }> = [];
 
     async function fetchStats() {
       // ...existing code...
@@ -67,55 +68,58 @@
 
         // Pelaajien pelatut pelit, voitot, tasapelit, tappiot, maalit, syötöt, pisteet, pistettä/peli, blokit, blokit/peli, vedot kohti maalia, vedot maaliakohti/peli, vedot blokkiin, vedot blokkiin/peli, vedot ohi maalin ja vedot ohi maalin/peli
         playerStats = {};
+        playerList = [];
+        if (Array.isArray(playersData.players)) {
+          for (const p of playersData.players) {
+            playerStats[p.id] = { id: p.id, name: `${p.first_name} ${p.last_name}`, games: 0, wins: 0, draws: 0, losses: 0, goals: 0, assists: 0, points: 0, pointsPerGame: "0.00", blocks: 0, blocksPerGame: "0.00", shotsOnGoal: 0, shotsOnGoalPerGame: "0.00", shotsBlocked: 0, shotsBlockedPerGame: "0.00", shotsOffTarget: 0, shotsOffTargetPerGame: "0.00" };
+            playerList.push({ id: p.id, name: `${p.first_name} ${p.last_name}` });
+          }
+        }
         if (Array.isArray(gamesData.games)) {
           for (const game of gamesData.games) {
             if (Array.isArray(game.field_positions)) {
               for (const pid of game.field_positions) {
-                const name = playerIdMap[pid];
-                if (name) {
-                  if (!playerStats[name]) {
-                    playerStats[name] = { name, games: 0, wins: 0, draws: 0, losses: 0, goals: 0, assists: 0, points: 0, pointsPerGame: "0.00", blocks: 0, blocksPerGame: "0.00", shotsOnGoal: 0, shotsOnGoalPerGame: "0.00", shotsBlocked: 0, shotsBlockedPerGame: "0.00", shotsOffTarget: 0, shotsOffTargetPerGame: "0.00" };
-                  }
-                  playerStats[name].games += 1;
+                if (playerStats[pid]) {
+                  playerStats[pid].games += 1;
                   // Voittojen, tasapelien ja tappioiden laskenta
                   const teamGoalsArr = Array.isArray(game.team_goals) ? game.team_goals : [];
                   const opponentGoals = Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0;
                   const teamGoals = teamGoalsArr.length;
                   if (teamGoals > opponentGoals) {
-                    playerStats[name].wins += 1;
+                    playerStats[pid].wins += 1;
                   } else if (teamGoals === opponentGoals) {
-                    playerStats[name].draws += 1;
+                    playerStats[pid].draws += 1;
                   } else if (teamGoals < opponentGoals) {
-                    playerStats[name].losses += 1;
+                    playerStats[pid].losses += 1;
                   }
                   // Maalien laskenta
                   const goals = teamGoalsArr.filter((gid: string) => parseInt(gid) === pid).length;
-                  playerStats[name].goals += goals;
+                  playerStats[pid].goals += goals;
                   // Syöttöjen laskenta
                   const assistsArr = Array.isArray(game.assists) ? game.assists : [];
                   const assists = assistsArr.filter((aid: string) => parseInt(aid) === pid).length;
-                  playerStats[name].assists += assists;
+                  playerStats[pid].assists += assists;
                   // Pisteet
-                  playerStats[name].points += goals + assists;
+                  playerStats[pid].points += goals + assists;
                   // Blokkien laskenta
                   const blocksArr = Array.isArray(game.blocks) ? game.blocks : [];
-                  playerStats[name].blocks += blocksArr.filter((bid: string) => parseInt(bid) === pid).length;
+                  playerStats[pid].blocks += blocksArr.filter((bid: string) => parseInt(bid) === pid).length;
                   // Vedot kohti maalia
                   const shotsOnGoalArr = Array.isArray(game.shots_on_goal) ? game.shots_on_goal : [];
-                  playerStats[name].shotsOnGoal += shotsOnGoalArr.filter((sid: string) => parseInt(sid) === pid).length;
+                  playerStats[pid].shotsOnGoal += shotsOnGoalArr.filter((sid: string) => parseInt(sid) === pid).length;
                   // Vedot blokkiin
                   const shotsBlockedArr = Array.isArray(game.shots_blocked) ? game.shots_blocked : [];
-                  playerStats[name].shotsBlocked += shotsBlockedArr.filter((sbid: string) => parseInt(sbid) === pid).length;
+                  playerStats[pid].shotsBlocked += shotsBlockedArr.filter((sbid: string) => parseInt(sbid) === pid).length;
                   // Vedot ohi maalin
                   const shotsOffTargetArr = Array.isArray(game.shots_off_target) ? game.shots_off_target : [];
-                  playerStats[name].shotsOffTarget += shotsOffTargetArr.filter((otid: string) => parseInt(otid) === pid).length;
+                  playerStats[pid].shotsOffTarget += shotsOffTargetArr.filter((otid: string) => parseInt(otid) === pid).length;
                 }
               }
             }
           }
           // Laske pistettä/peli, blokit/peli, vedot maaliakohti/peli, vedot blokkiin/peli ja vedot ohi maalin/peli kaikille
-          for (const name in playerStats) {
-            const stats = playerStats[name];
+          for (const pid in playerStats) {
+            const stats = playerStats[pid];
             stats.pointsPerGame = stats.games > 0 ? (stats.points / stats.games).toFixed(2) : "0.00";
             stats.blocksPerGame = stats.games > 0 ? (stats.blocks / stats.games).toFixed(2) : "0.00";
             stats.shotsOnGoalPerGame = stats.games > 0 ? (stats.shotsOnGoal / stats.games).toFixed(2) : "0.00";
@@ -186,6 +190,32 @@
           goalieStats[name].interruptionsPerGame = games > 0 ? (interruptions / games).toFixed(2) : '0.00';
         }
       }
+      // Laske plus-pisteet
+      for (const pid in playerStats) {
+        let plusCount = 0;
+        for (const game of gamesData.games) {
+          if (Array.isArray(game.plus_points)) {
+            plusCount += game.plus_points.filter(id => id === Number(pid)).length;
+          }
+        }
+        playerStats[pid].plus = plusCount;
+      }
+      // Laske miinus-pisteet
+      for (const pid in playerStats) {
+        let minusCount = 0;
+        for (const game of gamesData.games) {
+          if (Array.isArray(game.minus_points)) {
+            minusCount += game.minus_points.filter(id => id === Number(pid)).length;
+          }
+        }
+        playerStats[pid].minus = minusCount;
+      }
+      // Järjestä playerList sukunimen mukaan aakkosjärjestykseen
+      playerList.sort((a, b) => {
+        const aLast = a.name.split(' ').pop()?.toLowerCase() ?? '';
+        const bLast = b.name.split(' ').pop()?.toLowerCase() ?? '';
+        return aLast.localeCompare(bLast);
+      });
     }
   import { onMount } from 'svelte';
   let teams: any[] = [];
@@ -294,6 +324,9 @@
                 <th>Syötöt</th>
                 <th>Pisteet</th>
                 <th>Pistettä/peli</th>
+                <th>+</th>
+                <th>-</th>
+                <th>+/-</th>
                 <th>Blokit</th>
                 <th>Blokit/peli</th>
                 <th>Vedot <br/>maalia kohti</th>
@@ -301,30 +334,33 @@
                 <th>Vedot <br/>blokkiin</th>
                 <th>Vedot <br/>blokkiin/peli</th>
                 <th>Vedot <br/>ohi maalin</th>
-                <th>Vedot <br/>ohi maalin/peli</th>
+                <th>Vedot <br/>ohi maalin/peli</th>                
               </tr>
             </thead>
             <tbody>
-              {#each playerNames as name}
-                  <tr>
-                    <td class="name-col">{name}</td>
-                    <td>{playerStats[name]?.games ?? 0}</td>
-                    <td>{playerStats[name]?.wins ?? 0}</td>
-                    <td>{playerStats[name]?.draws ?? 0}</td>
-                    <td>{playerStats[name]?.losses ?? 0}</td>
-                    <td>{playerStats[name]?.goals ?? 0}</td>
-                    <td>{playerStats[name]?.assists ?? 0}</td>
-                    <td>{playerStats[name]?.points ?? 0}</td>
-                    <td>{playerStats[name]?.pointsPerGame ?? "0.00"}</td>
-                    <td>{playerStats[name]?.blocks ?? 0}</td>
-                    <td>{playerStats[name]?.blocksPerGame ?? "0.00"}</td>
-                    <td>{playerStats[name]?.shotsOnGoal ?? 0}</td>
-                    <td>{playerStats[name]?.shotsOnGoalPerGame ?? "0.00"}</td>
-                    <td>{playerStats[name]?.shotsBlocked ?? 0}</td>
-                    <td>{playerStats[name]?.shotsBlockedPerGame ?? "0.00"}</td>
-                    <td>{playerStats[name]?.shotsOffTarget ?? 0}</td>
-                    <td>{playerStats[name]?.shotsOffTargetPerGame ?? "0.00"}</td>
-                  </tr>
+              {#each playerList as player}
+                <tr>
+                  <td class="name-col">{player.name}</td>
+                  <td>{playerStats[player.id]?.games ?? 0}</td>
+                  <td>{playerStats[player.id]?.wins ?? 0}</td>
+                  <td>{playerStats[player.id]?.draws ?? 0}</td>
+                  <td>{playerStats[player.id]?.losses ?? 0}</td>
+                  <td>{playerStats[player.id]?.goals ?? 0}</td>
+                  <td>{playerStats[player.id]?.assists ?? 0}</td>
+                  <td>{playerStats[player.id]?.points ?? 0}</td>
+                  <td>{playerStats[player.id]?.pointsPerGame ?? "0.00"}</td>
+                  <td>{playerStats[player.id]?.plus ?? ''}</td>
+                  <td>{playerStats[player.id]?.minus ?? ''}</td>
+                  <td>{(playerStats[player.id]?.plus ?? 0) - (playerStats[player.id]?.minus ?? 0)}</td>
+                  <td>{playerStats[player.id]?.blocks ?? 0}</td>
+                  <td>{playerStats[player.id]?.blocksPerGame ?? "0.00"}</td>
+                  <td>{playerStats[player.id]?.shotsOnGoal ?? 0}</td>
+                  <td>{playerStats[player.id]?.shotsOnGoalPerGame ?? "0.00"}</td>
+                  <td>{playerStats[player.id]?.shotsBlocked ?? 0}</td>
+                  <td>{playerStats[player.id]?.shotsBlockedPerGame ?? "0.00"}</td>
+                  <td>{playerStats[player.id]?.shotsOffTarget ?? 0}</td>
+                  <td>{playerStats[player.id]?.shotsOffTargetPerGame ?? "0.00"}</td>                  
+                </tr>
               {/each}
             </tbody>
           </table>

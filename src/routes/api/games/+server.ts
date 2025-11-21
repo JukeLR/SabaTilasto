@@ -24,7 +24,7 @@ export const GET = async ({ url, cookies }: RequestEvent) => {
 			if (url.searchParams.get('end_date')) {
 				whereClauses.push(`game_date <= '${url.searchParams.get('end_date')}'`);
 			}
-		let sqlQuery = 'SELECT * FROM games';
+		let sqlQuery = 'SELECT *, plus_points, minus_points FROM games';
 		if (whereClauses.length > 0) {
 			sqlQuery += ' WHERE ' + whereClauses.join(' AND ');
 		}

@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS games (
     game_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     lineup INTEGER[],  -- Peliin valitut pelaajat (ID:t)
     field_positions INTEGER[],  -- Kentälliset järjestyksessä (21 paikkaa: maalivahti + 4x5 kenttäpelaajaa)
+    plus_points INTEGER[], -- Plus pisteet (pelaaja-id:t)
+    minus_points INTEGER[], -- Miinus pisteet (pelaaja-id:t)
     status VARCHAR(20) DEFAULT 'Luotu' CHECK (status IN ('Luotu', 'Käynnissä', 'Pelattu')),
     notes TEXT,  -- Vapaat muistiinpanot
     final_own_score INTEGER DEFAULT 0,
