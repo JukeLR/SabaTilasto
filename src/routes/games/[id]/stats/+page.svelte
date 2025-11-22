@@ -26,6 +26,7 @@
   import { get } from 'svelte/store';
   let maalivahtiNimi = "";
   let vastustajaNimi = "";
+  let ownTeamId: number | null = null;
   let pollingInterval: any;
 
   async function fetchGameAndPlayers() {
@@ -33,6 +34,7 @@
     const res = await fetch(`/api/games/${id}?basic=true`);
     const data = await res.json();
     vastustajaNimi = data.opponentName || "";
+    ownTeamId = data.own_team_id || null;
     gameLineup.set(data.lineup || []);
     gameFieldPositions.set(data.fieldPositions || []);
     await fetchAndUpdatePlayerNames(data.lineup || []);
@@ -95,7 +97,7 @@
   let goalieInterruptionPressed = false;
   let goalieSwappedPressed = false;
 
-  function handleGoalieSwappedClick() {
+  async function handleGoalieSwappedClick() {
     goalieSwappedPressed = true;
     // Tulosta maalivahtinimi ja id terminaaliin
     const goalieId = gameFieldPositions && get(gameFieldPositions)[0];
@@ -103,7 +105,44 @@
     const goalieName = names[goalieId] || "";
     console.log("Maalivahti:", goalieName, "ID:", goalieId);
     console.log("vaihdettu maalivahti:", vaihdettuMaalivahti);
-    // Tähän voi lisätä tallennuslogiikkaa jos halutaan
+    const id = $page.params.id ?? $page.data.id;
+    // Hae nykyinen field_positions-array ja lisää vaihdettuMaalivahti, jos ei jo mukana
+    let currentPositions = (get(gameFieldPositions) || []).filter((v: any) => typeof v === 'number');
+    if (typeof vaihdettuMaalivahti === 'number' && !currentPositions.includes(vaihdettuMaalivahti)) {
+      currentPositions = [...currentPositions, vaihdettuMaalivahti];
+    }
+    // Hae muut PUT:lle vaadittavat tiedot
+    const currentLineup = get(gameLineup) || [];
+    // Käytetään suoraan ownTeamId-muuttujaa
+    const opponentName = vastustajaNimi;
+    if (!ownTeamId) {
+      alert('Joukkueen ID puuttuu, ei voida tallentaa.');
+      goalieSwappedPressed = false;
+      return;
+    }
+    try {
+      const res = await fetch(`/api/games/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fieldPositions: currentPositions,
+          lineup: currentLineup,
+          ownTeamId: ownTeamId,
+          opponentName: opponentName
+        }),
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        alert('Vaihdon tallennus epäonnistui');
+      } else {
+        await fetchGameAndPlayers();
+      }
+    } catch (e) {
+      alert('Tallennusvirhe: ' + e);
+    }
+    setTimeout(() => {
+      goalieSwappedPressed = false;
+    }, 10000); // 10 sekuntia
   }
 
   async function handleOpponentShotsOffClick() {
