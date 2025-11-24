@@ -5,17 +5,17 @@ import { getUserById } from '$lib/auth';
 
 // GET - Hae kaikki joukkueet
 export const GET: RequestHandler = async () => {
-    try {
-        const teams = await sql`
-            SELECT id, name, home_city, age_group, created_at
-            FROM teams
-            ORDER BY name ASC
-        `;
-        return json(teams);
-    } catch (error) {
-        console.error('Virhe joukkueiden haussa:', error);
-        return json({ error: 'Joukkueiden haku epäonnistui' }, { status: 500 });
-    }
+	try {
+		const teams = await sql`
+			SELECT id, name, home_city, age_group, created_at
+			FROM teams
+			ORDER BY name ASC
+		`;
+		return json({ teams });
+	} catch (error) {
+		console.error('Virhe joukkueiden haussa:', error);
+		return json({ error: 'Joukkueiden haku epäonnistui' }, { status: 500 });
+	}
 };
 
 // POST - Lisää uusi joukkue

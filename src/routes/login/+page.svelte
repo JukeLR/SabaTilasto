@@ -67,6 +67,11 @@
 			</button>
 		</form>
 
+		<div class="auth-link" style="margin-bottom:0.5rem;">
+			<a href="/login/forgot-password" style="font-weight:bold; color:#357ab8; text-decoration:underline;">
+				Unohtuiko salasana?
+			</a>
+		</div>
 		<div class="auth-link" style="display:block; margin-top:1rem;">
 			Eikö sinulla ole tiliä? <a href="/register" style="font-weight:bold; color:#357ab8; text-decoration:underline;">Rekisteröidy</a>
 		</div>

@@ -3,6 +3,8 @@
 	let email = $state('');
 	let password = $state('');
 	let confirmPassword = $state('');
+	let firstName = $state('');
+	let lastName = $state('');
 	let error = $state('');
 	let isLoading = $state(false);
 
@@ -13,6 +15,10 @@
 			error = 'Salasanat eivät täsmää';
 			return;
 		}
+		if (!firstName || !lastName) {
+			error = 'Etunimi ja sukunimi ovat pakollisia';
+			return;
+		}
 
 		isLoading = true;
 
@@ -20,7 +26,7 @@
 			const response = await fetch('/api/auth/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ username, email, password })
+				body: JSON.stringify({ username, email, password, firstName, lastName })
 			});
 
 			const data = await response.json();
@@ -48,6 +54,26 @@
 		{/if}
 
 		<form onsubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+			<div class="form-group">
+				<label for="firstName">Etunimi</label>
+				<input 
+					type="text" 
+					id="firstName" 
+					bind:value={firstName}
+					required 
+					disabled={isLoading}
+				/>
+			</div>
+			<div class="form-group">
+				<label for="lastName">Sukunimi</label>
+				<input 
+					type="text" 
+					id="lastName" 
+					bind:value={lastName}
+					required 
+					disabled={isLoading}
+				/>
+			</div>
 			<div class="form-group">
 				<label for="username">Käyttäjätunnus</label>
 				<input 

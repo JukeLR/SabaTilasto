@@ -398,6 +398,9 @@ main.stats-main .player-table th {
 main.stats-main .player-table tbody tr {
   transition: background 0.2s;
 }
+main.stats-main .player-table tbody tr:nth-child(even) td {
+  background: #f6f6f6;
+}
 main.stats-main .player-table tbody tr:hover {
   background: #f5faff;
 }

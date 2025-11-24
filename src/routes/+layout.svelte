@@ -103,15 +103,8 @@
 		}
 	}
 
-	onMount(() => {
-		const allowedForGuest = ['/'];
-		const currentPath = window.location.pathname;
-		if (!isLoggedIn && !allowedForGuest.includes(currentPath)) {
-			openLoginModal();
-			// Optionally, you can redirect to '/'
-			// window.location.href = '/';
-		}
-	});
+	// Poistettu modalin automaattinen avaus kirjautumattomille.
+	// Ohjaus /login-sivulle hoidetaan +layout.ts-tiedostossa.
 </script>
 
 <svelte:head>
@@ -130,16 +123,13 @@
 	
 	{#if showMenu}
 		<div class="menu-dropdown">
+			<!-- Etusivu-linkki näkyy aina ylimpänä -->
+			<button class="menu-item" onclick={() => navigateTo('/')}>Etusivu</button>
 			{#if isLoggedIn}
 				<div class="menu-header">
 					<strong>{currentUser?.firstName} {currentUser?.lastName}</strong>
 					<span class="role-badge">{userRole}</span>
 				</div>
-				
-				<button class="menu-item" onclick={() => navigateTo('/')}>
-					Etusivu
-				</button>
-				
 				{#if userRole === 'admin'}
 					<button class="menu-item" onclick={() => navigateTo('/admin')}>
 						Käyttäjähallinta
@@ -148,7 +138,6 @@
 						Sarjat
 					</button>
 				{/if}
-				
 				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
 					<button class="menu-item" onclick={() => navigateTo('/games')}>
 						Pelit
@@ -157,7 +146,6 @@
 						Tilastot
 					</button>
 				{/if}
-				
 				{#if userRole === 'admin'}
 					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
 						Joukkueet
@@ -166,19 +154,17 @@
 						Pelaajat
 					</button>
 				{/if}
-				
 				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö'}
 					<button class="menu-item" onclick={() => navigateTo('/reports')}>
 						Raportit
 					</button>
 				{/if}
-				
 				<button class="menu-item" onclick={() => navigateTo('/profile')}>
 					Oma profiili
 				</button>
 				<button class="menu-item" onclick={logout}>Kirjaudu ulos</button>
 			{:else}
-				<button class="menu-item" onclick={openLoginModal}>Kirjaudu</button>
+				<button class="menu-item" onclick={() => navigateTo('/login')}>Kirjaudu</button>
 			{/if}
 		</div>
 	{/if}

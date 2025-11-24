@@ -231,7 +231,7 @@
 		min-width: 160px;
   }
   .container {
-    max-width: 800px;
+    
     margin: 0 auto;
     padding: 20px;
   }
@@ -242,7 +242,7 @@
       margin-bottom: 30px;
       overflow: auto;
       display: block;
-      max-height: 500px;
+      
     }
     .stats-table th, .stats-table td {
       border: 1px solid #ddd;
@@ -250,6 +250,12 @@
       text-align: center;
       vertical-align: middle;
       background: #fff;
+    }
+    .stats-table tbody tr:nth-child(even) td {
+      background: #f6f6f6 !important;
+    }
+    .stats-table tbody tr:nth-child(even) td:first-child {
+      background: #e0e0e0 !important;
     }
     .stats-table td {
       font-size: 1.25rem;

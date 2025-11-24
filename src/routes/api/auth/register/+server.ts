@@ -5,9 +5,10 @@ export const POST = async ({ request, cookies }: RequestEvent) => {
 	try {
 		const { username, email, password, firstName, lastName } = await request.json();
 
+
 		// Validointi
-		if (!username || !email || !password) {
-			return json({ error: 'Käyttäjätunnus, sähköposti ja salasana ovat pakollisia' }, { status: 400 });
+		if (!username || !email || !password || !firstName || !lastName) {
+			return json({ error: 'Käyttäjätunnus, sähköposti, salasana, etunimi ja sukunimi ovat pakollisia' }, { status: 400 });
 		}
 
 		if (username.length < 3) {

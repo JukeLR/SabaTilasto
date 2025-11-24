@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getUserByUsername } from '$lib/auth';
+import { getUserByEmail } from '$lib/auth';
 import bcrypt from 'bcryptjs';
 import { sql } from '$lib/db';
 import { sendPasswordResetEmail } from '$lib/email';
@@ -17,29 +17,29 @@ function generateRandomPassword(length: number = 12): string {
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const { username } = await request.json();
+		const { email } = await request.json();
 
-		if (!username) {
+		if (!email) {
 			return json(
-				{ success: false, error: 'Käyttäjätunnus on pakollinen' },
+				{ success: false, error: 'Sähköposti on pakollinen' },
 				{ status: 400 }
 			);
 		}
 
 		// Tarkista löytyykö käyttäjä
-		const user = await getUserByUsername(username);
-		
+		const user = await getUserByEmail(email);
+        
 		if (!user) {
 			// Turvallisuussyistä ei paljasteta onko käyttäjää olemassa
 			return json({
 				success: true,
-				message: 'Jos käyttäjätunnus löytyy, uusi salasana lähetetään sähköpostiin'
+				message: 'Jos sähköposti löytyy, uusi salasana lähetetään sähköpostiin'
 			});
 		}
 
 		// Generoi uusi satunnainen salasana
 		const newPassword = generateRandomPassword();
-		
+        
 		// Hashaa uusi salasana
 		const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -48,7 +48,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			UPDATE users 
 			SET password = ${hashedPassword},
 				updated_at = NOW()
-			WHERE username = ${username}
+			WHERE email = ${email}
 		`;
 
 		// Lähetä sähköposti uudella salasanalla
@@ -59,9 +59,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 
 		if (!emailSent) {
-			console.error(`Sähköpostin lähetys epäonnistui käyttäjälle ${username}`);
+			console.error(`Sähköpostin lähetys epäonnistui käyttäjälle ${user.username}`);
 			console.log(`HUOM: Salasana päivitettiin tietokantaan, mutta sähköpostia ei lähetetty.`);
-			console.log(`Uusi salasana käyttäjälle ${username}: ${newPassword}`);
+			console.log(`Uusi salasana käyttäjälle ${user.username}: ${newPassword}`);
 		}
 
 		// Piilotetaan sähköpostiosoite osittain
