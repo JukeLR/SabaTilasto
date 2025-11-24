@@ -138,10 +138,12 @@
 						Sarjat
 					</button>
 				{/if}
-				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
+				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'kirjuri'}
 					<button class="menu-item" onclick={() => navigateTo('/games')}>
 						Pelit
 					</button>
+				{/if}
+				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
 					<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
 						Tilastot
 					</button>

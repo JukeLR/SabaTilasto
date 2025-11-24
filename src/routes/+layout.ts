@@ -18,10 +18,10 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				};
 			}
 
-			// Toimihenkilö pääsee etusivulle, peleihin, tilastoihin ja omaan profiiliin
+			// Toimihenkilö pääsee etusivulle, tilastoihin, omaan profiiliin ja raportteihin
 			if (role === 'toimihenkilö') {
-				// Sallitut polut: etusivu, pelit, tilastot, oma profiili, raportit ja kaikki raporttien alasivut
-				const allowedPaths = ['/', '/games', '/games/stats', '/profile'];
+				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut
+				const allowedPaths = ['/', '/games/stats', '/profile'];
 				if (
 					allowedPaths.includes(pathname) ||
 					pathname.startsWith('/reports')
