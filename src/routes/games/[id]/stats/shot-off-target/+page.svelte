@@ -121,6 +121,6 @@ async function saveShotOffTarget() {
 .fp-col { flex: 1; min-width: 100px; }
 .fp-btn { width: 100%; font-size: 0.95rem; border-radius: 6px; padding: 7px 0; margin-bottom: 2px; border: 1px solid #ccc; background: #eee; cursor: pointer; }
 .fp-selected { background: #4caf50; color: #fff; }
-.fp-save { background: #2196f3; color: #fff; font-weight: bold; }
-.fp-cancel { background: #aaa; color: #fff; font-weight: bold; margin-top: 8px; }
+.fp-save { background: #2196f3; color: #fff; font-weight: bold; padding: 25px 0;}
+.fp-cancel { background: #aaa; color: #fff; font-weight: bold; margin-top: 8px; padding: 20px 0;}
 </style>

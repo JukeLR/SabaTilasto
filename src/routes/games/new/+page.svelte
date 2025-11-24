@@ -91,7 +91,8 @@
 		try {
 			const response = await fetch('/api/admin/teams');
 			if (response.ok) {
-				teams = await response.json();
+				const data = await response.json();
+				teams = data.teams || [];
 				console.log('Joukkueet haettu:', teams);
 			}
 		} catch (error) {
@@ -362,14 +363,9 @@
 			// Varmista että ownTeamId ei ole null
 			let safeHomeTeamId = homeTeamId;
 			if (!safeHomeTeamId) {
-				// Jos muokkaustilassa, käytä vanhaa arvoa
-				if (isEditMode && data && data.game && data.game.own_team_id) {
-					safeHomeTeamId = data.game.own_team_id;
-				} else {
-					error = 'Joukkueen valinta puuttuu!';
-					isSaving = false;
-					return;
-				}
+				error = 'Joukkueen valinta puuttuu!';
+				isSaving = false;
+				return;
 			}
 			const gameData = {
 				seriesId: seriesId,
@@ -992,8 +988,9 @@
 			<h2>Lisätiedot</h2>
 			
 			<div class="form-group">
-				<label>Kokoonpano</label>
+				<label for="select-players">Kokoonpano</label>
 				<button 
+					id="select-players"
 					type="button" 
 					class="select-players-button"
 					onclick={() => homeTeamId && fetchTeamPlayers(homeTeamId)}

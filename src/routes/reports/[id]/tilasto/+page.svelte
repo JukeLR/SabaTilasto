@@ -61,7 +61,7 @@
   }
 
   function goBackToReports() {
-    window.location.href = "/games";
+    window.location.href = "/reports";
   }
 
   function formatDate(dateStr: string) {
