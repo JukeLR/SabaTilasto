@@ -24,6 +24,9 @@
     if (last && stats[last] > 0) stats[last]--;
   }
 </script>
+<svelte:head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+</svelte:head>
 <main>
   <h1 style="text-align:center;margin-top:2rem;">SabaTilastot</h1>
   <div style="text-align:center;margin-top:2rem;">
