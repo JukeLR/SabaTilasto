@@ -1,5 +1,6 @@
-<script>
-  let stats = {
+<script lang="ts">
+  type StatKey = 'ownGoal' | 'oppGoal' | 'shotOnGoal' | 'shotMissed' | 'shotBlocked' | 'oppShotBlocked' | 'oppShotMissed' | 'save' | 'goalieBreak';
+  let stats: Record<StatKey, number> = {
     ownGoal: 0,
     oppGoal: 0,
     shotOnGoal: 0,
@@ -10,6 +11,18 @@
     save: 0,
     goalieBreak: 0
   };
+  // Undo-toiminto: pidä kirjaa painallushistoriasta
+  let actionHistory: StatKey[] = [];
+
+  function recordAction(key: StatKey) {
+    actionHistory.push(key);
+  }
+
+  function undoLast() {
+    if (actionHistory.length === 0) return;
+    const last = actionHistory.pop();
+    if (last && stats[last] > 0) stats[last]--;
+  }
 </script>
 <main>
   <h1 style="text-align:center;margin-top:2rem;">SabaTilastot</h1>
@@ -20,47 +33,50 @@
     <div class="row wide-row">
       <div class="col">
         <div class="label">Maali meille</div>
-        <button class="btn btn-green wide-btn" on:click={() => stats.ownGoal++}>{stats.ownGoal}</button>
+        <button class="btn btn-green wide-btn" on:click={() => { stats.ownGoal++; recordAction('ownGoal'); }}>{stats.ownGoal}</button>
       </div>
       <div class="col">
         <div class="label">Maali vastustajalle</div>
-        <button class="btn btn-orange wide-btn" on:click={() => stats.oppGoal++}>{stats.oppGoal}</button>
+        <button class="btn btn-orange wide-btn" on:click={() => { stats.oppGoal++; recordAction('oppGoal'); }}>{stats.oppGoal}</button>
       </div>
     </div>
     <div class="row">
       <div class="col">
         <div class="label">Veto maalia<br/>kohti</div>
-        <button class="btn btn-green" on:click={() => stats.shotOnGoal++}>{stats.shotOnGoal}</button>
+        <button class="btn btn-green" on:click={() => { stats.shotOnGoal++; recordAction('shotOnGoal'); }}>{stats.shotOnGoal}</button>
       </div>
       <div class="col">
         <div class="label">Veto ohi<br/>maalin</div>
-        <button class="btn btn-yellow" on:click={() => stats.shotMissed++}>{stats.shotMissed}</button>
+        <button class="btn btn-yellow" on:click={() => { stats.shotMissed++; recordAction('shotMissed'); }}>{stats.shotMissed}</button>
       </div>
       <div class="col">
         <div class="label">Veto<br/>blokkiin</div>
-        <button class="btn btn-yellow" on:click={() => stats.shotBlocked++}>{stats.shotBlocked}</button>
+        <button class="btn btn-yellow" on:click={() => { stats.shotBlocked++; recordAction('shotBlocked'); }}>{stats.shotBlocked}</button>
       </div>
     </div>
     <div class="row wide-row">
       <div class="col">
         <div class="label">Vastustajan veto<br/>blokattu</div>
-        <button class="btn btn-green wide-btn" on:click={() => stats.oppShotBlocked++}>{stats.oppShotBlocked}</button>
+        <button class="btn btn-green wide-btn" on:click={() => { stats.oppShotBlocked++; recordAction('oppShotBlocked'); }}>{stats.oppShotBlocked}</button>
       </div>
       <div class="col">
         <div class="label">Vastustajan veto ohi<br/>maalin</div>
-        <button class="btn btn-yellow wide-btn" on:click={() => stats.oppShotMissed++}>{stats.oppShotMissed}</button>
+        <button class="btn btn-yellow wide-btn" on:click={() => { stats.oppShotMissed++; recordAction('oppShotMissed'); }}>{stats.oppShotMissed}</button>
       </div>
     </div>
     <div class="row wide-row">
       <div class="col">
         <div class="label">Torjunta</div>
-        <button class="btn btn-green wide-btn" on:click={() => stats.save++}>{stats.save}</button>
+        <button class="btn btn-green wide-btn" on:click={() => { stats.save++; recordAction('save'); }}>{stats.save}</button>
       </div>
       <div class="col">
         <div class="label">Maalivahdin katko</div>
-        <button class="btn btn-green wide-btn" on:click={() => stats.goalieBreak++}>{stats.goalieBreak}</button>
+        <button class="btn btn-green wide-btn" on:click={() => { stats.goalieBreak++; recordAction('goalieBreak'); }}>{stats.goalieBreak}</button>
       </div>
     </div>
+  </div>
+  <div style="text-align:center; margin-top:2rem;">
+    <button type="button" class="btn-undo" on:click={undoLast} style="margin-top:2rem;min-width:120px;">Undo</button>
   </div>
 </main>
 
@@ -78,7 +94,35 @@
   justify-content: center;
   gap: 10px;
 }
+.btn-undo {
+    background: #f1ade3;
+    color: #222;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    font-size: 2rem;
+    font-weight: 600;
+    padding: 12px 0;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 350px;
+  }
 .wide-row .btn {
+  .btn-undo {
+    background: #e0e0e0;
+    color: #222;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 12px 0;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-undo:hover {
+    background: #d1d1d1;
+  }
   width: 180px;
 }
 .wide-btn {
