@@ -19,6 +19,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 			}
 
 
+
 			// Kirjuri pääsee etusivulle, /games-sivulle ja sen alasivuille sekä omaan profiiliin
 			if (role === 'kirjuri') {
 				// Sallitut polut: etusivu, /games ja kaikki sen alasivut, oma profiili
@@ -37,8 +38,8 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				}
 			}
 
-			// Toimihenkilö pääsee etusivulle, tilastoihin, omaan profiiliin ja raportteihin
-			if (role === 'toimihenkilö') {
+			// Junioripäällikkö ja toimihenkilö pääsevät etusivulle, tilastoihin, omaan profiiliin ja raportteihin
+			if (role === 'toimihenkilö' || role === 'junioripäällikkö') {
 				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut
 				const allowedPaths = ['/', '/games/stats', '/profile'];
 				if (
