@@ -79,7 +79,7 @@
     </div>
   </div>
   <div style="text-align:center; margin-top:2rem;">
-    <button type="button" class="btn-undo" on:click={undoLast} style="margin-top:2rem;min-width:120px;">Undo</button>
+    <button type="button" class="btn-undo" on:click={undoLast} style="margin-top:2rem;min-width:120px;">Peruuta</button>
   </div>
 </main>
 
