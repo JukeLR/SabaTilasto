@@ -18,6 +18,25 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				};
 			}
 
+
+			// Kirjuri pääsee etusivulle, /games-sivulle ja sen alasivuille sekä omaan profiiliin
+			if (role === 'kirjuri') {
+				// Sallitut polut: etusivu, /games ja kaikki sen alasivut, oma profiili
+				if (
+					pathname === '/' ||
+					pathname === '/profile' ||
+					pathname === '/games' ||
+					pathname.startsWith('/games/')
+				) {
+					return {
+						user,
+						isLoggedIn: true
+					};
+				} else {
+					throw redirect(303, '/');
+				}
+			}
+
 			// Toimihenkilö pääsee etusivulle, tilastoihin, omaan profiiliin ja raportteihin
 			if (role === 'toimihenkilö') {
 				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut

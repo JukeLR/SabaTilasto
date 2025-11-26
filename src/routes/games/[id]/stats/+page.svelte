@@ -62,7 +62,7 @@
 
   onMount(() => {
     fetchGameAndPlayers();
-    pollingInterval = setInterval(fetchGameAndPlayers, 3000);
+    pollingInterval = setInterval(fetchGameAndPlayers, 30000); // 30 sekuntia
     return () => clearInterval(pollingInterval);
   });
 

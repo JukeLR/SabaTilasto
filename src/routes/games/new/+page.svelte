@@ -347,8 +347,8 @@
 		isSaving = true;
 		
 		try {
-			// Muunna fieldPositions arrayiksi tietokantaa varten
-			const fieldPositionsArray: (number | null)[] = [
+			// Muunna fieldPositions arrayiksi tietokantaa varten ja suodata null-arvot pois
+			const fieldPositionsArray: number[] = [
 				fieldPositions.goalkeeper,
 				...fieldPositions.field1.row1,
 				...fieldPositions.field1.row2,
@@ -358,7 +358,7 @@
 				...fieldPositions.field3.row2,
 				...fieldPositions.field4.row1,
 				...fieldPositions.field4.row2
-			];
+			].filter((id): id is number => id !== null && id !== undefined);
 			
 			// Varmista että ownTeamId ei ole null
 			let safeHomeTeamId = homeTeamId;
