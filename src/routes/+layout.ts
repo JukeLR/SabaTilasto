@@ -22,12 +22,12 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 
 			// Kirjuri pääsee etusivulle, /games-sivulle ja sen alasivuille sekä omaan profiiliin
 			if (role === 'kirjuri') {
-				// Sallitut polut: etusivu, /games ja kaikki sen alasivut, oma profiili
+				// Sallitut polut: etusivu, /games ja kaikki sen alasivut, oma profiili (ei tilastot)
 				if (
 					pathname === '/' ||
 					pathname === '/profile' ||
-					pathname === '/games' ||
-					pathname.startsWith('/games/')
+					(pathname === '/games') ||
+					(pathname.startsWith('/games/') && pathname !== '/games/stats')
 				) {
 					return {
 						user,
@@ -38,8 +38,9 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				}
 			}
 
-			// Junioripäällikkö ja toimihenkilö pääsevät etusivulle, tilastoihin, omaan profiiliin ja raportteihin
-			if (role === 'toimihenkilö' || role === 'junioripäällikkö') {
+
+			// Junioripäällikkö, toimihenkilö ja pelaaja pääsevät etusivulle, tilastoihin, omaan profiiliin ja raportteihin
+			if (role === 'toimihenkilö' || role === 'junioripäällikkö' || role === 'pelaaja') {
 				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut
 				const allowedPaths = ['/', '/games/stats', '/profile'];
 				if (

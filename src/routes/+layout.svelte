@@ -143,11 +143,11 @@
 						Pelit
 					</button>
 				{/if}
-				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'kirjuri'}
-					<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
-						Tilastot
-					</button>
-				{/if}
+				   {#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'pelaaja'}
+					   <button class="menu-item" onclick={() => navigateTo('/games/stats')}>
+						   Tilastot
+					   </button>
+				   {/if}
 				{#if userRole === 'admin'}
 					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
 						Joukkueet
@@ -156,11 +156,11 @@
 						Pelaajat
 					</button>
 				{/if}
-				{#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö'}
-					<button class="menu-item" onclick={() => navigateTo('/reports')}>
-						Raportit
-					</button>
-				{/if}
+				   {#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'pelaaja'}
+					   <button class="menu-item" onclick={() => navigateTo('/reports')}>
+						   Raportit
+					   </button>
+				   {/if}
 				<button class="menu-item" onclick={() => navigateTo('/profile')}>
 					Oma profiili
 				</button>

@@ -17,6 +17,7 @@ export interface User {
 	last_name: string | null;
 	role: string | null;
 	team_ids: number[] | null;
+	player_ids: number[] | null;
 	created_at?: Date;
 	updated_at?: Date;
 }

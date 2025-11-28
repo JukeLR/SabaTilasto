@@ -28,12 +28,15 @@ let playerList: Array<{ id: number; name: string }> = [];
       // Hae maalivahdit
       const goaliesRes = await fetch(`/api/players?team_id=${selectedTeam}&position=Maalivahti`);
       const goaliesData = await goaliesRes.json();
-      goalieNames = Array.isArray(goaliesData.players)
-        ? goaliesData.players
-            .slice()
-            .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
-            .map((p: any) => `${p.first_name} ${p.last_name}`)
-        : [];
+      let filteredGoalies = Array.isArray(goaliesData.players) ? goaliesData.players.slice() : [];
+      // Pelaaja-roolilla näytetään vain sidotun pelaajan maalivahtitilastot
+      if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+        const allowedIds = user.player_ids.map((id: any) => Number(id));
+        filteredGoalies = filteredGoalies.filter((g: any) => allowedIds.includes(g.id));
+      }
+      goalieNames = filteredGoalies
+        .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
+        .map((p: any) => `${p.first_name} ${p.last_name}`);
       // Hae kenttäpelaajat
       const playersRes = await fetch(`/api/players?team_id=${selectedTeam}&not_position=Maalivahti`);
       const playersData = await playersRes.json();
@@ -74,6 +77,16 @@ let playerList: Array<{ id: number; name: string }> = [];
             playerStats[p.id] = { id: p.id, name: `${p.first_name} ${p.last_name}`, games: 0, wins: 0, draws: 0, losses: 0, goals: 0, assists: 0, points: 0, pointsPerGame: "0.00", blocks: 0, blocksPerGame: "0.00", shotsOnGoal: 0, shotsOnGoalPerGame: "0.00", shotsBlocked: 0, shotsBlockedPerGame: "0.00", shotsOffTarget: 0, shotsOffTargetPerGame: "0.00" };
             playerList.push({ id: p.id, name: `${p.first_name} ${p.last_name}` });
           }
+        }
+        // Pelaaja-roolilla näytetään vain sidotun pelaajan tilastot
+        if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+          const allowedIds = user.player_ids.map((id: any) => Number(id));
+          playerList = playerList.filter(p => allowedIds.includes(p.id));
+          const filteredStats: typeof playerStats = {};
+          for (const id of allowedIds) {
+            if (playerStats[id]) filteredStats[id] = playerStats[id];
+          }
+          playerStats = filteredStats;
         }
         if (Array.isArray(gamesData.games)) {
           for (const game of gamesData.games) {
@@ -129,10 +142,8 @@ let playerList: Array<{ id: number; name: string }> = [];
         }
       // Rakennetaan id->nimi map maalivahdeille
       const goalieIdMap: Record<number, string> = {};
-      if (Array.isArray(goaliesData.players)) {
-        for (const g of goaliesData.players) {
-          goalieIdMap[g.id] = `${g.first_name} ${g.last_name}`;
-        }
+      for (const g of filteredGoalies) {
+        goalieIdMap[g.id] = `${g.first_name} ${g.last_name}`;
       }
       // Laske pelit
       goalieStats = {};
@@ -145,7 +156,12 @@ let playerList: Array<{ id: number; name: string }> = [];
           if (game.goalie_change && goalieIdMap[game.goalie_change]) {
             goalieIds.push(game.goalie_change);
           }
-          const uniqueGoalies = Array.from(new Set(goalieIds));
+          // Pelaaja-roolilla suodata vain sallitut maalivahdit
+          let uniqueGoalies = Array.from(new Set(goalieIds));
+          if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+            const allowedIds = user.player_ids.map((id: any) => Number(id));
+            uniqueGoalies = uniqueGoalies.filter((gid) => allowedIds.includes(gid));
+          }
           const teamGoals = Array.isArray(game.team_goals) ? game.team_goals.length : 0;
           const opponentGoals = Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0;
           const isWin = teamGoals > opponentGoals;
@@ -195,7 +211,7 @@ let playerList: Array<{ id: number; name: string }> = [];
         let plusCount = 0;
         for (const game of gamesData.games) {
           if (Array.isArray(game.plus_points)) {
-            plusCount += game.plus_points.filter(id => id === Number(pid)).length;
+            plusCount += game.plus_points.filter((id: number) => id === Number(pid)).length;
           }
         }
         playerStats[pid].plus = plusCount;
@@ -205,7 +221,7 @@ let playerList: Array<{ id: number; name: string }> = [];
         let minusCount = 0;
         for (const game of gamesData.games) {
           if (Array.isArray(game.minus_points)) {
-            minusCount += game.minus_points.filter(id => id === Number(pid)).length;
+            minusCount += game.minus_points.filter((id: number) => id === Number(pid)).length;
           }
         }
         playerStats[pid].minus = minusCount;
@@ -218,17 +234,37 @@ let playerList: Array<{ id: number; name: string }> = [];
       });
     }
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  // onMount already imported above, getContext not needed
   let teams: any[] = [];
   let competitions: any[] = [];
   let selectedTeam: number | null = null;
   let selectedCompetition: number | null = null;
   let startDate: string = '';
   let endDate: string = '';
+  import type { User } from '$lib/db';
+  let user: User | null = null;
+  let userRole = '';
+  let userTeamId: number | null = null;
 
   onMount(async () => {
+    // Get user from layout data
+    const data = page && page.subscribe ? (await new Promise<any>(res => {
+      let unsub: (() => void) | undefined;
+      unsub = page.subscribe(val => {
+        if (unsub) unsub();
+        res(val.data);
+      });
+    })) : {};
+    user = data?.user || null;
+    userRole = user?.role || '';
+    userTeamId = user?.team_ids && Array.isArray(user.team_ids) && user.team_ids.length > 0 ? user.team_ids[0] : null;
+    console.log('DEBUG: user', user, 'userRole', userRole, 'userTeamId', userTeamId);
+
     // Hae joukkueet
     const teamsRes = await fetch('/api/admin/teams');
     const teamsData = await teamsRes.json();
+    console.log('DEBUG: teamsData', teamsData);
     if (Array.isArray(teamsData)) {
       teams = teamsData;
     } else if (Array.isArray(teamsData.teams)) {
@@ -236,6 +272,20 @@ let playerList: Array<{ id: number; name: string }> = [];
     } else {
       teams = [];
     }
+
+    // Jos toimihenkilö TAI pelaaja, näytä vain omat joukkueet
+    if ((userRole === 'toimihenkilö' || userRole === 'pelaaja') && user?.team_ids && Array.isArray(user.team_ids)) {
+      const userTeamIdsNum = user.team_ids.map((id: any) => Number(id));
+      teams = teams.filter((team: any) => userTeamIdsNum.includes(Number(team.id)));
+      if (teams.length === 0) {
+        console.warn('KÄYTTÄJÄ: Ei yhtään joukkuetta täsmää user.team_ids:', user.team_ids, 'teams:', teams);
+      }
+      // Jos käyttäjällä on vain yksi joukkue, valitse se automaattisesti
+      if (teams.length === 1) {
+        selectedTeam = teams[0].id;
+      }
+    }
+
     // Hae sarjat
     const compRes = await fetch('/api/competitions');
     const compData = await compRes.json();
@@ -251,7 +301,9 @@ let playerList: Array<{ id: number; name: string }> = [];
       <select id="team-select" bind:value={selectedTeam}>
         <option value="">-- Valitse --</option>
         {#each teams as team}
-          <option value={team.id}>{team.name}</option>
+          {#if userRole !== 'toimihenkilö' || (user?.team_ids && user.team_ids.includes(team.id))}
+            <option value={team.id}>{team.name}</option>
+          {/if}
         {/each}
       </select>
     </div>

@@ -8,22 +8,29 @@ export const GET = async ({ url, cookies }: RequestEvent) => {
 			return json({ error: 'Ei kirjautunut' }, { status: 401 });
 		}
 
-		// Suodatus parametreilla
-		const teamId = url.searchParams.get('team_id');
+		// Haetaan käyttäjän rooli ja mahdollinen team_id
+		const userResult = await sql`SELECT role, team_ids FROM users WHERE id = ${parseInt(userId)}`;
+		const user = userResult[0];
+		let effectiveTeamId = url.searchParams.get('team_id');
+		// Jos toimihenkilö ja on team_id, rajoitetaan vain omaan joukkueeseen
+		if (user && user.role === 'toimihenkilö' && Array.isArray(user.team_ids) && user.team_ids.length > 0) {
+			effectiveTeamId = user.team_ids[0];
+		}
+
 		const seriesId = url.searchParams.get('series_id');
 		let whereClauses = [];
-		if (teamId) {
-			whereClauses.push(`own_team_id = ${parseInt(teamId)}`);
+		if (effectiveTeamId) {
+			whereClauses.push(`own_team_id = ${parseInt(effectiveTeamId)}`);
 		}
 		if (seriesId) {
 			whereClauses.push(`series_id = ${parseInt(seriesId)}`);
 		}
-			if (url.searchParams.get('start_date')) {
-				whereClauses.push(`game_date >= '${url.searchParams.get('start_date')}'`);
-			}
-			if (url.searchParams.get('end_date')) {
-				whereClauses.push(`game_date <= '${url.searchParams.get('end_date')}'`);
-			}
+		if (url.searchParams.get('start_date')) {
+			whereClauses.push(`game_date >= '${url.searchParams.get('start_date')}'`);
+		}
+		if (url.searchParams.get('end_date')) {
+			whereClauses.push(`game_date <= '${url.searchParams.get('end_date')}'`);
+		}
 		let sqlQuery = 'SELECT *, plus_points, minus_points FROM games';
 		if (whereClauses.length > 0) {
 			sqlQuery += ' WHERE ' + whereClauses.join(' AND ');

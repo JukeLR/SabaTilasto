@@ -14,14 +14,16 @@ export const GET = async ({ cookies }: RequestEvent) => {
 		}
 
 		return json({ 
-			user: { 
-				id: user.id, 
-				username: user.username, 
-				email: user.email,
-				role: user.role,
-				firstName: user.first_name,
-				lastName: user.last_name
-			} 
+			   user: { 
+				   id: user.id, 
+				   username: user.username, 
+				   email: user.email,
+				   role: user.role,
+				   firstName: user.first_name,
+				   lastName: user.last_name,
+				   team_ids: user.team_ids, // palautetaan myös team_ids
+				   player_ids: user.player_ids // palautetaan myös player_ids
+			   } 
 		});
 
 	} catch (error) {

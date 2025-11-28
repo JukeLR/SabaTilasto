@@ -6,15 +6,33 @@
   import { page } from "$app/stores";
   import { onMount } from "svelte";
 
+
   let gameId = "";
   let game: any = null;
   let players: any[] = [];
   let isLoading: boolean = true;
   let error: string = "";
+  let user = null;
+  let userRole = '';
+  let userTeamIds: number[] = [];
+
 
   onMount(async () => {
+    // Hae käyttäjä layoutin datasta
+    const data = page && page.subscribe ? (await new Promise<any>(res => {
+      let unsub: (() => void) | undefined;
+      unsub = page.subscribe(val => { if (unsub) unsub(); res(val.data); });
+    })) : {};
+    user = data?.user || null;
+    userRole = user?.role || '';
+    userTeamIds = Array.isArray(user?.team_ids) ? user.team_ids.map((id: any) => Number(id)) : [];
     gameId = $page.params.id ? $page.params.id : "";
     await fetchGame();
+    // Jos toimihenkilö, tarkista pääsy peliin
+    if (userRole === 'toimihenkilö' && game && !userTeamIds.includes(Number(game.own_team_id))) {
+      error = 'Sinulla ei ole oikeuksia nähdä tämän pelin tilastoja.';
+      return;
+    }
     await fetchPlayers();
   });
 
@@ -53,6 +71,11 @@
               players = [...players, playerData];
             }
           }
+        }
+        // Pelaaja-roolilla näytetään vain sidotun pelaajan tilastot
+        if (userRole === 'pelaaja' && Array.isArray(user?.player_ids) && user.player_ids.length > 0) {
+          const allowedId = Number(user.player_ids[0]);
+          players = players.filter(p => p.id === allowedId);
         }
       }
     } catch (err) {
@@ -196,6 +219,7 @@
               <td>{getPlayerSavePercentage(p.id)}</td>
             </tr>
           {/each}
+          {#if userRole !== 'pelaaja'}
           <tr style="font-weight: bold; background: #f2f2f2;">
             <td>Yhteensä</td>
             <td>{players.reduce((sum, p) => sum + getPlayerGoals(p.id), 0)}</td>
@@ -211,6 +235,7 @@
             <td>{players.reduce((sum, p) => sum + getPlayerGoalieInterruptions(p.id), 0)}</td>
             <td></td>
           </tr>
+          {/if}
         </tbody>
       </table>
     </div>

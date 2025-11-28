@@ -110,22 +110,7 @@
     transition: background 0.2s;
     width: 350px;
   }
-.wide-row .btn {
-  .btn-undo {
-    background: #e0e0e0;
-    color: #222;
-    border: 1px solid #bbb;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    padding: 12px 0;
-    margin-bottom: 1.5rem;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .btn-undo:hover {
-    background: #d1d1d1;
-  }
+.wide-row .btn {  
   width: 180px;
 }
 .wide-btn {

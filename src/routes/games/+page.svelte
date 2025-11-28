@@ -1,7 +1,9 @@
+
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { teamsStore, fetchTeams } from '$lib/stores/teams';
-	import { goto } from '$app/navigation';
+import { onMount } from 'svelte';
+import { teamsStore, fetchTeams } from '$lib/stores/teams';
+import { goto } from '$app/navigation';
+import { page } from '$app/stores';
 
 	interface Game {
 		id: number;
@@ -18,13 +20,29 @@
 	let games = $state<Game[]>([]);
 	let isLoading = $state(true);
 	let error = $state('');
+	let user = null;
+	let userRole = '';
+	let userTeamId: number | null = null;
 
 	// Jaa pelit tilan mukaan
 	let createdGames = $derived(games.filter(game => game.status === 'Luotu'));
 	let ongoingGames = $derived(games.filter(game => game.status === 'Käynnissä'));
 	let completedGames = $derived(games.filter(game => game.status === 'Pelattu'));
 
+
+
 	onMount(async () => {
+		// Get user from layout data
+		const data = page && page.subscribe ? (await new Promise<any>(res => {
+			let unsub: (() => void) | undefined;
+			unsub = page.subscribe(val => {
+				if (unsub) unsub();
+				res(val.data);
+			});
+		})) : {};
+		user = data?.user || null;
+		userRole = user?.role || '';
+		userTeamId = user?.team_ids && Array.isArray(user.team_ids) && user.team_ids.length > 0 ? user.team_ids[0] : null;
 		await fetchGames();
 		await fetchTeams();
 	});
@@ -33,12 +51,20 @@
 		try {
 			isLoading = true;
 			error = '';
-			
-			const response = await fetch('/api/games');
+			let url = '/api/games';
+			// If kirjuri, only fetch their own team's games
+			if (userRole === 'kirjuri' && userTeamId) {
+				url += `?team_id=${userTeamId}`;
+			}
+			const response = await fetch(url);
 			const data = await response.json();
-
 			if (response.ok) {
-				games = data.games || [];
+				let allGames = data.games || [];
+				// Extra safety: filter on frontend too
+				if (userRole === 'kirjuri' && userTeamId) {
+					allGames = allGames.filter((g: Game) => g.own_team_id === userTeamId);
+				}
+				games = allGames;
 			} else {
 				error = data.error || 'Pelien haku epäonnistui';
 			}

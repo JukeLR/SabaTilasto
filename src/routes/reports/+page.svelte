@@ -21,7 +21,21 @@
   let ongoingGames: Game[] = [];
   let completedGames: Game[] = [];
 
+
+  import { page } from '$app/stores';
+  let user = null;
+  let userRole = '';
+  let userTeamIds: number[] = [];
+
   onMount(async () => {
+    // Hae käyttäjä layoutin datasta
+    const data = page && page.subscribe ? (await new Promise<any>(res => {
+      let unsub: (() => void) | undefined;
+      unsub = page.subscribe(val => { if (unsub) unsub(); res(val.data); });
+    })) : {};
+    user = data?.user || null;
+    userRole = user?.role || '';
+    userTeamIds = Array.isArray(user?.team_ids) ? user.team_ids.map((id: any) => Number(id)) : [];
     await fetchGames();
   });
 
@@ -33,6 +47,18 @@
       const data = await response.json();
       if (response.ok) {
         games = data.games || [];
+        // Toimihenkilö: suodata vain omat joukkueet
+        if (userRole === 'toimihenkilö' && userTeamIds.length > 0) {
+          games = games.filter(game => userTeamIds.includes(Number(game.own_team_id)));
+        }
+        // Pelaaja: suodata vain oman joukkueen pelit, joissa pelaaja on pelannut
+        if (userRole === 'pelaaja' && userTeamIds.length > 0 && Array.isArray(user?.player_ids) && user.player_ids.length > 0) {
+          const playerId = Number(user.player_ids[0]);
+          games = games.filter(game =>
+            userTeamIds.includes(Number(game.own_team_id)) &&
+            Array.isArray(game.field_positions) && game.field_positions.includes(playerId)
+          );
+        }
         ongoingGames = games.filter(game => game.status === 'Käynnissä');
         completedGames = games.filter(game => game.status === 'Pelattu');
       } else {
