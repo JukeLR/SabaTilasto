@@ -214,7 +214,10 @@ import { page } from '$app/stores';
 											Näytä raportti
 										</button>
 										<button class="btn-continue" onclick={() => startGame(game.id)}>
-											Jatka tilastointia
+											Mobiili tilastointi
+										</button>
+										<button class="btn-desktop" onclick={() => goto(`/games/${game.id}/desktop-stats`)}>
+											Työpöytä tilastointi
 										</button>
 									</td>
 								</tr>
