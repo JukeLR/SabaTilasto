@@ -14,10 +14,6 @@ async function saveStats() {
     showPlusSelected = true;
     // Ei plussia, mutta jos OM-maali, jatketaan tallennukseen
     // Ei returnia, jatketaan PATCHiin
-  } else if (plusmiinusIds.length === 0) {
-    showPlusSelected = true;
-    alert('Valinta merkitty!');
-    return;
   }
   // Lähetä PATCHissa vain uudet plussat, ei vanhoja
   if (plusmiinusIds.length > 0) {
@@ -101,7 +97,10 @@ function handleGoalAssistSelection(playerId: number) {
 function handlePlusMiinus() {
   if ($selectedPlayers.length === 0) {
     showPlusSelected = true;
-    // Ei siirretä mitään backendille, vain napin väri
+    // Siirrytään silti maalisyöttö-vaiheeseen, jotta voidaan valita maalintekijä ja syöttäjä
+    plusmiinusIds = [];
+    selectionPhase.set('maalisyotto');
+    selectedPlayers.set([]);
     return;
   }
   showPlusSelected = false;
