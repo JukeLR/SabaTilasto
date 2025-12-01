@@ -160,6 +160,12 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 		) {
 			updateFields.goalie_change = body.goalie_change;
 		}
+		if (body.fieldPositions !== undefined) {
+			updateFields.field_positions = body.fieldPositions;
+		}
+		if (body.lineup !== undefined) {
+			updateFields.lineup = body.lineup;
+		}
 	if (body.opponentName !== undefined) {
 		updateFields.opponent_team_name = body.opponentName;
 	}
@@ -260,6 +266,8 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			status = ${updateFields.status !== undefined ? updateFields.status : currentGame.status},
 			opponent_team_name = ${updateFields.opponent_team_name !== undefined ? updateFields.opponent_team_name : currentGame.opponentName},
 			goalie_change = ${updateFields.goalie_change !== undefined ? updateFields.goalie_change : currentGame.goalie_change},
+			field_positions = ${updateFields.field_positions !== undefined ? updateFields.field_positions : currentGame.fieldPositions},
+			lineup = ${updateFields.lineup !== undefined ? updateFields.lineup : currentGame.lineup},
 			updated_at = NOW()
 		WHERE id = ${gameId}
 		RETURNING id

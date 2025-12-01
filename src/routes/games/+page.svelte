@@ -2,6 +2,15 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 import { teamsStore, fetchTeams } from '$lib/stores/teams';
+import { gameLineup, gameFieldPositions } from '$lib/stores/gameState';
+import { playerNames, fetchAndUpdatePlayerNames } from '$lib/stores/playerNames';
+import { teamGoals } from '$lib/stores/teamGoals';
+import { opponentGoals } from '$lib/stores/opponentGoals';
+import { shotsOnGoal } from '$lib/stores/shotsOnGoal';
+import { shotsOffTarget } from '$lib/stores/shotsOffTarget';
+import { shotsBlocked } from '$lib/stores/shotsBlocked';
+import { blocks } from '$lib/stores/blocks';
+import { saves, goalieGameInterruption, opponentShotOff } from '$lib/stores/saves';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 
@@ -100,7 +109,7 @@ import { page } from '$app/stores';
 		}
 	}
 
-	async function startGame(gameId: number) {
+	async function startGame(gameId: number, mode: 'mobile' | 'desktop' = 'mobile') {
 		try {
 			// Päivitä pelin status käynnissä-tilaan
 			const response = await fetch(`/api/games/${gameId}`, {
@@ -114,15 +123,40 @@ import { page } from '$app/stores';
 				await fetchGames();
 			}
 
+			// Hae pelin tiedot ja tallenna storeihin
+			const res = await fetch(`/api/games/${gameId}?basic=true`);
+			const data = await res.json();
+			// Tallennus storeihin
+			gameLineup.set(data.lineup || []);
+			gameFieldPositions.set(data.fieldPositions || []);
+			await fetchAndUpdatePlayerNames(data.lineup || []);
+			teamGoals.set(data.team_goals || []);
+			opponentGoals.set(data.opponent_goals || []);
+			shotsOnGoal.set(data.shots_on_goal || []);
+			shotsOffTarget.set(data.shots_off_target || []);
+			shotsBlocked.set(data.shots_blocked || []);
+			blocks.set(data.blocks || []);
+			saves.set(data.saves || []);
+			goalieGameInterruption.set(data.goalie_game_interruption || []);
+			opponentShotOff.set(typeof data.opponent_shots_off === 'number' ? data.opponent_shots_off : 0);
+
 			// Ohjaa tilastointisivulle
 			if (typeof window !== 'undefined') {
-				goto(`/games/${gameId}/stats`);
+				if (mode === 'desktop') {
+					goto(`/games/${gameId}/desktop-stats`);
+				} else {
+					goto(`/games/${gameId}/stats`);
+				}
 			}
 		} catch (err) {
 			console.error('Error starting game:', err);
 			// Ohjaa silti tilastointisivulle vaikka status-päivitys epäonnistuisi
 			if (typeof window !== 'undefined') {
-				goto(`/games/${gameId}/stats`);
+				if (mode === 'desktop') {
+					goto(`/games/${gameId}/desktop-stats`);
+				} else {
+					goto(`/games/${gameId}/stats`);
+				}
 			}
 		}
 	}
@@ -172,9 +206,12 @@ import { page } from '$app/stores';
 										<button class="btn-view" onclick={() => viewGame(game.id, game.status)}>
 											Muokkaa
 										</button>
-										<button class="btn-start" onclick={() => startGame(game.id)}>
-											Aloita tilastointi
-										</button>
+										   <button class="btn-start" onclick={() => startGame(game.id, 'mobile')}>
+											   Aloita<br/>mobiilitilastointi
+										   </button>
+										   <button class="btn-desktop" onclick={() => startGame(game.id, 'desktop')}>
+											   Aloita<br/>työpöytätilastointi
+										   </button>
 									</td>
 								</tr>
 							{/each}
@@ -214,10 +251,10 @@ import { page } from '$app/stores';
 											Näytä raportti
 										</button>
 										<button class="btn-continue" onclick={() => startGame(game.id)}>
-											Mobiili tilastointi
+											Mobiilitilastointi
 										</button>
 										<button class="btn-desktop" onclick={() => goto(`/games/${game.id}/desktop-stats`)}>
-											Työpöytä tilastointi
+											Työpöytätilastointi
 										</button>
 									</td>
 								</tr>
