@@ -54,13 +54,282 @@ onMount(async () => {
 			<div class="team-name right">{ownTeamName}</div>
 		{/if}
 	</div>
-	<!-- Tänne rakennetaan lisää sisältöä -->
+
+
+	<div class="field-image-wrapper">
+			<img src="/Kentta.svg" alt="Kenttä" class="field-image" />
+	</div>
+
+	<div class="stats-buttons-grid">
+		<button class="stat-btn green">
+			<span class="label">Maali<br />Meille</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn green">
+			<span class="label">Veto<br />maalia kohti</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn green">
+			<span class="label">Veto ohi<br />maalista</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn green">
+			<span class="label">Veto<br />blokkiin</span>
+			<span class="value">0</span>
+		</button>
+
+		<button class="stat-btn red">
+			<span class="label">Maali<br />Vastustajalle</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn green">
+			<span class="label">Maalivahdin<br />torjunta</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn red">
+			<span class="label">Veto ohi<br />maalista</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn red">
+			<span class="label">Veto<br />blokattu</span>
+			<span class="value">0</span>
+		</button>
+
+		<button class="stat-btn green">
+			<span class="label">Maalivahdin<br />katko</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn green">
+			<span class="label">Pitkä heitto<br />omille</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn green">
+			<span class="label">Lyhyt heitto<br />omille</span>
+			<span class="value">0</span>
+		</button>
+		<button class="stat-btn yellow">
+			<span class="label">Heitto<br />vastustajalle</span>
+			<span class="value">0</span>
+		</button>
+	</div>
+	<div class="fp-btn-container">
+		<div>	
+			<p class="text-row">1. Kenttä</p>
+			<div class="buttons-row three">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>
+			<div class="buttons-row two">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>
+			<p class="text-row">2. Kenttä</p>
+			<div class="buttons-row three">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>
+			<div class="buttons-row two">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>		
+		</div>
+		<div>	
+			<p class="text-row">MV</p>
+			<button class="fp-btn"></button>
+			<button class="fp-btn">Ei maalivahtia</button>
+			<button class="action-btn">+/-</button>
+			<button class="action-btn">Maali ja <br/>syöttö</button>
+			<button class="action-btn" style="height:60px;">Tallenna</button>
+		</div>
+		<div>	
+			<p class="text-row">3. Kenttä</p>
+			<div class="buttons-row three">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>
+			<div class="buttons-row two">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>
+			<p class="text-row">4. Kenttä</p>
+			<div class="buttons-row three">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>
+			<div class="buttons-row two">
+				<button class="fp-btn"></button>
+				<button class="fp-btn"></button>
+			</div>		
+		</div>		
+	</div>
+	<div class="bottom-container">
+		<div>
+			<button class="action-btn" style="height:60px;">Peruuta</button>
+		</div>
+		<div>			
+			<button class="action-btn" style="height:60px;">Manuaalinen tietokannan päivitys</button>
+		</div>
+		<div>
+			<button class="fp-btn" style="height:60px;">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
+			<button class="action-btn" style="height:60px;">Lopeta peli</button>
+		</div>
+	</div>
 </div>
 
+	
+
 <style>
+	.bottom-container {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 10px;
+		max-width: 1200px;
+		margin: 0 auto;
+		align-items: end;
+	}
+	.fp-btn-container {
+		display: grid;
+		grid-template-columns: 2fr 1fr 2fr; /* vasen 2x, keskimmäinen 1x, oikea 2x */
+		gap: 10px;
+		max-width: 1200px;
+		margin: 0 auto; /* keskittää koko rivin */
+	}
+	.text-row {
+		font-size: 16px;   /* fonttikoko */
+		font-weight: bold; /* lihavoitu */
+		margin-top: 10px;
+		margin-bottom: -5px;
+		text-align: center;
+	}
+	.buttons-row.three {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+	}
+	.buttons-row.two {
+		display: flex;
+		justify-content: center;
+		gap: 8px;
+	}
+	.fp-btn { 
+		width: 100%;
+		color: #111;
+		min-width: 70px;
+		font-size: 0.95rem;
+		border-radius: 6px;
+		padding: 0px 0;
+		margin-top: 6px;
+		margin-bottom: 6px;		
+		border: 1px solid #ccc;
+		background: #eee;
+		cursor: pointer;
+		min-height: 32px; 
+	}
+	.action-btn { 
+		width: 70%;
+		min-width: 70px;
+		font-size: 0.95rem;
+		font-weight: bold;
+		border-radius: 6px;
+		padding: 5px 0;
+		margin-top: 6px;
+		margin-bottom: 6px;
+		margin-left: auto;
+		margin-right: auto;
+		display: block;
+		background: #5b9bd5;
+		color: #111;
+		justify-content: center;
+		cursor: pointer;
+		min-height: 32px; 
+	}
+	.action-btn.pressed {
+		background: #4caf50;
+		color: #111;
+	}
+	.stats-buttons-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		grid-template-rows: repeat(3, 1fr);
+		gap: 9px;
+		max-width: 900px;
+		margin: 10px auto 0 auto;
+	}
+	.stat-btn {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		min-width: 180px;
+		min-height: 40px;
+		border-radius: 16px;
+		border: none;
+		font-family: inherit;
+		font-size: 12px;
+		font-weight: 700;
+		padding: 12px 22px 12px 18px;
+		box-shadow: 0 1px 4px #0001;
+		cursor: pointer;
+		transition: filter 0.15s;
+	}
+	.stat-btn .label {
+		color: #111;
+		text-align: left;
+		font-size: 14px;
+		font-weight: 700;
+		line-height: 1.1;
+	}
+	.stat-btn .value {
+		color: #111;
+		font-size: 1.6rem;
+		font-weight: 700;
+		margin-left: 16px;
+		min-width: 24px;
+		text-align: right;
+		text-shadow: 0 1px 2px #0002;
+	}
+	.stat-btn.green {
+		background: #6fcf5b;
+	}
+	.stat-btn.red {
+		background: #f26a3d;
+	}
+	.stat-btn.yellow {
+		background: #fff9b0;
+		color: #222;
+	}
+	.stat-btn.yellow .value {
+		color: #222;
+		text-shadow: none;
+	}
+	.stat-btn:active {
+		filter: brightness(0.95);
+	}
+	.field-image-wrapper {
+		width: 80%;
+		margin-left: auto;
+		margin-right: auto;
+		display: flex;
+		justify-content: center;
+		align-items: flex-start;
+		margin-top: 10px;
+	}
+	.field-image {
+		max-width: 900px;
+		justify-content: center;
+		width: auto;
+		max-width: 100%;
+		height: auto;
+		display: block;
+		border-radius: 18px;
+		box-shadow: 0 2px 12px #0001;
+		background: #fff;
+	}
 	.desktop-stats-root {
-		width: 2000px;
-		height: 2600px;
 		max-width: 100vw;
 		max-height: 100vh;
 		margin: 0 auto;
@@ -96,8 +365,7 @@ onMount(async () => {
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.team-name.left {}
-	.team-name.right {}
+
 	.center-controls {
 		flex: 0 1 340px;
 		display: flex;
@@ -160,6 +428,8 @@ onMount(async () => {
 			gap: 8px;
 		}
 	}
+
+
 </style>
 
 
