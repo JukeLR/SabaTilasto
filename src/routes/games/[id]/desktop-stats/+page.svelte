@@ -1,9 +1,58 @@
 <script lang="ts">
+
 import { goto } from "$app/navigation";
 import { onMount } from 'svelte';
 import { page } from "$app/stores";
 import { teamsStore } from '$lib/stores/teams';
 import { get } from 'svelte/store';
+import { gameLineup, gameFieldPositions } from '$lib/stores/gameState';
+import { lineupPlayersStore, fetchLineupPlayers } from '$lib/stores/lineupPlayers';
+import { playerNames } from '$lib/stores/playerNames';
+import { teamGoals } from '$lib/stores/teamGoals';
+import { opponentGoals } from '$lib/stores/opponentGoals';
+import { shotsOnGoal } from '$lib/stores/shotsOnGoal';
+import { shotsOffTarget } from '$lib/stores/shotsOffTarget';
+import { shotsBlocked } from '$lib/stores/shotsBlocked';
+import { blocks } from '$lib/stores/blocks';
+import { saves, goalieGameInterruption, opponentShotOff } from '$lib/stores/saves';
+
+// Overlayn logiikka
+type Mark = { x: number; y: number; renderX: number; renderY: number };
+let marks: Mark[] = [];
+let fieldImg: HTMLImageElement;
+let fieldWidth = 1, fieldHeight = 1;
+
+function updateFieldSize() {
+	if (fieldImg) {
+		fieldWidth = fieldImg.naturalWidth;
+		fieldHeight = fieldImg.naturalHeight;
+	}
+}
+
+function handleFieldClick(event: MouseEvent) {
+	if (!fieldImg) return;
+	const rect = fieldImg.getBoundingClientRect();
+	// Alkuperäinen klikattu kohta (aina sama renderointia varten)
+	let clickX = (event.clientX - rect.left) / rect.width;
+	let clickY = (event.clientY - rect.top) / rect.height;
+	// Tallennetaan marks-muuttujaan peilatut koordinaatit jos joukkueiden_paikat on false
+	let storeX = clickX;
+	let storeY = clickY;
+	if (!joukkueiden_paikat) {
+		storeX = 1 - clickX;
+		storeY = 1 - clickY;
+	}
+	marks = [{ x: storeX, y: storeY, renderX: clickX, renderY: clickY }];
+	// Tulosta tallennetut koordinaatit terminaaliin
+	console.log(`Laukaisupiste (talletettu): x=${storeX.toFixed(3)}, y=${storeY.toFixed(3)}`);
+}
+
+function handleFieldKeydown(event: KeyboardEvent) {
+	// Esimerkki: Enter/Space lisää pisteen keskelle (debug)
+	if (event.key === 'Enter' || event.key === ' ') {
+		marks = [{ x: 0.5, y: 0.5, renderX: 0.5, renderY: 0.5 }];
+	}
+}
 
 let ownTeamName = '';
 let opponentTeamName = '';
@@ -12,6 +61,7 @@ let joukkueiden_paikat = true; // true = oma vasemmalla, false = oma oikealla
 
 import { fetchTeams } from '$lib/stores/teams';
 
+// gameFieldPositions on nyt käytettävissä Svelte storesta
 onMount(async () => {
 	await fetchTeams();
 	const id = $page.params.id ?? $page.data.id;
@@ -21,6 +71,8 @@ onMount(async () => {
 	// Ensisijaisesti käytä ownTeamName, fallback teamsStore jos puuttuu
 	ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
 	opponentTeamName = data.opponentName || data.opponent_team_name || '';
+	// gameFieldPositions on jo asetettu /games-sivulla, mutta voit käyttää sitä tässä näin:
+	// $gameFieldPositions
 });
 </script>
 
@@ -56,9 +108,82 @@ onMount(async () => {
 	</div>
 
 
-	<div class="field-image-wrapper">
-			<img src="/Kentta.svg" alt="Kenttä" class="field-image" />
+
+	<div class="field-image-wrapper" style="position: relative;">
+		<img
+			src="/Kentta.svg"
+			alt="Kenttä"
+			class="field-image"
+			bind:this={fieldImg}
+			on:load={updateFieldSize}
+		/>
+		<div
+			class="field-overlay"
+			role="button"
+			aria-label="Laukaisukartta kenttä"
+			tabindex="0"
+			style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: auto;"
+			on:click={handleFieldClick}
+			on:keydown={handleFieldKeydown}
+		>
+			{#if marks.length > 0}
+				<div
+					class="mark-dot"
+					style="position: absolute; left: {(marks[0].renderX ?? marks[0].x) * 100}%; top: {(marks[0].renderY ?? marks[0].y) * 100}%; transform: translate(-50%, -50%);"
+					title={`(${((marks[0].renderX ?? marks[0].x)*100).toFixed(1)}, ${((marks[0].renderY ?? marks[0].y)*100).toFixed(1)})`}
+				></div>
+			{/if}
+		</div>
 	</div>
+<script lang="ts">
+// ...existing imports...
+import { onMount } from 'svelte';
+
+let marks: { x: number; y: number }[] = [];
+let fieldImg: HTMLImageElement;
+let fieldWidth = 1, fieldHeight = 1;
+
+function updateFieldSize() {
+	if (fieldImg) {
+		fieldWidth = fieldImg.naturalWidth;
+		fieldHeight = fieldImg.naturalHeight;
+	}
+}
+
+function handleFieldClick(event: MouseEvent) {
+	const rect = fieldImg.getBoundingClientRect();
+	let x = (event.clientX - rect.left) / rect.width;
+	let y = (event.clientY - rect.top) / rect.height;
+	// Peilataan, jos joukkueiden_paikat on false (oma oikealla)
+	if (!joukkueiden_paikat) {
+		x = 1 - x;
+		y = 1 - y;
+	}
+	// Tallennetaan aina "vasen alanurkka origona" (x, y)
+	marks = [...marks, { x, y }];
+}
+</script>
+<style>
+	.field-overlay {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		cursor: crosshair;
+		z-index: 2;
+	}
+	.mark-dot {
+		width: 18px;
+		height: 18px;
+		background: #f26a3d;
+		border: 2px solid #fff;
+		border-radius: 50%;
+		box-shadow: 0 1px 4px #0003;
+		pointer-events: none;
+		z-index: 3;
+	}
+</style>
 
 	<div class="stats-buttons-grid">
 		<button class="stat-btn green">
@@ -116,28 +241,28 @@ onMount(async () => {
 		<div>	
 			<p class="text-row">1. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[1])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[2])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[3])?.nick ?? ''}</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[4])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[5])?.nick ?? ''}</button>
 			</div>
 			<p class="text-row">2. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[6])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[7])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[8])?.nick ?? ''}</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
-			</div>		
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[9])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[10])?.nick ?? ''}</button>
+			</div>      
 		</div>
 		<div>	
 			<p class="text-row">MV</p>
-			<button class="fp-btn"></button>
+			<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[0])?.nick ?? ''}</button>
 			<button class="fp-btn">Ei maalivahtia</button>
 			<button class="action-btn">+/-</button>
 			<button class="action-btn">Maali ja <br/>syöttö</button>
@@ -146,24 +271,24 @@ onMount(async () => {
 		<div>	
 			<p class="text-row">3. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[11])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[12])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[13])?.nick ?? ''}</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[14])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[15])?.nick ?? ''}</button>
 			</div>
 			<p class="text-row">4. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[16])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[17])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[18])?.nick ?? ''}</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn"></button>
-				<button class="fp-btn"></button>
-			</div>		
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[19])?.nick ?? ''}</button>
+				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[20])?.nick ?? ''}</button>
+			</div>      
 		</div>		
 	</div>
 	<div class="bottom-container">
@@ -174,7 +299,7 @@ onMount(async () => {
 			<button class="action-btn" style="height:60px;">Manuaalinen tietokannan päivitys</button>
 		</div>
 		<div>
-			<button class="fp-btn" style="height:60px;">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
+			<button class="fp-btn" style="height:60px; padding: 10px">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
 			<button class="action-btn" style="height:60px;">Lopeta peli</button>
 		</div>
 	</div>
