@@ -258,7 +258,7 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
 			status = ${updateFields.status !== undefined ? updateFields.status : currentGame.status},
 			opponent_team_name = ${updateFields.opponent_team_name !== undefined ? updateFields.opponent_team_name : currentGame.opponentName},
-			goalie_change = ${updateFields.goalie_change !== undefined ? updateFields.goalie_change : currentGame.goalie_change},
+			/* goalie_change poistettu, ei käytössä eikä kannassa */
 			field_positions = ${updateFields.field_positions !== undefined ? updateFields.field_positions : currentGame.fieldPositions},
 			lineup = ${updateFields.lineup !== undefined ? updateFields.lineup : currentGame.lineup},
 			updated_at = NOW()

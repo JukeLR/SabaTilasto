@@ -20,11 +20,25 @@ import { goalieLongPass } from '$lib/stores/goalieLongPass';
 import { goalieShortPass } from '$lib/stores/goalieShortPass';
 import { goalieTurnover } from '$lib/stores/goalieTurnover';
 
+
 // Overlayn logiikka
 type Mark = { x: number; y: number; renderX: number; renderY: number };
 let marks: Mark[] = [];
 let fieldImg: HTMLImageElement;
 let fieldWidth = 1, fieldHeight = 1;
+
+// Stat button selection logic
+let selectedStat = '';
+const statButtons = [
+	{ key: 'teamGoals', label: 'Maali<br />Meille', color: 'green' },
+	{ key: 'shotsOnGoal', label: 'Veto<br />maalia kohti', color: 'green' },
+	{ key: 'shotsOffTarget', label: 'Veto ohi<br />maalista', color: 'green' },
+	{ key: 'shotsBlocked', label: 'Veto<br />blokkiin', color: 'green' },
+	{ key: 'opponentGoals', label: 'Maali<br />Vastustajalle', color: 'red' },
+	{ key: 'saves', label: 'Maalivahdin<br />torjunta', color: 'green' },
+	{ key: 'opponentShotOff', label: 'Vastustajan veto<br />ohi maalista', color: 'red' },
+	{ key: 'blocks', label: 'Veto<br />blokattu', color: 'red' }
+];
 
 function updateFieldSize() {
 	if (fieldImg) {
@@ -61,12 +75,67 @@ function handleFieldKeydown(event: KeyboardEvent) {
 	}
 }
 
+function handleSave() {
+	switch (selectedStat) {
+		case 'teamGoals':
+			// TODO: Tallenna "Maali meille"
+			break;
+		case 'shotsOnGoal':
+			// TODO: Tallenna "Veto maalia kohti"
+			break;
+		case 'shotsOffTarget':
+			// TODO: Tallenna "Veto ohi maalista"
+			break;
+		case 'shotsBlocked':
+			// TODO: Tallenna "Veto blokkiin"
+			break;
+		case 'opponentGoals':
+			// TODO: Tallenna "Maali vastustajalle"
+			break;
+		case 'saves':
+			// TODO: Tallenna "Maalivahdin torjunta"
+			break;
+		case 'opponentShotOff':
+			// TODO: Tallenna "Vastustajan veto ohi maalista"
+			break;
+		case 'blocks':
+			// TODO: Tallenna "Veto blokattu"
+			break;
+		default:
+			// TODO: Ei valintaa
+			break;
+	}
+}
+
+
 
 let ownTeamName = '';
 let opponentTeamName = '';
 let ownTeamId: number | null = null;
 let joukkueiden_paikat = true; // true = oma vasemmalla, false = oma oikealla
 let debugData = {};
+
+// Kenttäpelaajanappien monivalinta
+let selectedPlayerIds: number[] = [];
+function handlePlayerBtnClick(id: number) {
+	if (selectedPlayerIds.includes(id)) {
+		selectedPlayerIds = selectedPlayerIds.filter(pid => pid !== id);
+	} else {
+		selectedPlayerIds = [...selectedPlayerIds, id];
+	}
+}
+
+// Maalivahtinappien valinta
+let selectedGoalieId: number | null = null;
+let selectedNoGoalie = false;
+function handleGoalieBtnClick(id: number) {
+	selectedGoalieId = selectedGoalieId === id ? null : id;
+	selectedNoGoalie = false;
+}
+function handleNoGoalieBtnClick() {
+	selectedNoGoalie = !selectedNoGoalie;
+	selectedGoalieId = null;
+}
 
 import { fetchTeams } from '$lib/stores/teams';
 
@@ -132,7 +201,10 @@ onMount(async () => {
 
 
 
+
 	<div class="field-image-wrapper" style="position: relative;">
+		<!-- Poista viimeisin piste -pallo -->
+		<div class="remove-dot-btn" title="Poista viimeisin piste" on:click={() => { if (marks.length > 0) marks = marks.slice(0, -1); }}></div>
 		<img
 			src="/Kentta.svg"
 			alt="Kenttä"
@@ -161,39 +233,25 @@ onMount(async () => {
 	</div>
 
 	<div class="stats-buttons-grid">
-		<button class="stat-btn green">
-			<span class="label">Maali<br />Meille</span>
-			<span class="value">{$teamGoals.length}</span>
-		</button>
-		<button class="stat-btn green">
-					<span class="label">Veto<br />maalia kohti</span>
-					<span class="value">{$shotsOnGoal.length}</span>
-				</button>
-		<button class="stat-btn green">
-					<span class="label">Veto ohi<br />maalista</span>
-					<span class="value">{$shotsOffTarget.length}</span>
-				</button>
-		<button class="stat-btn green">
-					<span class="label">Veto<br />blokkiin</span>
-					<span class="value">{$shotsBlocked.length}</span>
-				</button>
-
-		<button class="stat-btn red">
-			<span class="label">Maali<br />Vastustajalle</span>
-			<span class="value">{$opponentGoals.length}</span>
-		</button>
-		<button class="stat-btn green">
-					<span class="label">Maalivahdin<br />torjunta</span>
-					<span class="value">{$saves.length}</span>
-				</button>
-		<button class="stat-btn red">
-			<span class="label">Vastustajan veto<br />ohi maalista</span>
-			<span class="value">{$opponentShotOff}</span>
-		</button>
-		<button class="stat-btn red">
-					<span class="label">Veto<br />blokattu</span>
-					<span class="value">{$blocks.length}</span>
-				</button>
+		{#each statButtons as btn}
+			<button
+				class="stat-btn {btn.color} {selectedStat === btn.key ? 'selected' : ''}"
+				on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
+			>
+				<span class="label">{@html btn.label}</span>
+				<span class="value">
+					{btn.key === 'teamGoals' ? $teamGoals.length
+					: btn.key === 'shotsOnGoal' ? $shotsOnGoal.length
+					: btn.key === 'shotsOffTarget' ? $shotsOffTarget.length
+					: btn.key === 'shotsBlocked' ? $shotsBlocked.length
+					: btn.key === 'opponentGoals' ? $opponentGoals.length
+					: btn.key === 'saves' ? $saves.length
+					: btn.key === 'opponentShotOff' ? $opponentShotOff
+					: btn.key === 'blocks' ? $blocks.length
+					: ''}
+				</span>
+			</button>
+		{/each}
 
 		<button class="stat-btn green">
 					<span class="label">Maalivahdin<br />katko</span>
@@ -215,54 +273,121 @@ onMount(async () => {
 	<div class="fp-btn-container">
 		<div>	
 			<p class="text-row">1. Kenttä</p>
+
 			<div class="buttons-row three">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[1])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[2])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[3])?.nick ?? ''}</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[1]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[1])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[1])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[2]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[2])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[2])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[3]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[3])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[3])?.nick ?? ''}
+				</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[4])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[5])?.nick ?? ''}</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[4]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[4])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[4])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[5]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[5])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[5])?.nick ?? ''}
+				</button>
 			</div>
 			<p class="text-row">2. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[6])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[7])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[8])?.nick ?? ''}</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[6]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[6])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[6])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[7]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[7])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[7])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[8]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[8])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[8])?.nick ?? ''}
+				</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[9])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[10])?.nick ?? ''}</button>
-			</div>      
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[9]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[9])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[9])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[10]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[10])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[10])?.nick ?? ''}
+				</button>
+			</div>
 		</div>
 		<div>	
 			<p class="text-row">MV</p>
-			<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[0])?.nick ?? ''}</button>
-			<button class="fp-btn">Ei maalivahtia</button>
+			<button class="fp-btn {selectedGoalieId === $gameFieldPositions[0] ? 'selected' : ''}"
+				on:click={() => handleGoalieBtnClick($gameFieldPositions[0])}>
+				{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[0])?.nick ?? ''}
+			</button>
+			<button class="fp-btn {selectedNoGoalie ? 'selected' : ''}"
+				on:click={handleNoGoalieBtnClick}>
+				Ei maalivahtia
+			</button>
 			<button class="action-btn">+/-</button>
 			<button class="action-btn">Maali ja <br/>syöttö</button>			
 		</div>
 		<div>	
 			<p class="text-row">3. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[11])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[12])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[13])?.nick ?? ''}</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[11]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[11])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[11])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[12]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[12])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[12])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[13]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[13])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[13])?.nick ?? ''}
+				</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[14])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[15])?.nick ?? ''}</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[14]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[14])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[14])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[15]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[15])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[15])?.nick ?? ''}
+				</button>
 			</div>
 			<p class="text-row">4. Kenttä</p>
 			<div class="buttons-row three">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[16])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[17])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[18])?.nick ?? ''}</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[16]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[16])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[16])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[17]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[17])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[17])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[18]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[18])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[18])?.nick ?? ''}
+				</button>
 			</div>
 			<div class="buttons-row two">
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[19])?.nick ?? ''}</button>
-				<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[20])?.nick ?? ''}</button>
-			</div>      
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[19]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[19])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[19])?.nick ?? ''}
+				</button>
+				<button class="fp-btn {selectedPlayerIds.includes($gameFieldPositions[20]) ? 'selected' : ''}"
+					on:click={() => handlePlayerBtnClick($gameFieldPositions[20])}>
+					{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[20])?.nick ?? ''}
+				</button>
+			</div>
 		</div>		
 	</div>
 	<div class="bottom-container">
@@ -270,7 +395,7 @@ onMount(async () => {
 			<button class="action-btn" style="height:60px;">Peruuta</button>
 		</div>
 		<div>			
-			<button class="action-btn" style="height:60px;">Tallenna</button>
+			<button class="action-btn" style="height:60px;" on:click={handleSave}>Tallenna</button>		
 		</div>
 		<div>
 			<button class="fp-btn" style="height:60px; padding: 10px">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
@@ -281,6 +406,27 @@ onMount(async () => {
 	
 
 <style>
+	.remove-dot-btn {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		width: 50px;
+		height: 50px;
+		background: #e53935;
+		border-radius: 50%;
+		border: 2px solid #fff;
+		box-shadow: 0 1px 4px #0003;
+		z-index: 10;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: filter 0.15s;
+	}
+	.remove-dot-btn:hover {
+		filter: brightness(0.85);
+	}
+
 	.field-overlay {
 		position: absolute;
 		left: 0;
@@ -332,20 +478,26 @@ onMount(async () => {
 		justify-content: center;
 		gap: 8px;
 	}
-	.fp-btn { 
-		width: 100%;
-		color: #111;
-		min-width: 70px;
-		font-size: 0.95rem;
-		border-radius: 6px;
-		padding: 0px 0;
-		margin-top: 6px;
-		margin-bottom: 6px;		
-		border: 1px solid #ccc;
-		background: #eee;
-		cursor: pointer;
-		min-height: 32px; 
-	}
+	   .fp-btn { 
+		   width: 100%;
+		   color: #111;
+		   min-width: 70px;
+		   font-size: 0.95rem;
+		   border-radius: 6px;
+		   padding: 0px 0;
+		   margin-top: 6px;
+		   margin-bottom: 6px;      
+		   border: 1px solid #ccc;
+		   background: #eee;
+		   cursor: pointer;
+		   min-height: 32px; 
+		   transition: background 0.15s, color 0.15s;
+	   }
+	   .fp-btn.selected {
+		   background: #3b82f6 !important;
+		   color: #fff;
+		   border: 2px solid #2563eb;
+	   }
 	.action-btn { 
 		width: 70%;
 		min-width: 70px;
@@ -422,6 +574,10 @@ onMount(async () => {
 	.stat-btn.yellow .value {
 		color: #222;
 		text-shadow: none;
+	}
+	.stat-btn.selected {
+		background: #3b82f6 !important;
+		color: #fff;
 	}
 	.stat-btn:active {
 		filter: brightness(0.95);
