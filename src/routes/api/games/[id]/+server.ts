@@ -30,12 +30,14 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 				g.shots_blocked,
 				g.blocks,
 				g.saves,
-				g.goalie_game_interruption,
-				g.opponent_shots_off,
-				g.plus_points,
-				g.minus_points,
-                t.name as "ownTeamName",
-                g.goalie_change
+				   g.goalie_game_interruption,
+				   g.opponent_shots_off,
+				   g.goalie_long_pass,
+				   g.goalie_short_pass,
+				   g.goalie_turnover,
+				   g.plus_points,
+				   g.minus_points,
+					t.name as "ownTeamName"
 			FROM games g
 			LEFT JOIN teams t ON g.own_team_id = t.id
 			WHERE g.id = ${gameId}
@@ -56,6 +58,9 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 		game.blocks = Array.isArray(game.blocks) ? game.blocks : (game.blocks ? [game.blocks] : []);
 		game.saves = Array.isArray(game.saves) ? game.saves : (game.saves ? [game.saves] : []);
 		game.goalie_game_interruption = Array.isArray(game.goalie_game_interruption) ? game.goalie_game_interruption : (game.goalie_game_interruption ? [game.goalie_game_interruption] : []);
+		game.goalie_long_pass = Array.isArray(game.goalie_long_pass) ? game.goalie_long_pass : (game.goalie_long_pass ? [game.goalie_long_pass] : []);
+		game.goalie_short_pass = Array.isArray(game.goalie_short_pass) ? game.goalie_short_pass : (game.goalie_short_pass ? [game.goalie_short_pass] : []);
+		game.goalie_turnover = Array.isArray(game.goalie_turnover) ? game.goalie_turnover : (game.goalie_turnover ? [game.goalie_turnover] : []);
 		game.opponent_shots_off = typeof game.opponent_shots_off === 'number' ? game.opponent_shots_off : 0;
 		return json(game);
 	} catch (error) {
@@ -73,17 +78,6 @@ export const PUT = async ({ params, request }: RequestEvent) => {
 	console.log('PUT payload:', body);
 	// Päivitä field_positions, lineup, ownTeamId, opponentName
 	// Hae nykyinen goalie_change
-	const currentRes = await sql`SELECT goalie_change FROM games WHERE id = ${gameId}`;
-	const currentGoalieChange = currentRes.length > 0 ? currentRes[0].goalie_change : null;
-	let newGoalieChange = currentGoalieChange;
-	if (
-	  body.goalie_change !== undefined &&
-	  body.goalie_change !== null &&
-	  typeof body.goalie_change === 'number' &&
-	  body.goalie_change > 0
-	) {
-	  newGoalieChange = body.goalie_change;
-	}
 	const result = await sql`
 		UPDATE games
 		SET
@@ -91,7 +85,6 @@ export const PUT = async ({ params, request }: RequestEvent) => {
 			lineup = ${body.lineup},
 			own_team_id = ${body.ownTeamId},
 			opponent_team_name = ${body.opponentName},
-			goalie_change = ${newGoalieChange},
 			updated_at = NOW()
 		WHERE id = ${gameId}
 		RETURNING id

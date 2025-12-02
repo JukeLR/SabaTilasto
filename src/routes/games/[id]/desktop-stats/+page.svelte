@@ -16,6 +16,9 @@ import { shotsOffTarget } from '$lib/stores/shotsOffTarget';
 import { shotsBlocked } from '$lib/stores/shotsBlocked';
 import { blocks } from '$lib/stores/blocks';
 import { saves, goalieGameInterruption, opponentShotOff } from '$lib/stores/saves';
+import { goalieLongPass } from '$lib/stores/goalieLongPass';
+import { goalieShortPass } from '$lib/stores/goalieShortPass';
+import { goalieTurnover } from '$lib/stores/goalieTurnover';
 
 // Overlayn logiikka
 type Mark = { x: number; y: number; renderX: number; renderY: number };
@@ -79,18 +82,21 @@ onMount(async () => {
        opponentTeamName = data.opponentName || data.opponent_team_name || '';
 
 	       // Päivitä storeihin AINA API-vastauksella
-	       gameLineup.set(data.lineup || []);
-	       gameFieldPositions.set(data.fieldPositions || []);
-	       await fetchLineupPlayers(data.lineup || []);
-	       teamGoals.set(data.team_goals || []);
-	       opponentGoals.set(data.opponent_goals || []);
-	       shotsOnGoal.set(data.shots_on_goal || []);
-	       shotsOffTarget.set(data.shots_off_target || []);
-	       shotsBlocked.set(data.shots_blocked || []);
-	       blocks.set(data.blocks || []);
-	       saves.set(data.saves || []);
-	       goalieGameInterruption.set(data.goalie_game_interruption || []);
-			   opponentShotOff.set(data.opponent_shots_off ?? 0);
+		gameLineup.set(data.lineup || []);
+		gameFieldPositions.set(data.fieldPositions || []);
+		await fetchLineupPlayers(data.lineup || []);
+		teamGoals.set(data.team_goals || []);
+		opponentGoals.set(data.opponent_goals || []);
+		shotsOnGoal.set(data.shots_on_goal || []);
+		shotsOffTarget.set(data.shots_off_target || []);
+		shotsBlocked.set(data.shots_blocked || []);
+		blocks.set(data.blocks || []);
+		saves.set(data.saves || []);
+		goalieGameInterruption.set(data.goalie_game_interruption || []);
+		opponentShotOff.set(data.opponent_shots_off ?? 0);
+		goalieLongPass.set(data.goalie_long_pass || []);
+		goalieShortPass.set(data.goalie_short_pass || []);
+		goalieTurnover.set(data.goalie_turnover || []);
    });
 </script>
 <div class="desktop-stats-root">
@@ -195,15 +201,15 @@ onMount(async () => {
 				</button>
 		<button class="stat-btn green">
 			<span class="label">Pitkä heitto<br />omille</span>
-			<span class="value">0</span>
+			<span class="value">{$goalieLongPass.length}</span>
 		</button>
 		<button class="stat-btn green">
 			<span class="label">Lyhyt heitto<br />omille</span>
-			<span class="value">0</span>
+			<span class="value">{$goalieShortPass.length}</span>
 		</button>
 		<button class="stat-btn yellow">
 			<span class="label">Heitto<br />vastustajalle</span>
-			<span class="value">0</span>
+			<span class="value">{$goalieTurnover.length}</span>
 		</button>
 	</div>
 	<div class="fp-btn-container">
