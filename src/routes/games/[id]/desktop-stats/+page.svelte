@@ -1,4 +1,5 @@
 <script lang="ts">
+// DEBUG: Näytä opponentGoals store UI:ssa
 
 import { goto } from "$app/navigation";
 import { onMount } from 'svelte';
@@ -37,14 +38,17 @@ function handleFieldClick(event: MouseEvent) {
 	let clickY = (event.clientY - rect.top) / rect.height;
 	// Tallennetaan marks-muuttujaan peilatut koordinaatit jos joukkueiden_paikat on false
 	let storeX = clickX;
+	let neonX = clickX;
 	let storeY = clickY;
+	let neonY = clickY;
 	if (!joukkueiden_paikat) {
-		storeX = 1 - clickX;
-		storeY = 1 - clickY;
+		neonX = 1 - clickX;
+		neonY = 1 - clickY;
 	}
 	marks = [{ x: storeX, y: storeY, renderX: clickX, renderY: clickY }];
 	// Tulosta tallennetut koordinaatit terminaaliin
 	console.log(`Laukaisupiste (talletettu): x=${storeX.toFixed(3)}, y=${storeY.toFixed(3)}`);
+	console.log(`Laukaisupiste (Neoniin): x=${neonX.toFixed(3)}, y=${neonY.toFixed(3)}`);
 }
 
 function handleFieldKeydown(event: KeyboardEvent) {
@@ -54,28 +58,41 @@ function handleFieldKeydown(event: KeyboardEvent) {
 	}
 }
 
+
 let ownTeamName = '';
 let opponentTeamName = '';
 let ownTeamId: number | null = null;
 let joukkueiden_paikat = true; // true = oma vasemmalla, false = oma oikealla
+let debugData = {};
 
 import { fetchTeams } from '$lib/stores/teams';
 
 // gameFieldPositions on nyt käytettävissä Svelte storesta
 onMount(async () => {
-	await fetchTeams();
-	const id = $page.params.id ?? $page.data.id;
-	const res = await fetch(`/api/games/${id}?basic=true`);
-	const data = await res.json();
-	ownTeamId = data.own_team_id || null;
-	// Ensisijaisesti käytä ownTeamName, fallback teamsStore jos puuttuu
-	ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
-	opponentTeamName = data.opponentName || data.opponent_team_name || '';
-	// gameFieldPositions on jo asetettu /games-sivulla, mutta voit käyttää sitä tässä näin:
-	// $gameFieldPositions
-});
-</script>
+       await fetchTeams();
+       const id = $page.params.id ?? $page.data.id;
+       const res = await fetch(`/api/games/${id}?basic=true`);
+       const data = await res.json();
+       debugData = data;
+       ownTeamId = data.own_team_id || null;
+       ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
+       opponentTeamName = data.opponentName || data.opponent_team_name || '';
 
+	       // Päivitä storeihin AINA API-vastauksella
+	       gameLineup.set(data.lineup || []);
+	       gameFieldPositions.set(data.fieldPositions || []);
+	       await fetchLineupPlayers(data.lineup || []);
+	       teamGoals.set(data.team_goals || []);
+	       opponentGoals.set(data.opponent_goals || []);
+	       shotsOnGoal.set(data.shots_on_goal || []);
+	       shotsOffTarget.set(data.shots_off_target || []);
+	       shotsBlocked.set(data.shots_blocked || []);
+	       blocks.set(data.blocks || []);
+	       saves.set(data.saves || []);
+	       goalieGameInterruption.set(data.goalie_game_interruption || []);
+			   opponentShotOff.set(data.opponent_shots_off ?? 0);
+   });
+</script>
 <div class="desktop-stats-root">
 	<div class="top-row">
 		{#if joukkueiden_paikat}
@@ -134,96 +151,48 @@ onMount(async () => {
 				></div>
 			{/if}
 		</div>
+
 	</div>
-<script lang="ts">
-// ...existing imports...
-import { onMount } from 'svelte';
-
-let marks: { x: number; y: number }[] = [];
-let fieldImg: HTMLImageElement;
-let fieldWidth = 1, fieldHeight = 1;
-
-function updateFieldSize() {
-	if (fieldImg) {
-		fieldWidth = fieldImg.naturalWidth;
-		fieldHeight = fieldImg.naturalHeight;
-	}
-}
-
-function handleFieldClick(event: MouseEvent) {
-	const rect = fieldImg.getBoundingClientRect();
-	let x = (event.clientX - rect.left) / rect.width;
-	let y = (event.clientY - rect.top) / rect.height;
-	// Peilataan, jos joukkueiden_paikat on false (oma oikealla)
-	if (!joukkueiden_paikat) {
-		x = 1 - x;
-		y = 1 - y;
-	}
-	// Tallennetaan aina "vasen alanurkka origona" (x, y)
-	marks = [...marks, { x, y }];
-}
-</script>
-<style>
-	.field-overlay {
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 100%;
-		height: 100%;
-		cursor: crosshair;
-		z-index: 2;
-	}
-	.mark-dot {
-		width: 18px;
-		height: 18px;
-		background: #f26a3d;
-		border: 2px solid #fff;
-		border-radius: 50%;
-		box-shadow: 0 1px 4px #0003;
-		pointer-events: none;
-		z-index: 3;
-	}
-</style>
 
 	<div class="stats-buttons-grid">
 		<button class="stat-btn green">
 			<span class="label">Maali<br />Meille</span>
-			<span class="value">0</span>
+			<span class="value">{$teamGoals.length}</span>
 		</button>
 		<button class="stat-btn green">
-			<span class="label">Veto<br />maalia kohti</span>
-			<span class="value">0</span>
-		</button>
+					<span class="label">Veto<br />maalia kohti</span>
+					<span class="value">{$shotsOnGoal.length}</span>
+				</button>
 		<button class="stat-btn green">
-			<span class="label">Veto ohi<br />maalista</span>
-			<span class="value">0</span>
-		</button>
+					<span class="label">Veto ohi<br />maalista</span>
+					<span class="value">{$shotsOffTarget.length}</span>
+				</button>
 		<button class="stat-btn green">
-			<span class="label">Veto<br />blokkiin</span>
-			<span class="value">0</span>
-		</button>
+					<span class="label">Veto<br />blokkiin</span>
+					<span class="value">{$shotsBlocked.length}</span>
+				</button>
 
 		<button class="stat-btn red">
 			<span class="label">Maali<br />Vastustajalle</span>
-			<span class="value">0</span>
+			<span class="value">{$opponentGoals.length}</span>
 		</button>
 		<button class="stat-btn green">
-			<span class="label">Maalivahdin<br />torjunta</span>
-			<span class="value">0</span>
+					<span class="label">Maalivahdin<br />torjunta</span>
+					<span class="value">{$saves.length}</span>
+				</button>
+		<button class="stat-btn red">
+			<span class="label">Vastustajan veto<br />ohi maalista</span>
+			<span class="value">{$opponentShotOff}</span>
 		</button>
 		<button class="stat-btn red">
-			<span class="label">Veto ohi<br />maalista</span>
-			<span class="value">0</span>
-		</button>
-		<button class="stat-btn red">
-			<span class="label">Veto<br />blokattu</span>
-			<span class="value">0</span>
-		</button>
+					<span class="label">Veto<br />blokattu</span>
+					<span class="value">{$blocks.length}</span>
+				</button>
 
 		<button class="stat-btn green">
-			<span class="label">Maalivahdin<br />katko</span>
-			<span class="value">0</span>
-		</button>
+					<span class="label">Maalivahdin<br />katko</span>
+					<span class="value">{$goalieGameInterruption.length}</span>
+				</button>
 		<button class="stat-btn green">
 			<span class="label">Pitkä heitto<br />omille</span>
 			<span class="value">0</span>
@@ -265,8 +234,7 @@ function handleFieldClick(event: MouseEvent) {
 			<button class="fp-btn">{$lineupPlayersStore.find(p => p.id === $gameFieldPositions[0])?.nick ?? ''}</button>
 			<button class="fp-btn">Ei maalivahtia</button>
 			<button class="action-btn">+/-</button>
-			<button class="action-btn">Maali ja <br/>syöttö</button>
-			<button class="action-btn" style="height:60px;">Tallenna</button>
+			<button class="action-btn">Maali ja <br/>syöttö</button>			
 		</div>
 		<div>	
 			<p class="text-row">3. Kenttä</p>
@@ -296,7 +264,7 @@ function handleFieldClick(event: MouseEvent) {
 			<button class="action-btn" style="height:60px;">Peruuta</button>
 		</div>
 		<div>			
-			<button class="action-btn" style="height:60px;">Manuaalinen tietokannan päivitys</button>
+			<button class="action-btn" style="height:60px;">Tallenna</button>
 		</div>
 		<div>
 			<button class="fp-btn" style="height:60px; padding: 10px">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
@@ -304,10 +272,28 @@ function handleFieldClick(event: MouseEvent) {
 		</div>
 	</div>
 </div>
-
 	
 
 <style>
+	.field-overlay {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		cursor: crosshair;
+		z-index: 2;
+	}
+	.mark-dot {
+		width: 18px;
+		height: 18px;
+		background: #f26a3d;
+		border: 2px solid #fff;
+		border-radius: 50%;
+		box-shadow: 0 1px 4px #0003;
+		pointer-events: none;
+		z-index: 3;
+	}
 	.bottom-container {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
