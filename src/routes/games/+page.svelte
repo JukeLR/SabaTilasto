@@ -1,5 +1,5 @@
-
 <script lang="ts">
+import { assists, fetchAssists } from '$lib/stores/assists';
 import { onMount } from 'svelte';
 import { teamsStore, fetchTeams } from '$lib/stores/teams';
 import { gameLineup, gameFieldPositions } from '$lib/stores/gameState';
@@ -139,6 +139,7 @@ import { page } from '$app/stores';
 			saves.set(data.saves || []);
 			goalieGameInterruption.set(data.goalie_game_interruption || []);
 			opponentShotOff.set(typeof data.opponent_shots_off === 'number' ? data.opponent_shots_off : 0);
+			assists.set(data.assists || []);
 
 			// Ohjaa tilastointisivulle
 			if (typeof window !== 'undefined') {

@@ -1,6 +1,7 @@
+
 <script lang="ts">
 // DEBUG: Näytä opponentGoals store UI:ssa
-
+import { assists } from '$lib/stores/assists';
 import { goto } from "$app/navigation";
 import { onMount } from 'svelte';
 import { page } from "$app/stores";
@@ -16,9 +17,11 @@ import { shotsOffTarget } from '$lib/stores/shotsOffTarget';
 import { shotsBlocked } from '$lib/stores/shotsBlocked';
 import { blocks } from '$lib/stores/blocks';
 import { saves, goalieGameInterruption, opponentShotOff } from '$lib/stores/saves';
+
 import { goalieLongPass } from '$lib/stores/goalieLongPass';
 import { goalieShortPass } from '$lib/stores/goalieShortPass';
 import { goalieTurnover } from '$lib/stores/goalieTurnover';
+import { plusMinusPlayers } from '$lib/stores/plusMinusPlayers';
 
 
 // Overlayn logiikka
@@ -35,7 +38,7 @@ const statButtons = [
 	{ key: 'shotsOffTarget', label: 'Veto ohi<br />maalista', color: 'green' },
 	{ key: 'shotsBlocked', label: 'Veto<br />blokkiin', color: 'green' },
 	{ key: 'opponentGoals', label: 'Maali<br />Vastustajalle', color: 'red' },
-	{ key: 'saves', label: 'Maalivahdin<br />torjunta', color: 'green' },
+	{ key: 'saves', label: 'Oman maali-<br />vahdin torjunta', color: 'green' },
 	{ key: 'opponentShotOff', label: 'Vastustajan veto<br />ohi maalista', color: 'red' },
 	{ key: 'blocks', label: 'Veto<br />blokattu', color: 'red' }
 ];
@@ -137,35 +140,46 @@ function handleNoGoalieBtnClick() {
 	selectedGoalieId = null;
 }
 
+// Action-nappien monivalinta
+let selectedActionBtns: Array<'plusminus' | 'goalassist'> = [];
+function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
+	if (selectedActionBtns.includes(type)) {
+		selectedActionBtns = selectedActionBtns.filter(t => t !== type);
+	} else {
+		selectedActionBtns = [...selectedActionBtns, type];
+	}
+}
+
 import { fetchTeams } from '$lib/stores/teams';
 
 // gameFieldPositions on nyt käytettävissä Svelte storesta
 onMount(async () => {
-       await fetchTeams();
-       const id = $page.params.id ?? $page.data.id;
-       const res = await fetch(`/api/games/${id}?basic=true`);
-       const data = await res.json();
-       debugData = data;
-       ownTeamId = data.own_team_id || null;
-       ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
-       opponentTeamName = data.opponentName || data.opponent_team_name || '';
+	await fetchTeams();
+	const id = $page.params.id ?? $page.data.id;
+	const res = await fetch(`/api/games/${id}?basic=true`);
+	const data = await res.json();
+	debugData = data;
+	ownTeamId = data.own_team_id || null;
+	ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
+	opponentTeamName = data.opponentName || data.opponent_team_name || '';
 
-	       // Päivitä storeihin AINA API-vastauksella
-		gameLineup.set(data.lineup || []);
-		gameFieldPositions.set(data.fieldPositions || []);
-		await fetchLineupPlayers(data.lineup || []);
-		teamGoals.set(data.team_goals || []);
-		opponentGoals.set(data.opponent_goals || []);
-		shotsOnGoal.set(data.shots_on_goal || []);
-		shotsOffTarget.set(data.shots_off_target || []);
-		shotsBlocked.set(data.shots_blocked || []);
-		blocks.set(data.blocks || []);
-		saves.set(data.saves || []);
-		goalieGameInterruption.set(data.goalie_game_interruption || []);
-		opponentShotOff.set(data.opponent_shots_off ?? 0);
-		goalieLongPass.set(data.goalie_long_pass || []);
-		goalieShortPass.set(data.goalie_short_pass || []);
-		goalieTurnover.set(data.goalie_turnover || []);
+	// Päivitä storeihin AINA API-vastauksella
+	gameLineup.set(data.lineup || []);
+	gameFieldPositions.set(data.fieldPositions || []);
+	await fetchLineupPlayers(data.lineup || []);
+	teamGoals.set(data.team_goals || []);
+	opponentGoals.set(data.opponent_goals || []);
+	shotsOnGoal.set(data.shots_on_goal || []);
+	shotsOffTarget.set(data.shots_off_target || []);
+	shotsBlocked.set(data.shots_blocked || []);
+	blocks.set(data.blocks || []);
+	saves.set(data.saves || []);
+	goalieGameInterruption.set(data.goalie_game_interruption || []);
+	opponentShotOff.set(data.opponent_shots_off ?? 0);
+	goalieLongPass.set(data.goalie_long_pass || []);
+	goalieShortPass.set(data.goalie_short_pass || []);
+	goalieTurnover.set(data.goalie_turnover || []);
+	assists.set(data.assists || []);
    });
 </script>
 <div class="desktop-stats-root">
@@ -233,25 +247,36 @@ onMount(async () => {
 	</div>
 
 	<div class="stats-buttons-grid">
-		{#each statButtons as btn}
-			<button
-				class="stat-btn {btn.color} {selectedStat === btn.key ? 'selected' : ''}"
-				on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
-			>
-				<span class="label">{@html btn.label}</span>
-				<span class="value">
-					{btn.key === 'teamGoals' ? $teamGoals.length
-					: btn.key === 'shotsOnGoal' ? $shotsOnGoal.length
-					: btn.key === 'shotsOffTarget' ? $shotsOffTarget.length
-					: btn.key === 'shotsBlocked' ? $shotsBlocked.length
-					: btn.key === 'opponentGoals' ? $opponentGoals.length
-					: btn.key === 'saves' ? $saves.length
-					: btn.key === 'opponentShotOff' ? $opponentShotOff
-					: btn.key === 'blocks' ? $blocks.length
-					: ''}
-				</span>
-			</button>
-		{/each}
+
+		   {#each statButtons as btn}
+			   {#if btn.key === 'saves'}
+				   <button class="stat-btn green" on:click={() => {/* TODO: Tallenna Maalivahdin torjunta */}}>
+					   <span class="label">{@html btn.label}</span>
+					   <span class="value">{$saves.length}</span>
+				   </button>
+			   {:else if btn.key === 'opponentShotOff'}
+				   <button class="stat-btn red" on:click={() => {/* TODO: Tallenna Vastustajan veto ohi maalista */}}>
+					   <span class="label">{@html btn.label}</span>
+					   <span class="value">{$opponentShotOff}</span>
+				   </button>
+			   {:else}
+				   <button
+					   class="stat-btn {btn.color} {selectedStat === btn.key ? 'selected' : ''}"
+					   on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
+				   >
+					   <span class="label">{@html btn.label}</span>
+					   <span class="value">
+						   {btn.key === 'teamGoals' ? $teamGoals.length
+						   : btn.key === 'shotsOnGoal' ? $shotsOnGoal.length
+						   : btn.key === 'shotsOffTarget' ? $shotsOffTarget.length
+						   : btn.key === 'shotsBlocked' ? $shotsBlocked.length
+						   : btn.key === 'opponentGoals' ? $opponentGoals.length
+						   : btn.key === 'blocks' ? $blocks.length
+						   : ''}
+					   </span>
+				   </button>
+			   {/if}
+		   {/each}
 
 		<button class="stat-btn green">
 					<span class="label">Maalivahdin<br />katko</span>
@@ -334,8 +359,16 @@ onMount(async () => {
 				on:click={handleNoGoalieBtnClick}>
 				Ei maalivahtia
 			</button>
-			<button class="action-btn">+/-</button>
-			<button class="action-btn">Maali ja <br/>syöttö</button>			
+			<button class="action-btn {selectedActionBtns.includes('plusminus') ? 'pressed-green' : ''}"
+				on:click={() => handleActionBtnClick('plusminus')}
+				disabled={selectedStat !== 'teamGoals' && selectedStat !== 'opponentGoals'}>
+				+/-
+			</button>
+			<button class="action-btn {selectedActionBtns.includes('goalassist') ? 'pressed-green' : ''}"
+				on:click={() => handleActionBtnClick('goalassist')}
+				disabled={selectedStat !== 'teamGoals' || !selectedActionBtns.includes('plusminus')}>
+				Maali ja <br/>syöttö
+			</button>
 		</div>
 		<div>	
 			<p class="text-row">3. Kenttä</p>
@@ -520,6 +553,17 @@ onMount(async () => {
 		background: #4caf50;
 		color: #111;
 	}
+	.action-btn.pressed-green {
+		background: #6fcf5b !important;
+		color: #111;
+		border: 2px solid #3b82f6;
+	}
+	.action-btn:disabled {
+		background: #e0e0e0 !important;
+		color: #aaa !important;
+		cursor: not-allowed;
+		border: 1px solid #ccc;
+	}
 	.stats-buttons-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
@@ -633,7 +677,7 @@ onMount(async () => {
 		font-size: 1.5rem;
 		font-weight: bold;
 		color: #222;
-		padding: 0 12px;
+		padding: 0 500px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
