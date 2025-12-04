@@ -48,6 +48,9 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 		}
 
 		const game = games[0];
+		// Poistetaan debug-tulostukset
+		// console.log('plus_points raw:', game.plus_points);
+		// console.log('minus_points raw:', game.minus_points);
 		// Varmista että tilastokentät ovat aina array
 		game.team_goals = Array.isArray(game.team_goals) ? game.team_goals : (game.team_goals ? [game.team_goals] : []);
 		game.opponent_goals = Array.isArray(game.opponent_goals) ? game.opponent_goals : (game.opponent_goals ? [game.opponent_goals] : []);
@@ -58,10 +61,34 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 		game.blocks = Array.isArray(game.blocks) ? game.blocks : (game.blocks ? [game.blocks] : []);
 		game.saves = Array.isArray(game.saves) ? game.saves : (game.saves ? [game.saves] : []);
 		game.goalie_game_interruption = Array.isArray(game.goalie_game_interruption) ? game.goalie_game_interruption : (game.goalie_game_interruption ? [game.goalie_game_interruption] : []);
+
+		// Parse plus_points and minus_points from string to array if needed
+		function parsePgArray(val) {
+			if (Array.isArray(val)) return val;
+			if (typeof val === 'string' && val.startsWith('{') && val.endsWith('}')) {
+				return val.slice(1, -1).split(',').map(x => Number(x.trim())).filter(x => !isNaN(x));
+			}
+			if (val == null) return [];
+			return [val];
+		}
+		game.plus_points = parsePgArray(game.plus_points);
+		game.minus_points = parsePgArray(game.minus_points);
 		game.goalie_long_pass = Array.isArray(game.goalie_long_pass) ? game.goalie_long_pass : (game.goalie_long_pass ? [game.goalie_long_pass] : []);
 		game.goalie_short_pass = Array.isArray(game.goalie_short_pass) ? game.goalie_short_pass : (game.goalie_short_pass ? [game.goalie_short_pass] : []);
 		game.goalie_turnover = Array.isArray(game.goalie_turnover) ? game.goalie_turnover : (game.goalie_turnover ? [game.goalie_turnover] : []);
 		game.opponent_shots_off = typeof game.opponent_shots_off === 'number' ? game.opponent_shots_off : 0;
+		// Pakota arrayt serialisoitumaan oikein
+		game.plus_points = Array.isArray(game.plus_points)
+          ? [...game.plus_points]
+          : typeof game.plus_points === 'string'
+            ? game.plus_points.replace(/[{}]/g, '').split(',').map(Number)
+            : [];
+
+        game.minus_points = Array.isArray(game.minus_points)
+          ? [...game.minus_points]
+          : typeof game.minus_points === 'string'
+            ? game.minus_points.replace(/[{}]/g, '').split(',').map(Number)
+            : [];
 		return json(game);
 	} catch (error) {
 		console.error('Get game error:', error);

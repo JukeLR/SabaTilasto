@@ -1,5 +1,6 @@
 <script lang="ts">
 import { assists, fetchAssists } from '$lib/stores/assists';
+import { plusPoints, minusPoints } from '$lib/stores/plusMinusPoints';
 import { onMount } from 'svelte';
 import { teamsStore, fetchTeams } from '$lib/stores/teams';
 import { gameLineup, gameFieldPositions } from '$lib/stores/gameState';
@@ -140,6 +141,11 @@ import { page } from '$app/stores';
 			goalieGameInterruption.set(data.goalie_game_interruption || []);
 			opponentShotOff.set(typeof data.opponent_shots_off === 'number' ? data.opponent_shots_off : 0);
 			assists.set(data.assists || []);
+			// Tallennus storeihin
+			console.log('API plus_points:', data.plus_points);
+			console.log('API minus_points:', data.minus_points);
+			plusPoints.set(data.plus_points || []);
+			minusPoints.set(data.minus_points || []);
 
 			// Ohjaa tilastointisivulle
 			if (typeof window !== 'undefined') {

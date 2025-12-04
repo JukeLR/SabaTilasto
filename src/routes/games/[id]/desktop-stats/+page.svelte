@@ -1,7 +1,7 @@
-
 <script lang="ts">
 // DEBUG: Näytä opponentGoals store UI:ssa
 import { assists } from '$lib/stores/assists';
+import { plusPoints, minusPoints } from '$lib/stores/plusMinusPoints';
 import { goto } from "$app/navigation";
 import { onMount } from 'svelte';
 import { page } from "$app/stores";
@@ -25,8 +25,9 @@ import { plusMinusPlayers } from '$lib/stores/plusMinusPlayers';
 
 
 // Overlayn logiikka
-type Mark = { x: number; y: number; renderX: number; renderY: number };
-let marks: Mark[] = [];
+type Mark = { x: number; y: number; renderX: number; renderY: number; char: string; color: string };
+let marks: Mark[] = []; // Only saved letters
+let tempPoint: { x: number; y: number; renderX: number; renderY: number } | null = null; // Temporary shot point
 let fieldImg: HTMLImageElement;
 let fieldWidth = 1, fieldHeight = 1;
 
@@ -53,10 +54,8 @@ function updateFieldSize() {
 function handleFieldClick(event: MouseEvent) {
 	if (!fieldImg) return;
 	const rect = fieldImg.getBoundingClientRect();
-	// Alkuperäinen klikattu kohta (aina sama renderointia varten)
 	let clickX = (event.clientX - rect.left) / rect.width;
 	let clickY = (event.clientY - rect.top) / rect.height;
-	// Tallennetaan marks-muuttujaan peilatut koordinaatit jos joukkueiden_paikat on false
 	let storeX = clickX;
 	let neonX = clickX;
 	let storeY = clickY;
@@ -65,48 +64,79 @@ function handleFieldClick(event: MouseEvent) {
 		neonX = 1 - clickX;
 		neonY = 1 - clickY;
 	}
-	marks = [{ x: storeX, y: storeY, renderX: clickX, renderY: clickY }];
+	tempPoint = { x: storeX, y: storeY, renderX: clickX, renderY: clickY };
 	// Tulosta tallennetut koordinaatit terminaaliin
 	console.log(`Laukaisupiste (talletettu): x=${storeX.toFixed(3)}, y=${storeY.toFixed(3)}`);
 	console.log(`Laukaisupiste (Neoniin): x=${neonX.toFixed(3)}, y=${neonY.toFixed(3)}`);
 }
 
 function handleFieldKeydown(event: KeyboardEvent) {
-	// Esimerkki: Enter/Space lisää pisteen keskelle (debug)
+	// Esimerkki: Enter/Space lisää tilapäisen pisteen keskelle (debug)
 	if (event.key === 'Enter' || event.key === ' ') {
-		marks = [{ x: 0.5, y: 0.5, renderX: 0.5, renderY: 0.5 }];
+		tempPoint = { x: 0.5, y: 0.5, renderX: 0.5, renderY: 0.5 };
 	}
 }
 
+
 function handleSave() {
-	switch (selectedStat) {
-		case 'teamGoals':
-			// TODO: Tallenna "Maali meille"
-			break;
-		case 'shotsOnGoal':
-			// TODO: Tallenna "Veto maalia kohti"
-			break;
-		case 'shotsOffTarget':
-			// TODO: Tallenna "Veto ohi maalista"
-			break;
-		case 'shotsBlocked':
-			// TODO: Tallenna "Veto blokkiin"
-			break;
-		case 'opponentGoals':
-			// TODO: Tallenna "Maali vastustajalle"
-			break;
-		case 'saves':
-			// TODO: Tallenna "Maalivahdin torjunta"
-			break;
-		case 'opponentShotOff':
-			// TODO: Tallenna "Vastustajan veto ohi maalista"
-			break;
-		case 'blocks':
-			// TODO: Tallenna "Veto blokattu"
-			break;
-		default:
-			// TODO: Ei valintaa
-			break;
+	if (
+		selectedStat === 'teamGoals' &&
+		selectedActionBtns.includes('plusminus') &&
+		selectedActionBtns.includes('goalassist')
+	) {
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'M', color: 'green' }
+			];
+			
+		}
+		// 2. Lisää maalintekijä teamGoalsiin (tai 'OM' jos ei lukittu)
+		if (lockedScorerId) {
+			teamGoals.update(arr => [...arr, `${lockedScorerId}`]);
+		} else {
+			teamGoals.update(arr => [...arr, 'OM']);
+		}
+		// 3. Lisää syöttäjä assistsiin (jos lukittu)
+		if (lockedAssistId !== null) {
+			assists.update(arr => lockedAssistId !== null ? [...arr, lockedAssistId] : arr);
+		}
+		// 4. Lisää plusMinusPlayers id:t plusPoints storeen
+		plusPoints.update(arr => [...arr, ...get(plusMinusPlayers)]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: lockedScorerId,
+						team: 1,
+						type: 'M',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('teamGoals:', get(teamGoals));
+		console.log('assists:', get(assists));
+		console.log('plusPoints:', get(plusPoints));
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedActionBtns = [];
+		lockedScorerId = null;
+		lockedAssistId = null;
+		return;
 	}
 }
 
@@ -142,7 +172,42 @@ function handleNoGoalieBtnClick() {
 
 // Action-nappien monivalinta
 let selectedActionBtns: Array<'plusminus' | 'goalassist'> = [];
+let lockedScorerId: number | null = null;
+let lockedAssistId: number | null = null;
 function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
+	if (type === 'plusminus' && selectedStat === 'teamGoals') {
+		if (selectedPlayerIds.length === 0) {
+			// Ei pelaajia valittuna: merkitse plusminus-nappi valituksi, mutta ei tallenneta storeen
+			if (!selectedActionBtns.includes('plusminus')) {
+				selectedActionBtns = [...selectedActionBtns, 'plusminus'];
+			}
+			return;
+		}
+		// Tallenna valitut pelaajat plusMinusPlayers-storeen
+		plusMinusPlayers.set([...selectedPlayerIds]);
+		// Merkitse +/- nappi valituksi
+		if (!selectedActionBtns.includes('plusminus')) {
+			selectedActionBtns = [...selectedActionBtns, 'plusminus'];
+		}
+		// Poista pelaajavalinnat
+		selectedPlayerIds = [];
+		return;
+	}
+	if (type === 'goalassist' && selectedStat === 'teamGoals') {
+		// Lukitse maalintekijä ja syöttäjä
+		if (selectedPlayerIds.length > 0) {
+			lockedScorerId = selectedPlayerIds[0];
+			lockedAssistId = selectedPlayerIds.length > 1 ? selectedPlayerIds[1] : null;
+		}
+		// Merkitse goalassist-nappi valituksi
+		if (!selectedActionBtns.includes('goalassist')) {
+			selectedActionBtns = [...selectedActionBtns, 'goalassist'];
+		}
+		// Poista pelaajavalinnat
+		selectedPlayerIds = [];
+		return;
+	}
+	// Normaali toggle-logiikka muille napeille
 	if (selectedActionBtns.includes(type)) {
 		selectedActionBtns = selectedActionBtns.filter(t => t !== type);
 	} else {
@@ -164,23 +229,25 @@ onMount(async () => {
 	opponentTeamName = data.opponentName || data.opponent_team_name || '';
 
 	// Päivitä storeihin AINA API-vastauksella
-	gameLineup.set(data.lineup || []);
-	gameFieldPositions.set(data.fieldPositions || []);
-	await fetchLineupPlayers(data.lineup || []);
-	teamGoals.set(data.team_goals || []);
-	opponentGoals.set(data.opponent_goals || []);
-	shotsOnGoal.set(data.shots_on_goal || []);
-	shotsOffTarget.set(data.shots_off_target || []);
-	shotsBlocked.set(data.shots_blocked || []);
-	blocks.set(data.blocks || []);
-	saves.set(data.saves || []);
-	goalieGameInterruption.set(data.goalie_game_interruption || []);
-	opponentShotOff.set(data.opponent_shots_off ?? 0);
-	goalieLongPass.set(data.goalie_long_pass || []);
-	goalieShortPass.set(data.goalie_short_pass || []);
-	goalieTurnover.set(data.goalie_turnover || []);
-	assists.set(data.assists || []);
-   });
+    gameLineup.set(data.lineup || []);
+    gameFieldPositions.set(data.fieldPositions || []);
+    await fetchLineupPlayers(data.lineup || []);
+    teamGoals.set(data.team_goals || []);
+    opponentGoals.set(data.opponent_goals || []);
+    shotsOnGoal.set(data.shots_on_goal || []);
+    shotsOffTarget.set(data.shots_off_target || []);
+    shotsBlocked.set(data.shots_blocked || []);
+    blocks.set(data.blocks || []);
+    saves.set(data.saves || []);
+    goalieGameInterruption.set(data.goalie_game_interruption || []);
+    opponentShotOff.set(data.opponent_shots_off ?? 0);
+    goalieLongPass.set(data.goalie_long_pass || []);
+    goalieShortPass.set(data.goalie_short_pass || []);
+    goalieTurnover.set(data.goalie_turnover || []);
+    assists.set(data.assists || []);
+    plusPoints.set(data.plus_points || []);
+    minusPoints.set(data.minus_points || []);
+});
 </script>
 <div class="desktop-stats-root">
 	<div class="top-row">
@@ -218,7 +285,14 @@ onMount(async () => {
 
 	<div class="field-image-wrapper" style="position: relative;">
 		<!-- Poista viimeisin piste -pallo -->
-		<div class="remove-dot-btn" title="Poista viimeisin piste" on:click={() => { if (marks.length > 0) marks = marks.slice(0, -1); }}></div>
+		<button
+			type="button"
+			class="remove-dot-btn"
+			title="Poista viimeisin piste"
+			aria-label="Poista viimeisin piste"
+			on:click={() => { if (marks.length > 0) marks = marks.slice(0, -1); }}
+			on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (marks.length > 0) marks = marks.slice(0, -1); } }}
+		></button>
 		<img
 			src="/Kentta.svg"
 			alt="Kenttä"
@@ -235,13 +309,21 @@ onMount(async () => {
 			on:click={handleFieldClick}
 			on:keydown={handleFieldKeydown}
 		>
-			{#if marks.length > 0}
+			{#if tempPoint}
 				<div
 					class="mark-dot"
-					style="position: absolute; left: {(marks[0].renderX ?? marks[0].x) * 100}%; top: {(marks[0].renderY ?? marks[0].y) * 100}%; transform: translate(-50%, -50%);"
-					title={`(${((marks[0].renderX ?? marks[0].x)*100).toFixed(1)}, ${((marks[0].renderY ?? marks[0].y)*100).toFixed(1)})`}
+					style="position: absolute; left: {(tempPoint.renderX ?? tempPoint.x) * 100}%; top: {(tempPoint.renderY ?? tempPoint.y) * 100}%; transform: translate(-50%, -50%);"
+					title={`(${((tempPoint.renderX ?? tempPoint.x)*100).toFixed(1)}, ${((tempPoint.renderY ?? tempPoint.y)*100).toFixed(1)})`}
 				></div>
 			{/if}
+			{#each marks as mark}
+				<svg
+					style="position: absolute; left: {(mark.renderX ?? mark.x) * 100}%; top: {(mark.renderY ?? mark.y) * 100}%; transform: translate(-50%, -50%); z-index: 4;"
+					width="24" height="24" viewBox="0 0 24 24"
+				>
+					<text x="12" y="16" text-anchor="middle" font-size="16" font-weight="bold" fill={mark.color || 'black'}>{mark.char}</text>
+				</svg>
+			{/each}
 		</div>
 
 	</div>
