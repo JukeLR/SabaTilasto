@@ -138,6 +138,311 @@ function handleSave() {
 		lockedAssistId = null;
 		return;
 	}
+	if (
+		selectedStat === 'opponentGoals' &&
+		selectedActionBtns.includes('plusminus') 
+	) {
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'M', color: 'red' }
+			];			
+		}
+		// 2. Lisää maalivahdin id opponentGoalsiin (tai 'TM' jos tyhjä maali)
+		if (selectedGoalieId) {
+			opponentGoals.update(arr => [...arr, `${selectedGoalieId}`]);
+		} else if (selectedNoGoalie) {
+			opponentGoals.update(arr => [...arr, 'TM']);
+		}		
+		// 4. Lisää plusMinusPlayers id:t minusPoints storeen
+		minusPoints.update(arr => [...arr, ...get(plusMinusPlayers)]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedGoalieId,
+						team: 0,
+						type: 'M',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('opponentGoals:', get(opponentGoals));
+		console.log('minusPoints:', get(minusPoints));
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedActionBtns = [];
+		selectedGoalieId = null;
+		selectedNoGoalie = false;
+		return;
+	}
+	if (
+		selectedStat === 'shotsOnGoal') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'K', color: 'green' }
+			];			
+		}
+		// 2. Lisää pelaajan id shotsOnGoaliin
+		shotsOnGoal.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 1,
+						type: 'K',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('shotsOnGoal:', get(shotsOnGoal));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		return;
+	}
+	if (
+		selectedStat === 'shotsOffTarget') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'O', color: 'green' }
+			];			
+		}
+		// 2. Lisää pelaajan id shotsOffTargetiin
+		shotsOffTarget.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 1,
+						type: 'O',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('shotsOffTarget:', get(shotsOffTarget));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		return;
+	}
+	if (
+		selectedStat === 'shotsBlocked') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'B', color: 'green' }
+			];			
+		}
+		// 2. Lisää pelaajan id shotsBlockediin
+		shotsBlocked.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 1,
+						type: 'B',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('shotsBlocked:', get(shotsBlocked));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		return;
+	}
+	if (
+		selectedStat === 'saves') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'K', color: 'red' }
+			];			
+		}
+		// 2. Lisää maalivahdin id savesiin
+		selectedGoalieId = $gameFieldPositions[0];
+		saves.update(arr => [...arr, selectedGoalieId]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedGoalieId,
+						team: 0,
+						type: 'K',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('saves:', get(saves));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedGoalieId = null;
+		selectedNoGoalie = false;
+		return;
+	}
+	if (
+		selectedStat === 'opponentShotOff') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'O', color: 'red' }
+			];			
+		}
+		// 2. kasvatetaan arvoa yhdellä
+		opponentShotOff.update(n => n + 1);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 0,
+						type: 'O',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('opponentShotOff:', get(opponentShotOff));		
+		// 5. Nollaa valinnat
+		selectedStat = '';		
+		return;
+	}
+	if (
+		selectedStat === 'blocks') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			marks = [
+				...marks,
+				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'B', color: 'red' }
+			];			
+		}
+		// 2. Lisää pelaajan id shotsBlockediin
+		blocks.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/shotmap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 0,
+						type: 'B',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('blocks:', get(blocks));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		return;
+	}
 }
 
 
@@ -175,7 +480,34 @@ let selectedActionBtns: Array<'plusminus' | 'goalassist'> = [];
 let lockedScorerId: number | null = null;
 let lockedAssistId: number | null = null;
 function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
-	if (type === 'plusminus' && selectedStat === 'teamGoals') {
+	if (type === 'plusminus' && (selectedStat === 'teamGoals' || selectedStat === 'opponentGoals')) {
+		// Jos opponentGoals
+		if (selectedStat === 'opponentGoals') {
+			if (selectedPlayerIds.length === 0) {
+				// Ei pelaajia valittuna: merkitse plusminus-nappi valituksi, mutta ei tallenneta storeen
+				if (!selectedActionBtns.includes('plusminus')) {
+					selectedActionBtns = [...selectedActionBtns, 'plusminus'];
+				}
+				// Merkitse maalivahti valituksi
+				selectedGoalieId = $gameFieldPositions[0];
+				selectedNoGoalie = false;
+				selectedPlayerIds = [];
+				return;
+			}
+			// Tallenna valitut pelaajat plusMinusPlayers-storeen
+			plusMinusPlayers.set([...selectedPlayerIds]);
+			// Merkitse +/- nappi valituksi
+			if (!selectedActionBtns.includes('plusminus')) {
+				selectedActionBtns = [...selectedActionBtns, 'plusminus'];
+			}
+			// Merkitse maalivahti valituksi
+			selectedGoalieId = $gameFieldPositions[0];
+			selectedNoGoalie = false;
+			// Poista pelaajavalinnat
+			selectedPlayerIds = [];
+			return;
+		}
+		// Jos teamGoals (vanha logiikka)
 		if (selectedPlayerIds.length === 0) {
 			// Ei pelaajia valittuna: merkitse plusminus-nappi valituksi, mutta ei tallenneta storeen
 			if (!selectedActionBtns.includes('plusminus')) {
@@ -332,12 +664,18 @@ onMount(async () => {
 
 		   {#each statButtons as btn}
 			   {#if btn.key === 'saves'}
-				   <button class="stat-btn green" on:click={() => {/* TODO: Tallenna Maalivahdin torjunta */}}>
+				   <button
+					   class="stat-btn green {selectedStat === btn.key ? 'selected' : ''}"
+					   on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
+				   >
 					   <span class="label">{@html btn.label}</span>
 					   <span class="value">{$saves.length}</span>
 				   </button>
 			   {:else if btn.key === 'opponentShotOff'}
-				   <button class="stat-btn red" on:click={() => {/* TODO: Tallenna Vastustajan veto ohi maalista */}}>
+				   <button
+					   class="stat-btn red {selectedStat === btn.key ? 'selected' : ''}"
+					   on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
+				   >
 					   <span class="label">{@html btn.label}</span>
 					   <span class="value">{$opponentShotOff}</span>
 				   </button>
@@ -347,32 +685,68 @@ onMount(async () => {
 					   on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
 				   >
 					   <span class="label">{@html btn.label}</span>
-					   <span class="value">
-						   {btn.key === 'teamGoals' ? $teamGoals.length
-						   : btn.key === 'shotsOnGoal' ? $shotsOnGoal.length
-						   : btn.key === 'shotsOffTarget' ? $shotsOffTarget.length
-						   : btn.key === 'shotsBlocked' ? $shotsBlocked.length
-						   : btn.key === 'opponentGoals' ? $opponentGoals.length
-						   : btn.key === 'blocks' ? $blocks.length
-						   : ''}
-					   </span>
+					<span class="value">
+						{btn.key === 'teamGoals' ? $teamGoals.length
+						: btn.key === 'shotsOnGoal' ? $shotsOnGoal.length
+						: btn.key === 'shotsOffTarget' ? $shotsOffTarget.length
+						: btn.key === 'shotsBlocked' ? $shotsBlocked.length
+						: btn.key === 'opponentGoals' ? $opponentGoals.length
+						: btn.key === 'blocks' ? $blocks.length
+						: btn.key === 'saves' ? $saves.length
+						: btn.key === 'opponentShotOff' ? $opponentShotOff
+						: ''}
+					</span>
 				   </button>
 			   {/if}
 		   {/each}
 
-		<button class="stat-btn green">
-					<span class="label">Maalivahdin<br />katko</span>
-					<span class="value">{$goalieGameInterruption.length}</span>
-				</button>
-		<button class="stat-btn green">
+		<button class="stat-btn green" on:click={() => {
+			selectedGoalieId = $gameFieldPositions[0];
+			goalieGameInterruption.update(arr => {
+				const updated = [...arr, selectedGoalieId];				
+				return updated;
+			});
+			selectedGoalieId = null;
+		}}>
+			<span class="label">Maalivahdin<br />katko</span>
+			<span class="value">{$goalieGameInterruption.length}</span>
+		</button>
+		<button class="stat-btn green" on:click={() => {
+			selectedGoalieId = $gameFieldPositions[0];
+			goalieLongPass.update(arr => {
+				const updated = [...arr, selectedGoalieId as number];
+				console.log('goalieLongPass:', updated);
+				return updated;
+			});
+			selectedGoalieId = null;
+		}}>
 			<span class="label">Pitkä heitto<br />omille</span>
 			<span class="value">{$goalieLongPass.length}</span>
 		</button>
-		<button class="stat-btn green">
+		<button class="stat-btn green" on:click={() => {
+			if (typeof $gameFieldPositions[0] === 'number') {
+				selectedGoalieId = $gameFieldPositions[0];
+				goalieShortPass.update(arr => {
+					const updated = [...arr, selectedGoalieId as number];					
+					return updated;
+				});
+				selectedGoalieId = null;
+			}
+		}}>
 			<span class="label">Lyhyt heitto<br />omille</span>
 			<span class="value">{$goalieShortPass.length}</span>
 		</button>
-		<button class="stat-btn yellow">
+		<button class="stat-btn yellow" on:click={() => {
+			if (typeof $gameFieldPositions[0] === 'number') {
+				selectedGoalieId = $gameFieldPositions[0];
+				goalieTurnover.update(arr => {
+					const updated = [...arr, selectedGoalieId as number];
+					console.log('goalieTurnover:', updated);
+					return updated;
+				});
+				selectedGoalieId = null;
+			}
+		}}>
 			<span class="label">Heitto<br />vastustajalle</span>
 			<span class="value">{$goalieTurnover.length}</span>
 		</button>
