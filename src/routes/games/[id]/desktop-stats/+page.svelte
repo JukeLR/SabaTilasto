@@ -1,6 +1,9 @@
+
+
 <script lang="ts">
 // DEBUG: Näytä opponentGoals store UI:ssa
 import { assists } from '$lib/stores/assists';
+import { marksStore, type Mark } from '$lib/stores/marks';
 import { plusPoints, minusPoints } from '$lib/stores/plusMinusPoints';
 import { goto } from "$app/navigation";
 import { onMount } from 'svelte';
@@ -23,10 +26,13 @@ import { goalieShortPass } from '$lib/stores/goalieShortPass';
 import { goalieTurnover } from '$lib/stores/goalieTurnover';
 import { plusMinusPlayers } from '$lib/stores/plusMinusPlayers';
 
+// Päivitä pelaajien nimet aina kun gameLineup päivittyy
+$: fetchLineupPlayers($gameLineup);
+
 
 // Overlayn logiikka
 type Mark = { x: number; y: number; renderX: number; renderY: number; char: string; color: string };
-let marks: Mark[] = []; // Only saved letters
+// marksStore Svelte-store korvaa paikallisen marks-taulukon
 let tempPoint: { x: number; y: number; renderX: number; renderY: number } | null = null; // Temporary shot point
 let fieldImg: HTMLImageElement;
 let fieldWidth = 1, fieldHeight = 1;
@@ -86,11 +92,11 @@ function handleSave() {
 	) {
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'M', color: 'green' }
-			];
-			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'M', color: 'green' }
+			]);
 		}
 		// 2. Lisää maalintekijä teamGoalsiin (tai 'OM' jos ei lukittu)
 		if (lockedScorerId) {
@@ -144,10 +150,11 @@ function handleSave() {
 	) {
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'M', color: 'red' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'M', color: 'red' }
+			]);
 		}
 		// 2. Lisää maalivahdin id opponentGoalsiin (tai 'TM' jos tyhjä maali)
 		if (selectedGoalieId) {
@@ -195,10 +202,11 @@ function handleSave() {
 	{ 
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'K', color: 'green' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'K', color: 'green' }
+			]);
 		}
 		// 2. Lisää pelaajan id shotsOnGoaliin
 		shotsOnGoal.update(arr => [...arr, selectedPlayerIds[0]]);
@@ -237,10 +245,11 @@ function handleSave() {
 	{ 
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'O', color: 'green' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'O', color: 'green' }
+			]);
 		}
 		// 2. Lisää pelaajan id shotsOffTargetiin
 		shotsOffTarget.update(arr => [...arr, selectedPlayerIds[0]]);
@@ -279,10 +288,11 @@ function handleSave() {
 	{ 
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'B', color: 'green' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'B', color: 'green' }
+			]);
 		}
 		// 2. Lisää pelaajan id shotsBlockediin
 		shotsBlocked.update(arr => [...arr, selectedPlayerIds[0]]);
@@ -321,10 +331,11 @@ function handleSave() {
 	{ 
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'K', color: 'red' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'K', color: 'red' }
+			]);
 		}
 		// 2. Lisää maalivahdin id savesiin
 		selectedGoalieId = $gameFieldPositions[0];
@@ -365,10 +376,11 @@ function handleSave() {
 	{ 
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'O', color: 'red' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'O', color: 'red' }
+			]);
 		}
 		// 2. kasvatetaan arvoa yhdellä
 		opponentShotOff.update(n => n + 1);
@@ -406,10 +418,11 @@ function handleSave() {
 	{ 
 		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 		if (tempPoint) {
-			marks = [
-				...marks,
-				{ x: tempPoint.x, y: tempPoint.y, renderX: tempPoint.renderX, renderY: tempPoint.renderY, char: 'B', color: 'red' }
-			];			
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'B', color: 'red' }
+			]);
 		}
 		// 2. Lisää pelaajan id shotsBlockediin
 		blocks.update(arr => [...arr, selectedPlayerIds[0]]);
@@ -442,7 +455,7 @@ function handleSave() {
 		selectedStat = '';
 		selectedPlayerIds = [];
 		return;
-	}
+	}		
 }
 
 
@@ -550,35 +563,51 @@ function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
 import { fetchTeams } from '$lib/stores/teams';
 
 // gameFieldPositions on nyt käytettävissä Svelte storesta
-onMount(async () => {
-	await fetchTeams();
-	const id = $page.params.id ?? $page.data.id;
-	const res = await fetch(`/api/games/${id}?basic=true`);
-	const data = await res.json();
-	debugData = data;
-	ownTeamId = data.own_team_id || null;
-	ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
-	opponentTeamName = data.opponentName || data.opponent_team_name || '';
+onMount(() => {
+	(async () => {
+		await fetchTeams();
+		const id = $page.params.id ?? $page.data.id;
+		const res = await fetch(`/api/games/${id}?basic=true`);
+		const data = await res.json();
+		debugData = data;
+		ownTeamId = data.own_team_id || null;
+		ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
+		opponentTeamName = data.opponentName || data.opponent_team_name || '';
 
-	// Päivitä storeihin AINA API-vastauksella
-    gameLineup.set(data.lineup || []);
-    gameFieldPositions.set(data.fieldPositions || []);
-    await fetchLineupPlayers(data.lineup || []);
-    teamGoals.set(data.team_goals || []);
-    opponentGoals.set(data.opponent_goals || []);
-    shotsOnGoal.set(data.shots_on_goal || []);
-    shotsOffTarget.set(data.shots_off_target || []);
-    shotsBlocked.set(data.shots_blocked || []);
-    blocks.set(data.blocks || []);
-    saves.set(data.saves || []);
-    goalieGameInterruption.set(data.goalie_game_interruption || []);
-    opponentShotOff.set(data.opponent_shots_off ?? 0);
-    goalieLongPass.set(data.goalie_long_pass || []);
-    goalieShortPass.set(data.goalie_short_pass || []);
-    goalieTurnover.set(data.goalie_turnover || []);
-    assists.set(data.assists || []);
-    plusPoints.set(data.plus_points || []);
-    minusPoints.set(data.minus_points || []);
+		// Älä ylikirjoita storeja API-vastauksella, polling hoitaa Neon-päivityksen taustalla
+		// Kokeile sekä get(gameLineup) että $gameLineup
+		await fetchLineupPlayers($gameLineup);
+
+		// Polling: päivitä Neon-tietokanta storejen arvoilla 30s välein
+		const poll = setInterval(async () => {
+			await fetch(`/api/games/${id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					plus_points: get(plusPoints),
+					minus_points: get(minusPoints),
+					team_goals: get(teamGoals),
+					opponent_goals: get(opponentGoals),
+					shots_on_goal: get(shotsOnGoal),
+					shots_off_target: get(shotsOffTarget),
+					shots_blocked: get(shotsBlocked),
+					blocks: get(blocks),
+					saves: get(saves),
+					goalie_game_interruption: get(goalieGameInterruption),
+					opponent_shots_off: get(opponentShotOff),
+					goalie_long_pass: get(goalieLongPass),
+					goalie_short_pass: get(goalieShortPass),
+					goalie_turnover: get(goalieTurnover),
+					assists: get(assists),
+					_fromPolling: true
+				})
+			});
+		}, 30000);
+		// Palauta clearInterval suoraan
+		return () => clearInterval(poll);
+		// Päivitä lineup vielä kerran
+		await fetchLineupPlayers(get(gameLineup));
+	})();
 });
 </script>
 <div class="desktop-stats-root">
@@ -622,8 +651,8 @@ onMount(async () => {
 			class="remove-dot-btn"
 			title="Poista viimeisin piste"
 			aria-label="Poista viimeisin piste"
-			on:click={() => { if (marks.length > 0) marks = marks.slice(0, -1); }}
-			on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (marks.length > 0) marks = marks.slice(0, -1); } }}
+			on:click={() => { if ($marksStore.length > 0) marksStore.update(arr => arr.slice(0, -1)); }}
+			on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if ($marksStore.length > 0) marksStore.update(arr => arr.slice(0, -1)); } }}
 		></button>
 		<img
 			src="/Kentta.svg"
@@ -648,7 +677,7 @@ onMount(async () => {
 					title={`(${((tempPoint.renderX ?? tempPoint.x)*100).toFixed(1)}, ${((tempPoint.renderY ?? tempPoint.y)*100).toFixed(1)})`}
 				></div>
 			{/if}
-			{#each marks as mark}
+			{#each $marksStore as mark}
 				<svg
 					style="position: absolute; left: {(mark.renderX ?? mark.x) * 100}%; top: {(mark.renderY ?? mark.y) * 100}%; transform: translate(-50%, -50%); z-index: 4;"
 					width="24" height="24" viewBox="0 0 24 24"

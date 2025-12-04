@@ -4,13 +4,9 @@
   import { get } from 'svelte/store';
   import { vaihdettuMaalivahtiStore } from '$lib/stores/vaihdettuMaalivahti';
 
+  // Poistettu API-haku ja storejen asetus, käytetään vain Svelte-storen arvoja
   async function fetchGameData() {
     const id = get(page).params.id;
-    const res = await fetch(`/api/games/${id}?basic=true`);
-    const data = await res.json();
-    gameLineup.set(data.lineup || []);
-    gameFieldPositions.set(data.fieldPositions || []);
-    await fetchLineupPlayers(data.lineup || []);
     // Päivitä kenttien ja maalivahdin tekstit heti kun nimet ja fieldPositions on haettu
     const nimet = get(playerNames);
     const fp = data.fieldPositions || [];
@@ -109,14 +105,6 @@
     let safeOwnTeamId = ownTeamId;
     if (!safeOwnTeamId) {
       // Hae vanha arvo pelidatasta
-      const res = await fetch(`/api/games/${id}?basic=true`);
-      const data = await res.json();
-      if (data && data.own_team_id) {
-        safeOwnTeamId = data.own_team_id;
-      } else {
-        alert('Joukkueen valinta puuttuu!');
-        return;
-      }
     }
     // Hae nykyinen goalie_change pelidatasta jos ei vaihdettu
     let goalieChange = null;

@@ -15,6 +15,7 @@
   let user = null;
   let userRole = '';
   let userTeamIds: number[] = [];
+  let shotmap: Array<{ x: number; y: number; team: number; type: string; games_id: number }> = [];
 
 
   onMount(async () => {
@@ -34,6 +35,18 @@
       return;
     }
     await fetchPlayers();
+
+    // Hae shotmap-pisteet tälle pelille
+    try {
+      const res = await fetch(`/api/shotmap?games_id=${gameId}`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) {
+        // Suodata vain tämän pelin pisteet
+        shotmap = data.filter((row: any) => Number(row.games_id) === Number(gameId));
+      }
+    } catch (e) {
+      // Ei virheilmoitusta
+    }
   });
 
   async function fetchGame() {
@@ -241,6 +254,26 @@
     </div>
   {/if}
 </div>
+<!-- Kenttäkuva ja pisteet renderöidään vain kerran, alla -->
+{#if game && Array.isArray(shotmap) && shotmap.length > 0}
+  <div style="width:100%; ">
+    <div style="display:flex; justify-content:space-between; align-items:left; max-width:1200px; padding: 0 100px">
+      <div style="font-size:1.3rem; font-weight:bold; color:#222;">{game?.ownTeamName ?? ''}</div>
+      <div style="font-size:1.3rem; font-weight:bold; color:#222;">{game?.opponentName ?? ''}</div>
+    </div>
+    <div style="position:relative; max-width:1200px; margin:20px 0; display:flex; justify-content:left;padding:0 100px;">
+      <img src="/Kentta.svg" alt="Kenttä" style="width:100%; height:auto; display:block;" />
+      {#each shotmap as point}
+        <svg
+          style="position:absolute; left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%); z-index:2; pointer-events:none;"
+          width="32" height="32" viewBox="0 0 32 32"
+        >
+          <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
+        </svg>
+      {/each}
+    </div>
+  </div>
+{/if}
 
 <style>
   .btn-back {
@@ -321,3 +354,5 @@
     margin: 20px 0;
   }
 </style>
+
+
