@@ -1,5 +1,3 @@
-
-
 <script lang="ts">
 // DEBUG: Näytä opponentGoals store UI:ssa
 import { assists } from '$lib/stores/assists';
@@ -695,7 +693,12 @@ onMount(() => {
 			   {#if btn.key === 'saves'}
 				   <button
 					   class="stat-btn green {selectedStat === btn.key ? 'selected' : ''}"
-					   on:click={() => selectedStat = (selectedStat === btn.key ? '' : btn.key)}
+					   on:click={() => {
+						   selectedStat = (selectedStat === btn.key ? '' : btn.key);
+						   if (selectedStat === 'saves' && typeof $gameFieldPositions[0] === 'number') {
+							   selectedGoalieId = $gameFieldPositions[0];
+						   }
+					   }}
 				   >
 					   <span class="label">{@html btn.label}</span>
 					   <span class="value">{$saves.length}</span>

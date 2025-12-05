@@ -14,6 +14,6 @@ export async function GET({ url }) {
     return new Response(JSON.stringify([]), { status: 400 });
   }
   // Hae pisteet Neonista
-  const rows = await sql`SELECT x, y, team, type, games_id FROM shotmap WHERE games_id = ${games_id}`;
+  const rows = await sql`SELECT x, y, player_id, team, type, games_id FROM shotmap WHERE games_id = ${games_id}`;
   return new Response(JSON.stringify(rows), { status: 200 });
 }

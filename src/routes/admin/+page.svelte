@@ -235,7 +235,14 @@ function getTeamNames(userTeams: any[]): string {
 										</div>
 									</div>
 								{:else}
-									<TeamDropdown teams={user.teams} />
+									<div style="display:flex; align-items:center; gap:8px;">
+										{#if user.teams && user.teams.length > 0}
+											<TeamDropdown teams={user.teams} />
+										{:else}
+											<span style="color:#888;">Ei joukkuetta</span>
+										{/if}
+										<button class="btn-edit-small" onclick={() => startEditTeams(user)}>Muokkaa</button>
+									</div>
 								{/if}
 							</td>
 							<td>

@@ -17,8 +17,21 @@
       }> = {};
 let playerStats: Record<number, { id: number; name: string; games: number; wins: number; draws: number; losses: number; goals: number; assists: number; points: number; pointsPerGame: string; blocks: number; blocksPerGame: string; shotsOnGoal: number; shotsOnGoalPerGame: string; shotsBlocked: number; shotsBlockedPerGame: string; shotsOffTarget: number; shotsOffTargetPerGame: string; plus?: number; minus?: number }> = {};
 let playerList: Array<{ id: number; name: string }> = [];
+let usedGameIds: number[] = [];
+let showGoalsHeatmap = false;
+let showShotsOnGoalHeatmap = false;
+let showBlocksHeatmap = false;
+let showOffTargetHeatmap = false;
+let shotmapPoints: Array<{ x: number; y: number; type: string }> = [];
+let shotsOnGoalPoints: Array<{ x: number; y: number; type: string }> = [];
+let blocksPoints: Array<{ x: number; y: number; type: string }> = [];
+let offTargetPoints: Array<{ x: number; y: number; type: string }> = [];
+let kenttaImgEl: HTMLImageElement | null = null;
+let overlayWidth = 1200;
+let overlayHeight = 800;
 
     async function fetchStats() {
+      // ...existing code...
       // ...existing code...
       // ...existing code...
       if (!selectedTeam) {
@@ -68,6 +81,18 @@ let playerList: Array<{ id: number; name: string }> = [];
       }
       const gamesRes = await fetch(gamesUrl);
       const gamesData = await gamesRes.json();
+      if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+        // Pelaaja-roolissa: vain pelit joissa pelaaja on mukana
+        const allowedIds = user.player_ids.map((id: any) => Number(id));
+        usedGameIds = Array.isArray(gamesData.games)
+          ? gamesData.games.filter((g: any) => Array.isArray(g.field_positions) && g.field_positions.some((pid: number) => allowedIds.includes(pid))).map((g: any) => g.id)
+          : [];
+      } else {
+        usedGameIds = Array.isArray(gamesData.games)
+          ? gamesData.games.map((g: any) => g.id)
+          : [];
+      }
+      console.log('DEBUG: Hae tilastot painettu', { selectedTeam, selectedCompetition, startDate, endDate, usedGameIds });
 
         // Pelaajien pelatut pelit, voitot, tasapelit, tappiot, maalit, syötöt, pisteet, pistettä/peli, blokit, blokit/peli, vedot kohti maalia, vedot maaliakohti/peli, vedot blokkiin, vedot blokkiin/peli, vedot ohi maalin ja vedot ohi maalin/peli
         playerStats = {};
@@ -291,6 +316,170 @@ let playerList: Array<{ id: number; name: string }> = [];
     const compData = await compRes.json();
     competitions = Array.isArray(compData.series) ? compData.series : [];
   });
+
+  function toggleGoalsHeatmap() {
+    showGoalsHeatmap = !showGoalsHeatmap;
+    if (showGoalsHeatmap) {
+      fetchGoalsHeatmap();
+    } else {
+      shotmapPoints = [];
+    }
+  }
+
+  async function fetchGoalsHeatmap() {
+    if (!usedGameIds || usedGameIds.length === 0) {
+      shotmapPoints = [];
+      return;
+    }
+    try {
+      const params = usedGameIds.map(id => `games_id=${id}`).join('&');
+      const res = await fetch(`/api/shotmap?${params}`);
+      const data = await res.json();
+      if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+        // Näytä vain pelaajan omat pisteet
+        const allowedIds = user.player_ids.map((id: any) => Number(id));
+        shotmapPoints = Array.isArray(data)
+          ? data.filter(pt => pt.type === 'M' && allowedIds.includes(Number(pt.player_id)))
+          : [];
+      } else {
+        shotmapPoints = Array.isArray(data)
+          ? data.filter(pt => pt.type === 'M')
+          : [];
+      }
+    } catch (e) {
+      console.error('Heatmap fetch error', e);
+      shotmapPoints = [];
+    }
+    console.log('DEBUG: shotmapPoints', shotmapPoints);
+  }
+
+  function toggleShotsOnGoalHeatmap() {
+    showShotsOnGoalHeatmap = !showShotsOnGoalHeatmap;
+    if (showShotsOnGoalHeatmap) {
+      fetchShotsOnGoalHeatmap();
+    } else {
+      shotsOnGoalPoints = [];
+    }
+  }
+
+    async function fetchShotsOnGoalHeatmap() {
+      if (!usedGameIds || usedGameIds.length === 0) {
+        shotsOnGoalPoints = [];
+        return;
+      }
+      try {
+        const params = usedGameIds.map(id => `games_id=${id}`).join('&');
+        const res = await fetch(`/api/shotmap?${params}`);
+        const data = await res.json();
+        if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+          const allowedIds = user.player_ids.map((id: any) => Number(id));
+          shotsOnGoalPoints = Array.isArray(data)
+            ? data.filter(pt => pt.type === 'K' && allowedIds.includes(Number(pt.player_id)))
+            : [];
+        } else {
+          shotsOnGoalPoints = Array.isArray(data)
+            ? data.filter(pt => pt.type === 'K')
+            : [];
+        }
+      } catch (e) {
+        console.error('ShotsOnGoal heatmap fetch error', e);
+        shotsOnGoalPoints = [];
+      }
+      console.log('DEBUG: shotsOnGoalPoints', shotsOnGoalPoints);
+    }
+
+  function toggleBlocksHeatmap() {
+    showBlocksHeatmap = !showBlocksHeatmap;
+    if (showBlocksHeatmap) {
+      fetchBlocksHeatmap();
+    } else {
+      blocksPoints = [];
+    }
+  }
+
+    async function fetchBlocksHeatmap() {
+      if (!usedGameIds || usedGameIds.length === 0) {
+        blocksPoints = [];
+        return;
+      }
+      try {
+        const params = usedGameIds.map(id => `games_id=${id}`).join('&');
+        const res = await fetch(`/api/shotmap?${params}`);
+        const data = await res.json();
+        console.log('DEBUG: shotmap API raw data', data);
+        if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+          const allowedIds = user.player_ids.map((id: any) => Number(id));
+          blocksPoints = Array.isArray(data)
+            ? data.filter(pt => pt.type === 'B' && allowedIds.includes(Number(pt.player_id)))
+            : [];
+        } else {
+          blocksPoints = Array.isArray(data)
+            ? data.filter(pt => pt.type === 'B')
+            : [];
+        }
+      } catch (e) {
+        console.error('Blocks heatmap fetch error', e);
+        blocksPoints = [];
+      }
+      console.log('DEBUG: blocksPoints', blocksPoints);
+    }    
+  
+  function toggleOffTargetHeatmap() {
+      showOffTargetHeatmap = !showOffTargetHeatmap;
+      if (showOffTargetHeatmap) {
+        fetchOffTargetHeatmap();
+      } else {
+        offTargetPoints = [];
+      }
+    }
+
+    async function fetchOffTargetHeatmap() {
+      if (!usedGameIds || usedGameIds.length === 0) {
+        offTargetPoints = [];
+        return;
+      }
+      try {
+        const params = usedGameIds.map(id => `games_id=${id}`).join('&');
+        const res = await fetch(`/api/shotmap?${params}`);
+        const data = await res.json();
+        if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
+          const allowedIds = user.player_ids.map((id: any) => Number(id));
+          offTargetPoints = Array.isArray(data)
+            ? data.filter(pt => pt.type === 'O' && allowedIds.includes(Number(pt.player_id)))
+            : [];
+        } else {
+          offTargetPoints = Array.isArray(data)
+            ? data.filter(pt => pt.type === 'O')
+            : [];
+        }
+      } catch (e) {
+        console.error('OffTarget heatmap fetch error', e);
+        offTargetPoints = [];
+      }
+      console.log('DEBUG: offTargetPoints', offTargetPoints);
+    }  
+
+  function updateOverlaySize() {
+    if (kenttaImgEl) {
+      overlayWidth = kenttaImgEl.naturalWidth || kenttaImgEl.width || 1200;
+      overlayHeight = kenttaImgEl.naturalHeight || kenttaImgEl.height || 800;
+      console.log('DEBUG overlayWidth:', overlayWidth, 'overlayHeight:', overlayHeight);
+    }
+  }
+
+$: if (shotmapPoints && shotmapPoints.length > 0) {
+  console.log('DEBUG shotmapPoints:', shotmapPoints);
+}
+
+  function scaleX(x: number) {
+    // Neonissa x: 0 (vasen) ... 1 (oikea)
+    return x * overlayWidth;
+  }
+  function scaleY(y: number) {
+    // Neonissa y: 0 (ALHAALLA) ... 1 (YLHÄÄLLÄ), SVG:ssä 0 (YLHÄÄLLÄ) ... overlayHeight (ALHAALLA)
+    return overlayHeight - (y * overlayHeight);
+  }
+  
 </script>
 
 <main class="stats-main">
@@ -418,9 +607,82 @@ let playerList: Array<{ id: number; name: string }> = [];
           </table>
     </div>
   </div>
+
+  <!-- Kenttäkuva pelaajatilastojen alle -->
+  <div style="width:1200px; margin-top:40px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto 10px auto; padding:0 50px;">
+      <div style="font-size:1.3rem; font-weight:bold; color:#222;">{selectedTeam ? (teams.find(t => t.id == selectedTeam)?.name ?? 'Joukkue') : 'Joukkue'}</div>
+      <div style="display:flex; gap:16px;">
+        <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap}>Maalit</button>
+        <button class="kentta-btn {showShotsOnGoalHeatmap ? 'active-yellow' : ''}" on:click={toggleShotsOnGoalHeatmap}>Vedot kohti maalia</button>
+        <button class="kentta-btn {showBlocksHeatmap ? 'active-green' : ''}" on:click={toggleBlocksHeatmap}>Blokit</button>
+        <button class="kentta-btn {showOffTargetHeatmap ? 'active-blue' : ''}" on:click={toggleOffTargetHeatmap}>Vedot ohimaalin</button>
+      </div>
+      <div style="font-size:1.3rem; font-weight:bold; color:#222;">Vastustaja</div>
+    </div>
+    <div class="kentta-container-fit">
+      <img src="/Kentta.svg" alt="Kenttä" class="kentta-img-fit" bind:this={kenttaImgEl} on:load={updateOverlaySize} />
+      {#if showGoalsHeatmap && shotmapPoints.length > 0}
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+          {#each shotmapPoints as pt}
+            {#if pt.type === 'M'}
+              <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(255,0,0,0.35)" />
+            {/if}
+          {/each}
+        </svg>
+      {/if}
+      {#if showShotsOnGoalHeatmap && shotsOnGoalPoints.length > 0}
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+          {#each shotsOnGoalPoints as pt}
+            {#if pt.type === 'K'}
+              <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(255,215,0,0.35)" />
+            {/if}
+          {/each}
+        </svg>
+      {/if}
+      {#if showBlocksHeatmap && blocksPoints.length > 0}
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+          {#each blocksPoints as pt}
+            {#if pt.type === 'B'}
+              <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(0,200,0,0.35)" />
+            {/if}
+          {/each}
+        </svg>
+      {/if}
+      {#if showOffTargetHeatmap && offTargetPoints.length > 0}
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+          {#each offTargetPoints as pt}
+            {#if pt.type === 'O'}
+              <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(0,0,255,0.35)" />
+            {/if}
+          {/each}
+        </svg>
+      {/if}    
+    </div>  
+  </div>
 </main>
 
 <style>
+.kentta-btn.active {
+  background: #43ea43;
+  color: #fff;
+  border: 2px solid #219c21;
+}
+.kentta-btn.active-yellow {
+  background: #ffe066;
+  color: #222;
+  border: 2px solid #bfa600;
+}
+.kentta-btn.active-green {
+  background: #a0f3a0;
+  color: #111;
+  border: 2px solid ##a0f3a0;
+}
+.kentta-btn.active-blue {
+      background: #61a2d8;
+      color: #111;
+      border: 2px solid #61a2d8;
+    }
 main.stats-main .player-table {
   width: 100%;
   border-collapse: collapse;
@@ -496,4 +758,53 @@ main.stats-main .btn-fetch {
   cursor: pointer;
   margin-top: 8px;
 }
+.kentta-btn {
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #b5c6d6;
+  background: #e3f0fa;
+  color: #222;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.kentta-btn.active {
+  background: #ee8ba4;
+  color: #111;
+  border: 2px solid #ee8ba4;
+}
+.kentta-btn:hover {
+  background: #b5c6d6;
+  color: #111;
+}
+  .kentta-container-fit {
+    position: relative;
+    max-width: 1200px;
+    width: 100%;
+    margin: 20px 0;
+    display: block;
+  }
+  .kentta-img-fit {
+    display: block;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    border: none;
+    max-width: 1200px;
+  }
+  .kentta-overlay-fit {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+    z-index: 2;
+    max-width: 1200px;
+  }
 </style>

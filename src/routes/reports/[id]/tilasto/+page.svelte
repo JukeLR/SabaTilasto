@@ -257,20 +257,33 @@
 <!-- Kenttäkuva ja pisteet renderöidään vain kerran, alla -->
 {#if game && Array.isArray(shotmap) && shotmap.length > 0}
   <div style="width:100%; ">
-    <div style="display:flex; justify-content:space-between; align-items:left; max-width:1200px; padding: 0 100px">
+    <div style="display:flex; justify-content:space-between; align-items:left; max-width:1200px;">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{game?.ownTeamName ?? ''}</div>
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{game?.opponentName ?? ''}</div>
     </div>
-    <div style="position:relative; max-width:1200px; margin:20px 0; display:flex; justify-content:left;padding:0 100px;">
-      <img src="/Kentta.svg" alt="Kenttä" style="width:100%; height:auto; display:block;" />
-      {#each shotmap as point}
-        <svg
-          style="position:absolute; left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%); z-index:2; pointer-events:none;"
-          width="32" height="32" viewBox="0 0 32 32"
-        >
-          <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
-        </svg>
-      {/each}
+    <div class="kentta-container-fit">
+      <img src="/Kentta.svg" alt="Kenttä" class="kentta-img-fit" />
+      {#if userRole === 'pelaaja' && Array.isArray(user?.player_ids) && user.player_ids.length > 0}
+        {#each shotmap.filter(pt => Number(pt.player_id) === Number(user.player_ids[0])) as point}
+          <svg
+            class="kentta-overlay-fit"
+            style="left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%);"
+            width="32" height="32" viewBox="0 0 32 32"
+          >
+            <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
+          </svg>
+        {/each}
+      {:else}
+        {#each shotmap as point}
+          <svg
+            class="kentta-overlay-fit"
+            style="left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%);"
+            width="32" height="32" viewBox="0 0 32 32"
+          >
+            <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
+          </svg>
+        {/each}
+      {/if}
     </div>
   </div>
 {/if}
@@ -288,10 +301,27 @@
 		transition: all 0.2s;
 		min-width: 160px;
   }
-  .container {
-    
-    margin: 0 auto;
-    padding: 20px;
+
+  .kentta-container-fit {
+    position: relative;
+    max-width: 1200px;
+    width: 100%;
+    margin: 20px 0;
+    display: block;
+  }
+  .kentta-img-fit {
+    display: block;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    border: none;
+    max-width: 1200px;
+  }
+  .kentta-overlay-fit {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
   }
 
     .stats-table {
