@@ -128,24 +128,24 @@ import { page } from '$app/stores';
 			const res = await fetch(`/api/games/${gameId}?basic=true`);
 			const data = await res.json();
 			// Tallennus storeihin
-			gameLineup.set(data.lineup || []);
-			gameFieldPositions.set(data.fieldPositions || []);
-			await fetchAndUpdatePlayerNames(data.lineup || []);
-			teamGoals.set(data.team_goals || []);
-			opponentGoals.set(data.opponent_goals || []);
-			shotsOnGoal.set(data.shots_on_goal || []);
-			shotsOffTarget.set(data.shots_off_target || []);
-			shotsBlocked.set(data.shots_blocked || []);
-			blocks.set(data.blocks || []);
-			saves.set(data.saves || []);
-			goalieGameInterruption.set(data.goalie_game_interruption || []);
-			opponentShotOff.set(typeof data.opponent_shots_off === 'number' ? data.opponent_shots_off : 0);
-			assists.set(data.assists || []);
+			if (Array.isArray(data.lineup) && data.lineup.length > 0) gameLineup.set(data.lineup);
+			if (Array.isArray(data.fieldPositions) && data.fieldPositions.length > 0) gameFieldPositions.set(data.fieldPositions);
+			if (Array.isArray(data.lineup) && data.lineup.length > 0) await fetchAndUpdatePlayerNames(data.lineup);
+			if (Array.isArray(data.team_goals) && data.team_goals.length > 0) teamGoals.set(data.team_goals);
+			if (Array.isArray(data.opponent_goals) && data.opponent_goals.length > 0) opponentGoals.set(data.opponent_goals);
+			if (Array.isArray(data.shots_on_goal) && data.shots_on_goal.length > 0) shotsOnGoal.set(data.shots_on_goal);
+			if (Array.isArray(data.shots_off_target) && data.shots_off_target.length > 0) shotsOffTarget.set(data.shots_off_target);
+			if (Array.isArray(data.shots_blocked) && data.shots_blocked.length > 0) shotsBlocked.set(data.shots_blocked);
+			if (Array.isArray(data.blocks) && data.blocks.length > 0) blocks.set(data.blocks);
+			if (Array.isArray(data.saves) && data.saves.length > 0) saves.set(data.saves);
+			if (Array.isArray(data.goalie_game_interruption) && data.goalie_game_interruption.length > 0) goalieGameInterruption.set(data.goalie_game_interruption);
+			if (typeof data.opponent_shots_off === 'number') opponentShotOff.set(data.opponent_shots_off);
+			if (Array.isArray(data.assists) && data.assists.length > 0) assists.set(data.assists);
 			// Tallennus storeihin
 			console.log('API plus_points:', data.plus_points);
 			console.log('API minus_points:', data.minus_points);
-			plusPoints.set(data.plus_points || []);
-			minusPoints.set(data.minus_points || []);
+			if (Array.isArray(data.plus_points) && data.plus_points.length > 0) plusPoints.set(data.plus_points);
+			if (Array.isArray(data.minus_points) && data.minus_points.length > 0) minusPoints.set(data.minus_points);
 
 			// Ohjaa tilastointisivulle
 			if (typeof window !== 'undefined') {

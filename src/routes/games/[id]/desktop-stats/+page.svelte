@@ -1,3 +1,4 @@
+
 <script lang="ts">
 // DEBUG: Näytä opponentGoals store UI:ssa
 import { assists } from '$lib/stores/assists';
@@ -558,13 +559,53 @@ function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
 	}
 }
 
+// "Lopeta peli" -napin toiminto
+async function handleEndGame() {
+	const id = $page.params.id ?? $page.data.id;
+	// 1. Päivitä kaikki tilastot Neon-tietokantaan (kuten polling tekee)
+	await fetch(`/api/games/${id}`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			plus_points: get(plusPoints),
+			minus_points: get(minusPoints),
+			team_goals: get(teamGoals),
+			opponent_goals: get(opponentGoals),
+			shots_on_goal: get(shotsOnGoal),
+			shots_off_target: get(shotsOffTarget),
+			shots_blocked: get(shotsBlocked),
+			blocks: get(blocks),
+			saves: get(saves),
+			goalie_game_interruption: get(goalieGameInterruption),
+			opponent_shots_off: get(opponentShotOff),
+			goalie_long_pass: get(goalieLongPass),
+			goalie_short_pass: get(goalieShortPass),
+			goalie_turnover: get(goalieTurnover),
+			assists: get(assists),
+			status: 'Pelattu'
+		})
+	});
+	// 2. Ohjaa takaisin /games-sivulle
+	goto('/games');
+}
+
 import { fetchTeams } from '$lib/stores/teams';
 
 // gameFieldPositions on nyt käytettävissä Svelte storesta
 onMount(() => {
+	// beforeunload-varmistus
+	const handler = (e) => {
+		e.preventDefault();
+		e.returnValue = 'Haluatko varmasti poistua sivulta? Tallentamattomat muutokset voivat hävitä.';
+		return 'Haluatko varmasti poistua sivulta? Tallentamattomat muutokset voivat hävitä.';
+	};
+	window.addEventListener('beforeunload', handler);
+
+	let cleanupPolling;
 	(async () => {
 		await fetchTeams();
 		const id = $page.params.id ?? $page.data.id;
+		// Hae pelin tiedot ja aseta storeihin kun sivu avautuu
 		const res = await fetch(`/api/games/${id}?basic=true`);
 		const data = await res.json();
 		debugData = data;
@@ -572,8 +613,24 @@ onMount(() => {
 		ownTeamName = data.ownTeamName || (ownTeamId && get(teamsStore)[ownTeamId]) || '';
 		opponentTeamName = data.opponentName || data.opponent_team_name || '';
 
+		// Päivitä storet vain jos dataa löytyy
+		if (Array.isArray(data.lineup) && data.lineup.length > 0) gameLineup.set(data.lineup);
+		if (Array.isArray(data.fieldPositions) && data.fieldPositions.length > 0) gameFieldPositions.set(data.fieldPositions);
+		if (Array.isArray(data.lineup) && data.lineup.length > 0) await fetchLineupPlayers(data.lineup);
+		if (Array.isArray(data.team_goals) && data.team_goals.length > 0) teamGoals.set(data.team_goals);
+		if (Array.isArray(data.opponent_goals) && data.opponent_goals.length > 0) opponentGoals.set(data.opponent_goals);
+		if (Array.isArray(data.shots_on_goal) && data.shots_on_goal.length > 0) shotsOnGoal.set(data.shots_on_goal);
+		if (Array.isArray(data.shots_off_target) && data.shots_off_target.length > 0) shotsOffTarget.set(data.shots_off_target);
+		if (Array.isArray(data.shots_blocked) && data.shots_blocked.length > 0) shotsBlocked.set(data.shots_blocked);
+		if (Array.isArray(data.blocks) && data.blocks.length > 0) blocks.set(data.blocks);
+		if (Array.isArray(data.saves) && data.saves.length > 0) saves.set(data.saves);
+		if (Array.isArray(data.goalie_game_interruption) && data.goalie_game_interruption.length > 0) goalieGameInterruption.set(data.goalie_game_interruption);
+		if (typeof data.opponent_shots_off === 'number') opponentShotOff.set(data.opponent_shots_off);
+		if (Array.isArray(data.assists) && data.assists.length > 0) assists.set(data.assists);
+		if (Array.isArray(data.plus_points) && data.plus_points.length > 0) plusPoints.set(data.plus_points);
+		if (Array.isArray(data.minus_points) && data.minus_points.length > 0) minusPoints.set(data.minus_points);
+
 		// Älä ylikirjoita storeja API-vastauksella, polling hoitaa Neon-päivityksen taustalla
-		// Kokeile sekä get(gameLineup) että $gameLineup
 		await fetchLineupPlayers($gameLineup);
 
 		// Polling: päivitä Neon-tietokanta storejen arvoilla 30s välein
@@ -601,11 +658,16 @@ onMount(() => {
 				})
 			});
 		}, 30000);
-		// Palauta clearInterval suoraan
-		return () => clearInterval(poll);
+		cleanupPolling = () => clearInterval(poll);
 		// Päivitä lineup vielä kerran
 		await fetchLineupPlayers(get(gameLineup));
 	})();
+
+	// Palautusfunktio: siivotaan beforeunload ja polling
+	return () => {
+		window.removeEventListener('beforeunload', handler);
+		if (cleanupPolling) cleanupPolling();
+	};
 });
 </script>
 <div class="desktop-stats-root">
@@ -643,15 +705,7 @@ onMount(() => {
 
 
 	<div class="field-image-wrapper" style="position: relative;">
-		<!-- Poista viimeisin piste -pallo -->
-		<button
-			type="button"
-			class="remove-dot-btn"
-			title="Poista viimeisin piste"
-			aria-label="Poista viimeisin piste"
-			on:click={() => { if ($marksStore.length > 0) marksStore.update(arr => arr.slice(0, -1)); }}
-			on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if ($marksStore.length > 0) marksStore.update(arr => arr.slice(0, -1)); } }}
-		></button>
+		
 		<img
 			src="/Kentta.svg"
 			alt="Kenttä"
@@ -920,7 +974,7 @@ onMount(() => {
 		</div>
 		<div>
 			<button class="fp-btn" style="height:60px; padding: 10px">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
-			<button class="action-btn" style="height:60px;">Lopeta peli</button>
+			<button class="action-btn" style="height:60px;" on:click={handleEndGame}>Lopeta peli</button>
 		</div>
 	</div>
 </div>
@@ -1147,6 +1201,7 @@ onMount(() => {
 	.top-row {
 		display: flex;
 		flex-direction: row;
+		flex-wrap: wrap;
 		width: 100%;
 		height: 50px;
 		align-items: center;
@@ -1156,16 +1211,16 @@ onMount(() => {
 		box-sizing: border-box;
 	}
 	.team-name {
-		flex: 0 1 320px;
+		flex: 1 1 0;
 		min-width: 0;
-		max-width: 400px;
+		max-width: 33vw;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 1.5rem;
 		font-weight: bold;
 		color: #222;
-		padding: 0 500px;
+		padding: 0 16px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -1220,10 +1275,12 @@ onMount(() => {
 		}
 		.top-row {
 			height: 60px;
+			flex-wrap: wrap;
 		}
 		.team-name {
 			font-size: 1.2rem;
 			padding: 0 8px;
+			max-width: 50vw;
 		}
 		.arrow-btn, .lineup-btn {
 			font-size: 1rem;
