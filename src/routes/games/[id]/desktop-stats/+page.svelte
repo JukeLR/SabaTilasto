@@ -973,7 +973,7 @@ onMount(() => {
 			<button class="action-btn" style="height:60px;" on:click={handleSave}>Tallenna</button>		
 		</div>
 		<div>
-			<button class="fp-btn" style="height:60px; padding: 10px">Jos maalivahti on vaihdettu pelissä,<br/>valitse tämä ennenkuin lopetat pelin</button>
+			<button class="fp-btn" style="height:80px; padding: 10px">Jos maalivahti on vaihdettu pelissä, valitse tämä ennenkuin lopetat pelin</button>
 			<button class="action-btn" style="height:60px;" on:click={handleEndGame}>Lopeta peli</button>
 		</div>
 	</div>

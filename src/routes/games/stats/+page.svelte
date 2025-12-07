@@ -609,8 +609,8 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
   </div>
 
   <!-- Kenttäkuva pelaajatilastojen alle -->
-  <div style="width:1200px; margin-top:40px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto 10px auto; ">
+  <div style="width:100%; max-width:1200px; margin-top:40px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin-bottom:10px;">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{selectedTeam ? (teams.find(t => t.id == selectedTeam)?.name ?? 'Joukkue') : 'Joukkue'}</div>
       <div style="display:flex; gap:16px;">
         <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap}>Maalit</button>
@@ -620,7 +620,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
       </div>
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">Vastustaja</div>
     </div>
-    <div class="kentta-container-fit">
+    <div class="kentta-container-fit" style="position:relative; width:100%; max-width:1200px; margin:0;">
       <img src="/Kentta.svg" alt="Kenttä" class="kentta-img-fit" bind:this={kenttaImgEl} on:load={updateOverlaySize} />
       {#if showGoalsHeatmap && shotmapPoints.length > 0}
         <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
