@@ -5,6 +5,8 @@ import TeamDropdown from '$lib/TeamDropdown.svelte';
 
 let { data }: { data: PageData } = $props();
 
+let searchUsername = $state('');
+
 let users = $state<any[]>([]);
 let teams = $state<any[]>([]);
 let loading = $state(true);
@@ -175,7 +177,7 @@ function getTeamNames(userTeams: any[]): string {
 <div class="admin-container">
 	<header>
 		<h1>Käyttäjähallinta</h1>
-		<a href="/" class="back-link">← Takaisin etusivulle</a>
+		
 	</header>
 
 	{#if loading}
@@ -183,6 +185,15 @@ function getTeamNames(userTeams: any[]): string {
 	{:else if error}
 		<div class="error">{error}</div>
 	{:else}
+		<div style="margin-bottom: 18px;">
+			<input
+				type="text"
+				placeholder="Etsi käyttäjätunnusta..."
+				bind:value={searchUsername}
+				class="search-input"
+				style="width: 260px; padding: 8px; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc;"
+			/>
+		</div>
 		<div class="users-table">
 			<table>
 				<thead>
@@ -197,7 +208,7 @@ function getTeamNames(userTeams: any[]): string {
 					</tr>
 				</thead>
 				<tbody>
-					{#each users as user}
+					{#each users.filter(u => !searchUsername || u.username.toLowerCase().includes(searchUsername.toLowerCase())) as user}
 						<tr>
 							<td>{user.username}</td>
 							<td>{user.first_name} {user.last_name}</td>
@@ -276,11 +287,11 @@ function getTeamNames(userTeams: any[]): string {
 </div>
 
 <style>
-	.admin-container {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 40px 20px;
-	}
+	   .admin-container {
+		   width: 100%;
+		   margin: 0;
+		   padding: 40px 20px;
+	   }
 
 	header {
 		display: flex;

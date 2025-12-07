@@ -610,7 +610,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
 
   <!-- Kenttäkuva pelaajatilastojen alle -->
   <div style="width:1200px; margin-top:40px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto 10px auto; padding:0 50px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto 10px auto; ">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{selectedTeam ? (teams.find(t => t.id == selectedTeam)?.name ?? 'Joukkue') : 'Joukkue'}</div>
       <div style="display:flex; gap:16px;">
         <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap}>Maalit</button>

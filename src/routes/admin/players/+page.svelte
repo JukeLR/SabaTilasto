@@ -6,6 +6,7 @@
 
 	let players = $state<any[]>([]);
 	let teams = $state<any[]>([]);
+	let selectedTeamId = $state('');
 	let isLoading = $state(true);
 	let error = $state('');
 	let successMessage = $state('');
@@ -388,7 +389,15 @@
 	<!-- Pelaajien lista -->
 	<div class="players-section">
 		<h2>Pelaajat ({players.length})</h2>
-
+		<div style="margin-bottom: 18px;">
+			<label for="team-filter" style="margin-right:8px; font-weight:500;">Suodata joukkue:</label>
+			<select id="team-filter" bind:value={selectedTeamId} style="padding:6px 12px; border-radius:6px; font-size:1rem;">
+				<option value="">Kaikki joukkueet</option>
+				{#each teams as team}
+					<option value={team.id}>{team.name}</option>
+				{/each}
+			</select>
+		</div>
 		{#if isLoading}
 			<p class="loading">Ladataan pelaajia...</p>
 		{:else if players.length === 0}
@@ -407,7 +416,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each players as player}
+						{#each players.filter(p => !selectedTeamId || (p.team_ids && p.team_ids.includes(Number(selectedTeamId)))) as player}
 							<tr>
 								{#if editingPlayerId === player.id}
 									<!-- Muokkaustila -->
