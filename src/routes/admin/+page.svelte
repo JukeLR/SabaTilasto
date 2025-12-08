@@ -188,7 +188,7 @@ function getTeamNames(userTeams: any[]): string {
 		<div style="margin-bottom: 18px;">
 			<input
 				type="text"
-				placeholder="Etsi käyttäjätunnusta..."
+				placeholder="Etsi käyttäjää"
 				bind:value={searchUsername}
 				class="search-input"
 				style="width: 260px; padding: 8px; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc;"
@@ -208,7 +208,15 @@ function getTeamNames(userTeams: any[]): string {
 					</tr>
 				</thead>
 				<tbody>
-					{#each users.filter(u => !searchUsername || u.username.toLowerCase().includes(searchUsername.toLowerCase())) as user}
+					{#each users.filter(u => {
+						if (!searchUsername) return true;
+						const search = searchUsername.toLowerCase();
+						return (
+							(u.username && u.username.toLowerCase().includes(search)) ||
+							(u.first_name && u.first_name.toLowerCase().includes(search)) ||
+							(u.last_name && u.last_name.toLowerCase().includes(search))
+						);
+					}) as user}
 						<tr>
 							<td>{user.username}</td>
 							<td>{user.first_name} {user.last_name}</td>

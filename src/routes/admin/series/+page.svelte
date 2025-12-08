@@ -1,31 +1,40 @@
+
 <script lang="ts">
-	import { onMount } from 'svelte';
+import { onMount } from 'svelte';
+import { page } from '$app/stores';
 
-	interface Series {
-		id: number;
-		name: string;
-		season: string | null;
-		created_at: string;
-	}
+interface Series {
+	id: number;
+	name: string;
+	season: string | null;
+	created_at: string;
+}
 
-	let series = $state<Series[]>([]);
-	let isLoading = $state(true);
-	let error = $state('');
-	let successMessage = $state('');
-	
-	// Uuden sarjan luominen
-	let newSeriesName = $state('');
-	let newSeriesSeason = $state('');
-	let isAdding = $state(false);
-	
-	// Muokkaus
-	let editingSeriesId = $state<number | null>(null);
-	let editSeriesName = $state('');
-	let editSeriesSeason = $state('');
+let series = $state<Series[]>([]);
+let isLoading = $state(true);
+let error = $state('');
+let successMessage = $state('');
+// Uuden sarjan luominen
+let newSeriesName = $state('');
+let newSeriesSeason = $state('');
+let isAdding = $state(false);
+// Muokkaus
+let editingSeriesId = $state<number | null>(null);
+let editSeriesName = $state('');
+let editSeriesSeason = $state('');
 
-	onMount(() => {
-		loadSeries();
+let userRole = '';
+onMount(() => {
+	// Hae käyttäjä layoutin datasta
+	const dataPromise = page && page.subscribe ? new Promise<any>(res => {
+		let unsub: (() => void) | undefined;
+		unsub = page.subscribe(val => { if (unsub) unsub(); res(val.data); });
+	}) : Promise.resolve({});
+	dataPromise.then(data => {
+		userRole = data?.user?.role || '';
 	});
+	loadSeries();
+});
 
 	async function loadSeries() {
 		isLoading = true;
@@ -265,8 +274,10 @@
 									<td>{s.season || '-'}</td>
 									<td>{formatDate(s.created_at)}</td>
 									<td>
-										<button class="btn-edit" onclick={() => startEdit(s)}>Muokkaa</button>
-										<button class="btn-delete" onclick={() => deleteSeries(s.id, s.name)}>Poista</button>
+										{#if userRole !== 'vastuuvalmentaja'}
+											<button class="btn-edit" onclick={() => startEdit(s)}>Muokkaa</button>
+											<button class="btn-delete" onclick={() => deleteSeries(s.id, s.name)}>Poista</button>
+										{/if}
 									</td>
 								{/if}
 							</tr>

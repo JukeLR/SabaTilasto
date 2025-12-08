@@ -28,6 +28,17 @@
     userRole = user?.role || '';
     userTeamIds = Array.isArray(user?.team_ids) ? user.team_ids.map((id: any) => Number(id)) : [];
     gameId = $page.params.id ? $page.params.id : "";
+
+    // Pelaaja-roolilla ilman player_id:tä ei haeta yhtään peliä eikä näytetä tilastoja
+    if (userRole === 'pelaaja' && (!Array.isArray(user?.player_ids) || user.player_ids.length === 0)) {
+      error = 'Sinulla ei ole pelaajatunnusta, joten et näe yhtään peliä.';
+      isLoading = false;
+      game = null;
+      players = [];
+      shotmap = [];
+      return;
+    }
+
     await fetchGame();
     // Jos toimihenkilö, tarkista pääsy peliin
     if (userRole === 'toimihenkilö' && game && !userTeamIds.includes(Number(game.own_team_id))) {
@@ -217,7 +228,13 @@
         <tbody>
           {#each players as p}
             <tr>
-              <td>{p.last_name} {p.first_name}</td>
+              <td class="name-col">
+                {#if userRole === 'admin' || userRole === 'vastuuvalmentaja'}
+                  <a href={`/reports/${gameId}/tilasto/${p.id}`}>{p.first_name} {p.last_name}</a>
+                {:else}
+                  {p.first_name} {p.last_name}
+                {/if}
+              </td>
               <td>{getPlayerGoals(p.id)}</td>
               <td>{getPlayerAssists(p.id)}</td>
               <td>{getPlayerShotsOnGoal(p.id)}</td>

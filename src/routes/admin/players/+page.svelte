@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import type { PageData } from './$types';
+	import type { User } from '$lib/db';
 
 	let { data }: { data: PageData } = $props();
 
@@ -34,9 +36,22 @@
 	let modalPlayerId = $state<number | null>(null);
 	let modalTeamIds = $state<number[]>([]);
 
-	onMount(() => {
-		loadTeams();
-		loadPlayers();
+	let user: User | null = null;
+	let userRole = '';
+
+	onMount(async () => {
+		// Get user from layout data
+		const data = page && page.subscribe ? (await new Promise<any>(res => {
+			let unsub: (() => void) | undefined;
+			unsub = page.subscribe(val => {
+				if (unsub) unsub();
+				res(val.data);
+			});
+		})) : {};
+		user = data?.user || null;
+		userRole = user?.role || '';
+		await loadTeams();
+		await loadPlayers();
 	});
 
 	async function loadTeams() {
@@ -44,7 +59,12 @@
 			const response = await fetch('/api/admin/teams');
 			const data = await response.json();
 			if (response.ok) {
-				teams = data.teams || [];
+				let allTeams = data.teams || [];
+				// Filter teams for vastuuvalmentaja
+				if (userRole === 'vastuuvalmentaja' && user?.team_ids && Array.isArray(user.team_ids)) {
+					allTeams = allTeams.filter((team: any) => user.team_ids.includes(team.id));
+				}
+				teams = allTeams;
 			}
 		} catch (err) {
 			console.error('Virhe joukkueiden latauksessa:', err);
@@ -54,14 +74,11 @@
 	async function loadPlayers() {
 		isLoading = true;
 		error = '';
-
 		try {
 			const response = await fetch('/api/admin/players');
-
 			if (!response.ok) {
 				throw new Error('Pelaajien lataus epäonnistui');
 			}
-
 			const data = await response.json();
 			players = data.players || [];
 		} catch (err) {
@@ -393,9 +410,15 @@
 			<label for="team-filter" style="margin-right:8px; font-weight:500;">Suodata joukkue:</label>
 			<select id="team-filter" bind:value={selectedTeamId} style="padding:6px 12px; border-radius:6px; font-size:1rem;">
 				<option value="">Kaikki joukkueet</option>
-				{#each teams as team}
-					<option value={team.id}>{team.name}</option>
-				{/each}
+				{#if userRole === 'vastuuvalmentaja' && user?.team_ids && Array.isArray(user.team_ids)}
+					{#each teams.filter(team => user.team_ids.includes(team.id)) as team}
+						<option value={team.id}>{team.name}</option>
+					{/each}
+				{:else}
+					{#each teams as team}
+						<option value={team.id}>{team.name}</option>
+					{/each}
+				{/if}
 			</select>
 		</div>
 		{#if isLoading}
@@ -465,11 +488,12 @@
 									</td>
 									<td>
 										<button class="btn-edit" onclick={() => startEdit(player)}>Muokkaa</button>
-										<button
-											class="btn-delete"
-											onclick={() => deletePlayer(player.id, `${player.first_name} ${player.last_name}`)}
-											>Poista</button
-										>
+										{#if userRole === 'admin'}
+											<button
+												class="btn-delete"
+												onclick={() => deletePlayer(player.id, `${player.first_name} ${player.last_name}`)}
+											>Poista</button>
+										{/if}
 									</td>
 								{/if}
 							</tr>

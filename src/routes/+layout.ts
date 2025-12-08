@@ -39,6 +39,32 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 			}
 
 
+
+			// Vastuuvalmentaja pääsee etusivulle, sarjoihin, peleihin, tilastoihin, pelaajiin, raportteihin ja omaan profiiliin
+			if (role === 'vastuuvalmentaja') {
+				// Salli kaikki /reports polut
+				if (
+					pathname === '/' ||
+					pathname.startsWith('/admin/series') ||
+					pathname.startsWith('/games') ||
+					pathname.startsWith('/reports') ||
+					pathname.startsWith('/admin/players') ||
+					pathname === '/admin/series' ||
+					pathname === '/games' ||
+					pathname === '/games/stats' ||
+					pathname === '/admin/players' ||
+					pathname === '/reports' ||
+					pathname === '/profile'
+				) {
+					return {
+						user,
+						isLoggedIn: true
+					};
+				} else {
+					throw redirect(303, '/');
+				}
+			}
+
 			// Junioripäällikkö, toimihenkilö ja pelaaja pääsevät etusivulle, tilastoihin, omaan profiiliin ja raportteihin
 			if (role === 'toimihenkilö' || role === 'junioripäällikkö' || role === 'pelaaja') {
 				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut

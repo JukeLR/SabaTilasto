@@ -935,9 +935,15 @@
 					required
 				>
 					<option value="">Valitse joukkue</option>
-					{#each teams as team}
-						<option value={team.id}>{team.name}</option>
-					{/each}
+					{#if (userRole === 'vastuuvalmentaja' || userRole === 'kirjuri') && Array.isArray(currentUser?.team_ids) && currentUser.team_ids.length > 0}
+						{#each teams.filter(team => currentUser.team_ids.includes(team.id)) as team}
+							<option value={team.id}>{team.name}</option>
+						{/each}
+					{:else}
+						{#each teams as team}
+							<option value={team.id}>{team.name}</option>
+						{/each}
+					{/if}
 				</select>
 			</div>
 			

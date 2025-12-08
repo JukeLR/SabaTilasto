@@ -298,8 +298,8 @@ let overlayHeight = 800;
       teams = [];
     }
 
-    // Jos toimihenkilö TAI pelaaja, näytä vain omat joukkueet
-    if ((userRole === 'toimihenkilö' || userRole === 'pelaaja') && user?.team_ids && Array.isArray(user.team_ids)) {
+    // Jos kirjuri, vastuuvalmentaja, toimihenkilö TAI pelaaja, näytä vain omat joukkueet
+    if ((userRole === 'kirjuri' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'pelaaja') && user?.team_ids && Array.isArray(user.team_ids)) {
       const userTeamIdsNum = user.team_ids.map((id: any) => Number(id));
       teams = teams.filter((team: any) => userTeamIdsNum.includes(Number(team.id)));
       if (teams.length === 0) {
@@ -315,6 +315,13 @@ let overlayHeight = 800;
     const compRes = await fetch('/api/competitions');
     const compData = await compRes.json();
     competitions = Array.isArray(compData.series) ? compData.series : [];
+
+    // Varmista overlayWidth/Height päivitys sivun latauksessa
+    if (kenttaImgEl && kenttaImgEl.complete) {
+      updateOverlaySize();
+    } else if (kenttaImgEl) {
+      kenttaImgEl.onload = updateOverlaySize;
+    }
   });
 
   function toggleGoalsHeatmap() {
@@ -487,18 +494,24 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
     <div class="stats-filters">
     <div class="filter-row">
       <label for="team-select">Valitse joukkue:</label>
-      <select id="team-select" bind:value={selectedTeam}>
+      <select id="team-select" bind:value={selectedTeam} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>
         <option value="">-- Valitse --</option>
         {#each teams as team}
-          {#if userRole !== 'toimihenkilö' || (user?.team_ids && user.team_ids.includes(team.id))}
-            <option value={team.id}>{team.name}</option>
+          {#if userRole === 'kirjuri' || userRole === 'vastuuvalmentaja'}
+            {#if user?.team_ids && user.team_ids.includes(team.id)}
+              <option value={team.id}>{team.name}</option>
+            {/if}
+          {:else}
+            {#if userRole !== 'toimihenkilö' || (user?.team_ids && user.team_ids.includes(team.id))}
+              <option value={team.id}>{team.name}</option>
+            {/if}
           {/if}
         {/each}
       </select>
     </div>
     <div class="filter-row">
       <label for="competition-select">Valitse sarja:</label>
-      <select id="competition-select" bind:value={selectedCompetition}>
+      <select id="competition-select" bind:value={selectedCompetition} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>
         <option value="">-- Valitse --</option>
         {#each competitions as comp}
           <option value={comp.id}>{comp.name}</option>
@@ -507,12 +520,12 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
     </div> 
     <div class="filter-row">
       <label for="start-date">Alkaen:</label>
-      <input type="date" id="start-date" bind:value={startDate} />
+      <input type="date" id="start-date" bind:value={startDate} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)} />
       <label for="end-date" style="margin-left:16px;">Päättyen:</label>
-      <input type="date" id="end-date" bind:value={endDate} />
+      <input type="date" id="end-date" bind:value={endDate} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)} />
     </div>
     <div class="filter-row">
-      <button class="btn-fetch" on:click={fetchStats}>Hae tilastot</button>
+      <button class="btn-fetch" on:click={fetchStats} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Hae tilastot</button>
     </div>
     <div class="stats-headings">
       <h2>Maalivahtitilastot</h2>
@@ -613,10 +626,10 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
   <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin-bottom:10px;">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{selectedTeam ? (teams.find(t => t.id == selectedTeam)?.name ?? 'Joukkue') : 'Joukkue'}</div>
       <div style="display:flex; gap:16px;">
-        <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap}>Maalit</button>
-        <button class="kentta-btn {showShotsOnGoalHeatmap ? 'active-yellow' : ''}" on:click={toggleShotsOnGoalHeatmap}>Vedot kohti maalia</button>
-        <button class="kentta-btn {showBlocksHeatmap ? 'active-green' : ''}" on:click={toggleBlocksHeatmap}>Blokit</button>
-        <button class="kentta-btn {showOffTargetHeatmap ? 'active-blue' : ''}" on:click={toggleOffTargetHeatmap}>Vedot ohimaalin</button>
+        <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Maalit</button>
+        <button class="kentta-btn {showShotsOnGoalHeatmap ? 'active-yellow' : ''}" on:click={toggleShotsOnGoalHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Vedot kohti maalia</button>
+        <button class="kentta-btn {showBlocksHeatmap ? 'active-green' : ''}" on:click={toggleBlocksHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Blokit</button>
+        <button class="kentta-btn {showOffTargetHeatmap ? 'active-blue' : ''}" on:click={toggleOffTargetHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Vedot ohimaalin</button>
       </div>
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">Vastustaja</div>
     </div>

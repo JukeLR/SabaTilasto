@@ -62,8 +62,8 @@ import { page } from '$app/stores';
 			isLoading = true;
 			error = '';
 			let url = '/api/games';
-			// If kirjuri, only fetch their own team's games
-			if (userRole === 'kirjuri' && userTeamId) {
+			// Jos kirjuri tai vastuuvalmentaja, näytetään vain oman joukkueen pelit
+			if ((userRole === 'kirjuri' || userRole === 'vastuuvalmentaja') && userTeamId) {
 				url += `?team_id=${userTeamId}`;
 			}
 			const response = await fetch(url);
@@ -71,7 +71,7 @@ import { page } from '$app/stores';
 			if (response.ok) {
 				let allGames = data.games || [];
 				// Extra safety: filter on frontend too
-				if (userRole === 'kirjuri' && userTeamId) {
+				if ((userRole === 'kirjuri' || userRole === 'vastuuvalmentaja') && userTeamId) {
 					allGames = allGames.filter((g: Game) => g.own_team_id === userTeamId);
 				}
 				games = allGames;

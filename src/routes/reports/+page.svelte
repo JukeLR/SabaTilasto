@@ -36,6 +36,17 @@
     user = data?.user || null;
     userRole = user?.role || '';
     userTeamIds = Array.isArray(user?.team_ids) ? user.team_ids.map((id: any) => Number(id)) : [];
+
+    // Pelaaja-roolilla ilman player_id:tä ei haeta yhtään peliä eikä näytetä listaa
+    if (userRole === 'pelaaja' && (!Array.isArray(user?.player_ids) || user.player_ids.length === 0)) {
+      error = 'Sinun tunnusta ei ole linkitetty yhteenkään pelaajaan, joten et näe yhtään peliä. Ota yhteyttä valmentajaasi.';
+      isLoading = false;
+      games = [];
+      ongoingGames = [];
+      completedGames = [];
+      return;
+    }
+
     await fetchGames();
   });
 
@@ -47,6 +58,10 @@
       const data = await response.json();
       if (response.ok) {
         games = data.games || [];
+        // Vastuuvalmentaja: suodata vain omat joukkueet
+        if (userRole === 'vastuuvalmentaja' && userTeamIds.length > 0) {
+          games = games.filter(game => userTeamIds.includes(Number(game.own_team_id)));
+        }
         // Toimihenkilö: suodata vain omat joukkueet
         if (userRole === 'toimihenkilö' && userTeamIds.length > 0) {
           games = games.filter(game => userTeamIds.includes(Number(game.own_team_id)));

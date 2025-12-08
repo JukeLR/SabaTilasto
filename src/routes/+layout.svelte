@@ -137,30 +137,59 @@
 					<button class="menu-item" onclick={() => navigateTo('/admin/series')}>
 						Sarjat
 					</button>
-				{/if}
-				{#if userRole === 'admin' || userRole === 'vastuuvalmentaja' || userRole === 'kirjuri'}
 					<button class="menu-item" onclick={() => navigateTo('/games')}>
 						Pelit
 					</button>
-				{/if}
-				   {#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'pelaaja'}
-					   <button class="menu-item" onclick={() => navigateTo('/games/stats')}>
-						   Tilastot
-					   </button>
-				   {/if}
-				{#if userRole === 'admin'}
-					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
-						Joukkueet
+					<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
+						Tilastot
 					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
 						Pelaajat
 					</button>
+					<button class="menu-item" onclick={() => navigateTo('/reports')}>
+						Raportit
+					</button>
 				{/if}
-				   {#if userRole === 'admin' || userRole === 'junioripäällikkö' || userRole === 'vastuuvalmentaja' || userRole === 'toimihenkilö' || userRole === 'pelaaja'}
-					   <button class="menu-item" onclick={() => navigateTo('/reports')}>
-						   Raportit
-					   </button>
-				   {/if}
+				{#if userRole === 'vastuuvalmentaja'}
+					<button class="menu-item" onclick={() => navigateTo('/admin/series')}>
+						Sarjat
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/games')}>
+						Pelit
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
+						Tilastot
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/admin/players')}>
+						Pelaajat
+					</button>
+					<button class="menu-item" onclick={() => navigateTo('/reports')}>
+						Raportit
+					</button>
+				{/if}
+				{#if userRole === 'junioripäällikkö' || userRole === 'toimihenkilö' || userRole === 'kirjuri' || userRole === 'pelaaja'}
+					{#if userRole === 'junioripäällikkö'}
+						<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
+							Tilastot
+						</button>
+						<button class="menu-item" onclick={() => navigateTo('/reports')}>
+							Raportit
+						</button>
+					{/if}
+					{#if userRole === 'toimihenkilö' || userRole === 'pelaaja'}
+						<button class="menu-item" onclick={() => navigateTo('/games/stats')}>
+							Tilastot
+						</button>
+						<button class="menu-item" onclick={() => navigateTo('/reports')}>
+							Raportit
+						</button>
+					{/if}
+					{#if userRole === 'kirjuri'}
+						<button class="menu-item" onclick={() => navigateTo('/games')}>
+							Pelit
+						</button>
+					{/if}
+				{/if}
 				<button class="menu-item" onclick={() => navigateTo('/profile')}>
 					Oma profiili
 				</button>
