@@ -610,7 +610,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
 
   <!-- Kenttäkuva pelaajatilastojen alle -->
   <div style="width:100%; max-width:1200px; margin-top:40px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin-bottom:10px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin-bottom:10px;">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{selectedTeam ? (teams.find(t => t.id == selectedTeam)?.name ?? 'Joukkue') : 'Joukkue'}</div>
       <div style="display:flex; gap:16px;">
         <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap}>Maalit</button>
@@ -621,9 +621,9 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">Vastustaja</div>
     </div>
     <div class="kentta-container-fit" style="position:relative; width:100%; max-width:1200px; margin:0;">
-      <img src="/Kentta.svg" alt="Kenttä" class="kentta-img-fit" bind:this={kenttaImgEl} on:load={updateOverlaySize} />
+      <img src="/Kentta.svg" alt="Kenttä" class="kentta-img-fit" bind:this={kenttaImgEl} on:load={updateOverlaySize} style="width:100%; max-width:1200px; display:block; margin:0; padding:0; border:none;" />
       {#if showGoalsHeatmap && shotmapPoints.length > 0}
-        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`} style="position:absolute; left:0; top:0; width:100%; height:100%; max-width:1200px; margin:0; padding:0; border:none; pointer-events:none; z-index:2;">
           {#each shotmapPoints as pt}
             {#if pt.type === 'M'}
               <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(255,0,0,0.35)" />
@@ -632,7 +632,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
         </svg>
       {/if}
       {#if showShotsOnGoalHeatmap && shotsOnGoalPoints.length > 0}
-        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`} style="position:absolute; left:0; top:0; width:100%; height:100%; max-width:1200px; margin:0; padding:0; border:none; pointer-events:none; z-index:2;">
           {#each shotsOnGoalPoints as pt}
             {#if pt.type === 'K'}
               <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(255,215,0,0.35)" />
@@ -641,7 +641,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
         </svg>
       {/if}
       {#if showBlocksHeatmap && blocksPoints.length > 0}
-        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`} style="position:absolute; left:0; top:0; width:100%; height:100%; max-width:1200px; margin:0; padding:0; border:none; pointer-events:none; z-index:2;">
           {#each blocksPoints as pt}
             {#if pt.type === 'B'}
               <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(0,200,0,0.35)" />
@@ -650,7 +650,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
         </svg>
       {/if}
       {#if showOffTargetHeatmap && offTargetPoints.length > 0}
-        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}> 
+        <svg class="kentta-overlay-fit" viewBox={`0 0 ${overlayWidth} ${overlayHeight}`} style="position:absolute; left:0; top:0; width:100%; height:100%; max-width:1200px; margin:0; padding:0; border:none; pointer-events:none; z-index:2;">
           {#each offTargetPoints as pt}
             {#if pt.type === 'O'}
               <circle cx={scaleX(pt.x)} cy={scaleY(pt.y)} r={overlayWidth/100} fill="rgba(0,0,255,0.35)" />

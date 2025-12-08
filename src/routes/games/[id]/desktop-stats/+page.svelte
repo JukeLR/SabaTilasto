@@ -69,7 +69,7 @@ function handleFieldClick(event: MouseEvent) {
 		neonX = 1 - clickX;
 		neonY = 1 - clickY;
 	}
-	tempPoint = { x: storeX, y: storeY, renderX: clickX, renderY: clickY };
+	tempPoint = { x: storeX, y: 1 - storeY, renderX: clickX, renderY: 1 - clickY };
 	// Tulosta tallennetut koordinaatit terminaaliin
 	console.log(`Laukaisupiste (talletettu): x=${storeX.toFixed(3)}, y=${storeY.toFixed(3)}`);
 	console.log(`Laukaisupiste (Neoniin): x=${neonX.toFixed(3)}, y=${neonY.toFixed(3)}`);
@@ -725,13 +725,13 @@ onMount(() => {
 			{#if tempPoint}
 				<div
 					class="mark-dot"
-					style="position: absolute; left: {(tempPoint.renderX ?? tempPoint.x) * 100}%; top: {(tempPoint.renderY ?? tempPoint.y) * 100}%; transform: translate(-50%, -50%);"
-					title={`(${((tempPoint.renderX ?? tempPoint.x)*100).toFixed(1)}, ${((tempPoint.renderY ?? tempPoint.y)*100).toFixed(1)})`}
+					style="position: absolute; left: {(tempPoint.renderX ?? tempPoint.x) * 100}%; top: {(1 - (tempPoint.renderY ?? tempPoint.y)) * 100}%; transform: translate(-50%, -50%);"
+					title={`(${((tempPoint.renderX ?? tempPoint.x)*100).toFixed(1)}, ${(100 - ((tempPoint.renderY ?? tempPoint.y)*100)).toFixed(1)})`}
 				></div>
 			{/if}
 			{#each $marksStore as mark}
 				<svg
-					style="position: absolute; left: {(mark.renderX ?? mark.x) * 100}%; top: {(mark.renderY ?? mark.y) * 100}%; transform: translate(-50%, -50%); z-index: 4;"
+					style="position: absolute; left: {(mark.renderX ?? mark.x) * 100}%; top: {(1 - (mark.renderY ?? mark.y)) * 100}%; transform: translate(-50%, -50%); z-index: 4;"
 					width="24" height="24" viewBox="0 0 24 24"
 				>
 					<text x="12" y="16" text-anchor="middle" font-size="16" font-weight="bold" fill={mark.color || 'black'}>{mark.char}</text>
