@@ -200,7 +200,6 @@ function getTeamNames(userTeams: any[]): string {
 					<tr>
 						<th>Käyttäjätunnus</th>
 						<th>Nimi</th>
-						<th>Sähköposti</th>
 						<th>Rooli</th>
 						<th>Joukkueet</th>
 						<th>Pelaaja</th>
@@ -219,8 +218,7 @@ function getTeamNames(userTeams: any[]): string {
 					}) as user}
 						<tr>
 							<td>{user.username}</td>
-							<td>{user.first_name} {user.last_name}</td>
-							<td>{user.email}</td>
+							<td>{user.first_name} {user.last_name}</td>							
 							<td>
 								<select 
 									value={user.role} 
