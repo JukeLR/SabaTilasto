@@ -79,13 +79,59 @@
   }
 
   // Placeholder for button actions
-  function handlePlus(statType: string, gameId: string) {
-    // TODO: implement
-    alert(`Lisää ${statType} peliin ${gameId}`);
+  async function handlePlus(statType: string, gameId: string) {
+    await updateStat(statType, gameId, 1);
   }
-  function handleMinus(statType: string, gameId: string) {
-    // TODO: implement
-    alert(`Vähennä ${statType} peliin ${gameId}`);
+  async function handleMinus(statType: string, gameId: string) {
+    await updateStat(statType, gameId, -1);
+  }
+
+  // Stat label to backend field mapping
+  const statFieldMap: Record<string, string> = {
+    'Maalit': 'team_goals',
+    'Syötöt': 'assists',
+    'Vedot kohti maalia': 'shots_on_goal',
+    'Vedot ohi maalin': 'shots_off_target',
+    'Vedot blokkiin': 'shots_blocked',
+    'Blokit': 'blocks',
+    'Plussat': 'plus_points',
+    'Miinukset': 'minus_points',
+    'Torjunnat': 'saves',
+    'Päästetyt maalit': 'opponent_goals'
+  };
+
+  async function updateStat(statType: string, gameId: string, delta: number) {
+    const field = statFieldMap[statType];
+    if (!field) return;
+    // Hae nykyinen array pelistä
+    const res = await fetch(`/api/games/${gameId}`);
+    if (!res.ok) return alert('Pelin haku epäonnistui');
+    const gameData = await res.json();
+    let arr = Array.isArray(gameData[field]) ? [...gameData[field]] : [];
+    const pid = Number(playerId);
+    arr = arr.map(Number); // Varmista että kaikki ovat numeroita
+    if (delta > 0) {
+      arr.push(pid);
+    } else {
+      const idx = arr.lastIndexOf(pid);
+      if (idx !== -1) {
+        arr.splice(idx, 1);
+      } else {
+        return;
+      }
+    }
+    // Päivitä backend
+    const patchRes = await fetch(`/api/games/${gameId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: arr })
+    });
+    if (!patchRes.ok) {
+      alert('Päivitys epäonnistui');
+      return;
+    }
+    // Päivitä näkymä
+    await fetchPlayerStats();
   }
 
   function formatDate(dateStr: string) {

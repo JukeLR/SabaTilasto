@@ -83,6 +83,48 @@ function handleFieldKeydown(event: KeyboardEvent) {
 }
 
 
+let saveError = '';
+let pollingSaveActive = false;
+let pollingSaveInterval: ReturnType<typeof setInterval> | null = null;
+
+async function trySaveStats() {
+	const id = $page.params.id ?? $page.data.id;
+	try {
+		const res = await fetch(`/api/games/${id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				plus_points: get(plusPoints),
+				minus_points: get(minusPoints),
+				team_goals: get(teamGoals),
+				opponent_goals: get(opponentGoals),
+				shots_on_goal: get(shotsOnGoal),
+				shots_off_target: get(shotsOffTarget),
+				shots_blocked: get(shotsBlocked),
+				blocks: get(blocks),
+				saves: get(saves),
+				goalie_game_interruption: get(goalieGameInterruption),
+				opponent_shots_off: get(opponentShotOff),
+				goalie_long_pass: get(goalieLongPass),
+				goalie_short_pass: get(goalieShortPass),
+				goalie_turnover: get(goalieTurnover),
+				assists: get(assists)
+			})
+		});
+		if (!res.ok) throw new Error('Tallennus epäonnistui');
+		saveError = '';
+		if (pollingSaveActive && pollingSaveInterval) {
+			clearInterval(pollingSaveInterval);
+			pollingSaveActive = false;
+			pollingSaveInterval = null;
+		}
+		return true;
+	} catch (err) {
+		saveError = 'Tallennus epäonnistui. Yritetään automaattisesti uudelleen...';
+		return false;
+	}
+}
+
 function handleSave() {
 	if (
 		selectedStat === 'teamGoals' &&
@@ -141,6 +183,14 @@ function handleSave() {
 		selectedActionBtns = [];
 		lockedScorerId = null;
 		lockedAssistId = null;
+		// ...existing code...
+		// Tallennetaan tilastot Neon-tietokantaan
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -194,6 +244,13 @@ function handleSave() {
 		selectedActionBtns = [];
 		selectedGoalieId = null;
 		selectedNoGoalie = false;
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -237,6 +294,13 @@ function handleSave() {
 		// 5. Nollaa valinnat
 		selectedStat = '';
 		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -280,6 +344,13 @@ function handleSave() {
 		// 5. Nollaa valinnat
 		selectedStat = '';
 		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -323,6 +394,13 @@ function handleSave() {
 		// 5. Nollaa valinnat
 		selectedStat = '';
 		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -368,6 +446,13 @@ function handleSave() {
 		selectedStat = '';
 		selectedGoalieId = null;
 		selectedNoGoalie = false;
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -410,6 +495,13 @@ function handleSave() {
 		console.log('opponentShotOff:', get(opponentShotOff));		
 		// 5. Nollaa valinnat
 		selectedStat = '';		
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}
 	if (
@@ -453,6 +545,13 @@ function handleSave() {
 		// 5. Nollaa valinnat
 		selectedStat = '';
 		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
 		return;
 	}		
 }
@@ -504,6 +603,13 @@ function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
 				selectedGoalieId = $gameFieldPositions[0];
 				selectedNoGoalie = false;
 				selectedPlayerIds = [];
+				// ...existing code...
+				trySaveStats().then(success => {
+					if (!success && !pollingSaveActive) {
+						pollingSaveActive = true;
+						pollingSaveInterval = setInterval(trySaveStats, 10000);
+					}
+				});
 				return;
 			}
 			// Tallenna valitut pelaajat plusMinusPlayers-storeen
@@ -517,6 +623,13 @@ function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
 			selectedNoGoalie = false;
 			// Poista pelaajavalinnat
 			selectedPlayerIds = [];
+			// ...existing code...
+			trySaveStats().then(success => {
+				if (!success && !pollingSaveActive) {
+					pollingSaveActive = true;
+					pollingSaveInterval = setInterval(trySaveStats, 10000);
+				}
+			});
 			return;
 		}
 		// Jos teamGoals (vanha logiikka)
@@ -525,6 +638,13 @@ function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
 			if (!selectedActionBtns.includes('plusminus')) {
 				selectedActionBtns = [...selectedActionBtns, 'plusminus'];
 			}
+			// ...existing code...
+			trySaveStats().then(success => {
+				if (!success && !pollingSaveActive) {
+					pollingSaveActive = true;
+					pollingSaveInterval = setInterval(trySaveStats, 10000);
+				}
+			});
 			return;
 		}
 		// Tallenna valitut pelaajat plusMinusPlayers-storeen
@@ -594,14 +714,14 @@ import { fetchTeams } from '$lib/stores/teams';
 // gameFieldPositions on nyt käytettävissä Svelte storesta
 onMount(() => {
 	// beforeunload-varmistus
-	const handler = (e) => {
+	const handler = (e: BeforeUnloadEvent) => {
 		e.preventDefault();
 		e.returnValue = 'Haluatko varmasti poistua sivulta? Tallentamattomat muutokset voivat hävitä.';
 		return 'Haluatko varmasti poistua sivulta? Tallentamattomat muutokset voivat hävitä.';
 	};
 	window.addEventListener('beforeunload', handler);
 
-	let cleanupPolling;
+	let cleanupPolling: (() => void) | undefined;
 	(async () => {
 		await fetchTeams();
 		const id = $page.params.id ?? $page.data.id;
@@ -634,29 +754,9 @@ onMount(() => {
 		await fetchLineupPlayers($gameLineup);
 
 		// Polling: päivitä Neon-tietokanta storejen arvoilla 30s välein
-		const poll = setInterval(async () => {
-			await fetch(`/api/games/${id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					plus_points: get(plusPoints),
-					minus_points: get(minusPoints),
-					team_goals: get(teamGoals),
-					opponent_goals: get(opponentGoals),
-					shots_on_goal: get(shotsOnGoal),
-					shots_off_target: get(shotsOffTarget),
-					shots_blocked: get(shotsBlocked),
-					blocks: get(blocks),
-					saves: get(saves),
-					goalie_game_interruption: get(goalieGameInterruption),
-					opponent_shots_off: get(opponentShotOff),
-					goalie_long_pass: get(goalieLongPass),
-					goalie_short_pass: get(goalieShortPass),
-					goalie_turnover: get(goalieTurnover),
-					assists: get(assists),
-					_fromPolling: true
-				})
-			});
+		const poll = setInterval(() => {
+			// Polling PATCH Neon-tietokantaan
+			trySaveStats();
 		}, 30000);
 		cleanupPolling = () => clearInterval(poll);
 		// Päivitä lineup vielä kerran
@@ -966,6 +1066,9 @@ onMount(() => {
 		</div>		
 	</div>
 	<div class="bottom-container">
+		{#if saveError}
+		<div class="save-error" style="color: red; font-weight: bold; text-align: center; margin-bottom: 10px;">{saveError}</div>
+		{/if}
 		<div>
 			<button class="action-btn" style="height:60px;">Peruuta</button>
 		</div>

@@ -191,48 +191,48 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 		updateFields.opponent_team_name = body.opponentName;
 	}
 	if (body.shots_blocked !== undefined) {
-		updateFields.shots_blocked = isPolling ? body.shots_blocked : [...(Array.isArray(currentGame.shots_blocked) ? currentGame.shots_blocked : []), ...(Array.isArray(body.shots_blocked) ? body.shots_blocked : [body.shots_blocked])];
+		updateFields.shots_blocked = body.shots_blocked;
 	}
 	if (body.shots_off_target !== undefined) {
-		updateFields.shots_off_target = isPolling ? body.shots_off_target : [...(Array.isArray(currentGame.shots_off_target) ? currentGame.shots_off_target : []), ...(Array.isArray(body.shots_off_target) ? body.shots_off_target : [body.shots_off_target])];
+		updateFields.shots_off_target = body.shots_off_target;
 	}
 	// Jos pollingista (desktop-stats), korvaa arrayt suoraan
 	// (Poistettu duplikaatti isPolling-määrittely)
 	if (body.plus_points !== undefined) {
-		updateFields.plus_points = isPolling ? body.plus_points : [...(Array.isArray(currentGame.plus_points) ? currentGame.plus_points : []), ...body.plus_points];
+		updateFields.plus_points = body.plus_points;
 	}
 	if (body.minus_points !== undefined) {
-		updateFields.minus_points = isPolling ? body.minus_points : [...(Array.isArray(currentGame.minus_points) ? currentGame.minus_points : []), ...body.minus_points];
+		updateFields.minus_points = body.minus_points;
 	}
 	if (body.team_goals !== undefined) {
-		updateFields.team_goals = isPolling ? body.team_goals : [...(Array.isArray(currentGame.team_goals) ? currentGame.team_goals : []), ...(Array.isArray(body.team_goals) ? body.team_goals : [body.team_goals])];
+		updateFields.team_goals = body.team_goals;
 	}
 	if (body.assists !== undefined) {
-		updateFields.assists = isPolling ? body.assists : [...(Array.isArray(currentGame.assists) ? currentGame.assists : []), ...(Array.isArray(body.assists) ? body.assists : [body.assists])];
+		updateFields.assists = body.assists;
 	}
 	if (body.opponent_goals !== undefined) {
-		updateFields.opponent_goals = isPolling ? body.opponent_goals : [...(Array.isArray(currentGame.opponent_goals) ? currentGame.opponent_goals : []), ...(Array.isArray(body.opponent_goals) ? body.opponent_goals : [body.opponent_goals])];
+		updateFields.opponent_goals = body.opponent_goals;
 	}
 	if (body.shots_on_goal !== undefined) {
-		updateFields.shots_on_goal = isPolling ? body.shots_on_goal : [...(Array.isArray(currentGame.shots_on_goal) ? currentGame.shots_on_goal : []), ...(Array.isArray(body.shots_on_goal) ? body.shots_on_goal : [body.shots_on_goal])];
+		updateFields.shots_on_goal = body.shots_on_goal;
 	}
 	if (body.saves !== undefined) {
-		updateFields.saves = isPolling ? body.saves : [...(Array.isArray(currentGame.saves) ? currentGame.saves : []), ...(Array.isArray(body.saves) ? body.saves : [body.saves])];
+		updateFields.saves = body.saves;
 	}
 	if (body.goalie_long_pass !== undefined) {
-		updateFields.goalie_long_pass = isPolling ? body.goalie_long_pass : [...(Array.isArray(currentGame.goalie_long_pass) ? currentGame.goalie_long_pass : []), ...(Array.isArray(body.goalie_long_pass) ? body.goalie_long_pass : [body.goalie_long_pass])];
+		updateFields.goalie_long_pass = body.goalie_long_pass;
 	}
 	if (body.goalie_short_pass !== undefined) {
-		updateFields.goalie_short_pass = isPolling ? body.goalie_short_pass : [...(Array.isArray(currentGame.goalie_short_pass) ? currentGame.goalie_short_pass : []), ...(Array.isArray(body.goalie_short_pass) ? body.goalie_short_pass : [body.goalie_short_pass])];
+		updateFields.goalie_short_pass = body.goalie_short_pass;
 	}
 	if (body.goalie_turnover !== undefined) {
-		updateFields.goalie_turnover = isPolling ? body.goalie_turnover : [...(Array.isArray(currentGame.goalie_turnover) ? currentGame.goalie_turnover : []), ...(Array.isArray(body.goalie_turnover) ? body.goalie_turnover : [body.goalie_turnover])];
+		updateFields.goalie_turnover = body.goalie_turnover;
 	}
 	if (body.goalie_game_interruption !== undefined) {
-		updateFields.goalie_game_interruption = isPolling ? body.goalie_game_interruption : [...(Array.isArray(currentGame.goalie_game_interruption) ? currentGame.goalie_game_interruption : []), ...(Array.isArray(body.goalie_game_interruption) ? body.goalie_game_interruption : [body.goalie_game_interruption])];
+		updateFields.goalie_game_interruption = body.goalie_game_interruption;
 	}
 	if (body.blocks !== undefined) {
-		updateFields.blocks = isPolling ? body.blocks : [...(Array.isArray(currentGame.blocks) ? currentGame.blocks : []), ...(Array.isArray(body.blocks) ? body.blocks : [body.blocks])];
+		updateFields.blocks = body.blocks;
 	}
 	if (body.opponent_shots_off !== undefined) {
 		// Jos body.opponent_shots_off on numero, kasvatetaan arvoa yhdellä
