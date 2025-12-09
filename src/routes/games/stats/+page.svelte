@@ -31,6 +31,7 @@ let overlayWidth = 1200;
 let overlayHeight = 800;
 
     async function fetchStats() {
+        console.log('fetchStats kutsuttu, selectedTeam:', selectedTeam);
       // ...existing code...
       // ...existing code...
       // ...existing code...
@@ -92,7 +93,7 @@ let overlayHeight = 800;
           ? gamesData.games.map((g: any) => g.id)
           : [];
       }
-      console.log('DEBUG: Hae tilastot painettu', { selectedTeam, selectedCompetition, startDate, endDate, usedGameIds });
+      
 
         // Pelaajien pelatut pelit, voitot, tasapelit, tappiot, maalit, syötöt, pisteet, pistettä/peli, blokit, blokit/peli, vedot kohti maalia, vedot maaliakohti/peli, vedot blokkiin, vedot blokkiin/peli, vedot ohi maalin ja vedot ohi maalin/peli
         playerStats = {};
@@ -114,6 +115,9 @@ let overlayHeight = 800;
           playerStats = filteredStats;
         }
         if (Array.isArray(gamesData.games)) {
+          console.log('Kaikki pelit:', gamesData.games);
+          const seriesIds = [...new Set(gamesData.games.map((g: any) => g.series_id).filter(Boolean))];
+          console.log('Joukkueen sarja-id:t:', seriesIds);
           for (const game of gamesData.games) {
             if (Array.isArray(game.field_positions)) {
               for (const pid of game.field_positions) {
@@ -264,6 +268,23 @@ let overlayHeight = 800;
   let teams: any[] = [];
   let competitions: any[] = [];
   let selectedTeam: number | null = null;
+  let seriesPlayed: number[] = [];
+
+  async function selectedTeamChanged() {
+    if (selectedTeam) {
+      const res = await fetch(`/api/games?team_id=${selectedTeam}`);
+      const data = await res.json();
+      if (Array.isArray(data.games)) {
+        const seriesIds = [...new Set(data.games.map((g: any) => g.series_id).filter(Boolean))];
+        seriesPlayed = seriesIds;
+        console.log('Joukkueen sarja-id:t (valittu joukkue):', seriesIds);
+      } else {
+        seriesPlayed = [];
+      }
+    } else {
+      seriesPlayed = [];
+    }
+  }
   let selectedCompetition: number | null = null;
   let startDate: string = '';
   let endDate: string = '';
@@ -284,12 +305,11 @@ let overlayHeight = 800;
     user = data?.user || null;
     userRole = user?.role || '';
     userTeamId = user?.team_ids && Array.isArray(user.team_ids) && user.team_ids.length > 0 ? user.team_ids[0] : null;
-    console.log('DEBUG: user', user, 'userRole', userRole, 'userTeamId', userTeamId);
-
+    
     // Hae joukkueet
     const teamsRes = await fetch('/api/admin/teams');
     const teamsData = await teamsRes.json();
-    console.log('DEBUG: teamsData', teamsData);
+    
     if (Array.isArray(teamsData)) {
       teams = teamsData;
     } else if (Array.isArray(teamsData.teams)) {
@@ -357,7 +377,6 @@ let overlayHeight = 800;
       console.error('Heatmap fetch error', e);
       shotmapPoints = [];
     }
-    console.log('DEBUG: shotmapPoints', shotmapPoints);
   }
 
   function toggleShotsOnGoalHeatmap() {
@@ -392,7 +411,6 @@ let overlayHeight = 800;
         console.error('ShotsOnGoal heatmap fetch error', e);
         shotsOnGoalPoints = [];
       }
-      console.log('DEBUG: shotsOnGoalPoints', shotsOnGoalPoints);
     }
 
   function toggleBlocksHeatmap() {
@@ -413,7 +431,6 @@ let overlayHeight = 800;
         const params = usedGameIds.map(id => `games_id=${id}`).join('&');
         const res = await fetch(`/api/shotmap?${params}`);
         const data = await res.json();
-        console.log('DEBUG: shotmap API raw data', data);
         if (userRole === 'pelaaja' && user && Array.isArray(user.player_ids) && user.player_ids.length > 0) {
           const allowedIds = user.player_ids.map((id: any) => Number(id));
           blocksPoints = Array.isArray(data)
@@ -428,7 +445,6 @@ let overlayHeight = 800;
         console.error('Blocks heatmap fetch error', e);
         blocksPoints = [];
       }
-      console.log('DEBUG: blocksPoints', blocksPoints);
     }    
   
   function toggleOffTargetHeatmap() {
@@ -463,19 +479,16 @@ let overlayHeight = 800;
         console.error('OffTarget heatmap fetch error', e);
         offTargetPoints = [];
       }
-      console.log('DEBUG: offTargetPoints', offTargetPoints);
     }  
 
   function updateOverlaySize() {
     if (kenttaImgEl) {
       overlayWidth = kenttaImgEl.naturalWidth || kenttaImgEl.width || 1200;
       overlayHeight = kenttaImgEl.naturalHeight || kenttaImgEl.height || 800;
-      console.log('DEBUG overlayWidth:', overlayWidth, 'overlayHeight:', overlayHeight);
     }
   }
 
 $: if (shotmapPoints && shotmapPoints.length > 0) {
-  console.log('DEBUG shotmapPoints:', shotmapPoints);
 }
 
   function scaleX(x: number) {
@@ -494,7 +507,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
     <div class="stats-filters">
     <div class="filter-row">
       <label for="team-select">Valitse joukkue:</label>
-      <select id="team-select" bind:value={selectedTeam} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>
+      <select id="team-select" bind:value={selectedTeam} on:change={selectedTeamChanged} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>
         <option value="">-- Valitse --</option>
         {#each teams as team}
           {#if userRole === 'kirjuri' || userRole === 'vastuuvalmentaja'}
@@ -511,21 +524,21 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
     </div>
     <div class="filter-row">
       <label for="competition-select">Valitse sarja:</label>
-      <select id="competition-select" bind:value={selectedCompetition} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>
+      <select id="competition-select" bind:value={selectedCompetition} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))}>
         <option value="">-- Valitse --</option>
-        {#each competitions as comp}
+        {#each competitions.filter(comp => seriesPlayed.includes(comp.id)) as comp}
           <option value={comp.id}>{comp.name}</option>
         {/each}
       </select>
     </div> 
     <div class="filter-row">
       <label for="start-date">Alkaen:</label>
-      <input type="date" id="start-date" bind:value={startDate} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)} />
+      <input type="date" id="start-date" bind:value={startDate} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))} />
       <label for="end-date" style="margin-left:16px;">Päättyen:</label>
-      <input type="date" id="end-date" bind:value={endDate} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)} />
+      <input type="date" id="end-date" bind:value={endDate} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))} />
     </div>
     <div class="filter-row">
-      <button class="btn-fetch" on:click={fetchStats} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Hae tilastot</button>
+      <button class="btn-fetch" on:click={fetchStats} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))}>Hae tilastot</button>
     </div>
     <div class="stats-headings">
       <h2>Maalivahtitilastot</h2>
@@ -626,10 +639,10 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
   <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin-bottom:10px;">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{selectedTeam ? (teams.find(t => t.id == selectedTeam)?.name ?? 'Joukkue') : 'Joukkue'}</div>
       <div style="display:flex; gap:16px;">
-        <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Maalit</button>
-        <button class="kentta-btn {showShotsOnGoalHeatmap ? 'active-yellow' : ''}" on:click={toggleShotsOnGoalHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Vedot kohti maalia</button>
-        <button class="kentta-btn {showBlocksHeatmap ? 'active-green' : ''}" on:click={toggleBlocksHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Blokit</button>
-        <button class="kentta-btn {showOffTargetHeatmap ? 'active-blue' : ''}" on:click={toggleOffTargetHeatmap} disabled={userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0)}>Vedot ohimaalin</button>
+        <button class="kentta-btn {showGoalsHeatmap ? 'active' : ''}" on:click={toggleGoalsHeatmap} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))}>Maalit</button>
+        <button class="kentta-btn {showShotsOnGoalHeatmap ? 'active-yellow' : ''}" on:click={toggleShotsOnGoalHeatmap} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))}>Vedot kohti maalia</button>
+        <button class="kentta-btn {showBlocksHeatmap ? 'active-green' : ''}" on:click={toggleBlocksHeatmap} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))}>Blokit</button>
+        <button class="kentta-btn {showOffTargetHeatmap ? 'active-blue' : ''}" on:click={toggleOffTargetHeatmap} disabled={!selectedTeam || (userRole === 'pelaaja' && (!user?.player_ids || user.player_ids.length === 0))}>Vedot ohimaalin</button>
       </div>
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">Vastustaja</div>
     </div>
