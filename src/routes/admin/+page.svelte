@@ -5,7 +5,9 @@ import TeamDropdown from '$lib/TeamDropdown.svelte';
 
 let { data }: { data: PageData } = $props();
 
+
 let searchUsername = $state('');
+let teamFilter = $state("");
 
 let users = $state<any[]>([]);
 let teams = $state<any[]>([]);
@@ -193,12 +195,21 @@ function getTeamNames(userTeams: any[]): string {
 				class="search-input"
 				style="width: 260px; padding: 8px; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc;"
 			/>
+			<select
+				bind:value={teamFilter}
+				class="search-input"
+				style="width: 200px; padding: 8px; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc;"
+			>
+				<option value="">Suodata joukkuetta</option>
+				{#each teams as team}
+					<option value={team.id}>{team.name}</option>
+				{/each}
+			</select>
 		</div>
 		<div class="users-table">
 			<table>
 				<thead>
 					<tr>
-						<th>Käyttäjätunnus</th>
 						<th>Nimi</th>
 						<th>Rooli</th>
 						<th>Joukkueet</th>
@@ -208,16 +219,25 @@ function getTeamNames(userTeams: any[]): string {
 				</thead>
 				<tbody>
 					{#each users.filter(u => {
-						if (!searchUsername) return true;
-						const search = searchUsername.toLowerCase();
-						return (
-							(u.username && u.username.toLowerCase().includes(search)) ||
-							(u.first_name && u.first_name.toLowerCase().includes(search)) ||
-							(u.last_name && u.last_name.toLowerCase().includes(search))
-						);
+						// Username search
+						let matchesSearch = true;
+						if (searchUsername) {
+							const search = searchUsername.toLowerCase();
+							matchesSearch = (
+								(u.username && u.username.toLowerCase().includes(search)) ||
+								(u.first_name && u.first_name.toLowerCase().includes(search)) ||
+								(u.last_name && u.last_name.toLowerCase().includes(search))
+							);
+						}
+						// Team filter
+						let matchesTeam = true;
+						if (teamFilter && teamFilter !== "") {
+							const userTeamIds = Array.isArray(u.team_ids) ? u.team_ids : (u.team_ids ? [u.team_ids] : []);
+							matchesTeam = userTeamIds.map(String).includes(String(teamFilter));
+						}
+						return matchesSearch && matchesTeam;
 					}) as user}
 						<tr>
-							<td>{user.username}</td>
 							<td>{user.first_name} {user.last_name}</td>							
 							<td>
 								<select 
