@@ -328,6 +328,7 @@ let overlayHeight = 800;
       // Jos käyttäjällä on vain yksi joukkue, valitse se automaattisesti
       if (teams.length === 1) {
         selectedTeam = teams[0].id;
+        await selectedTeamChanged();
       }
     }
 
