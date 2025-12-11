@@ -134,6 +134,9 @@
 					<button class="menu-item" onclick={() => navigateTo('/admin')}>
 						Käyttäjähallinta
 					</button>
+					<button class="menu-item" onclick={() => navigateTo('/admin/teams')}>
+						Joukkueet
+					</button>
 					<button class="menu-item" onclick={() => navigateTo('/admin/series')}>
 						Sarjat
 					</button>

@@ -179,7 +179,12 @@ function getTeamNames(userTeams: any[]): string {
 <div class="admin-container">
 	<header>
 		<h1>Käyttäjähallinta</h1>
-		
+		<nav class="admin-menu">
+			{#if data?.user?.role === 'admin'}
+				<a href="/admin/teams" class="admin-menu-link">Joukkueet</a>
+			{/if}
+			<!-- ...muita admin-linkkejä tähän... -->
+		</nav>
 	</header>
 
 	{#if loading}
@@ -313,33 +318,44 @@ function getTeamNames(userTeams: any[]): string {
 </div>
 
 <style>
-	   .admin-container {
-		   width: 100%;
-		   margin: 0;
-		   padding: 40px 20px;
-	   }
+   .admin-container {
+	   width: 100%;
+	   margin: 0;
+	   padding: 40px 20px;
+   }
 
-	header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 30px;
-	}
+   header {
+	   display: flex;
+	   justify-content: space-between;
+	   align-items: center;
+	   margin-bottom: 30px;
+   }
 
-	h1 {
-		font-size: 2rem;
-		color: #1a1a1a;
-	}
+   h1 {
+	   font-size: 2rem;
+	   color: #1a1a1a;
+   }
 
-	.back-link {
-		color: #4a90e2;
-		text-decoration: none;
-		font-weight: 600;
-	}
+   .admin-menu {
+	   display: flex;
+	   gap: 18px;
+	   align-items: center;
+   }
 
-	.back-link:hover {
-		text-decoration: underline;
-	}
+   .admin-menu-link {
+	   color: #4a90e2;
+	   text-decoration: none;
+	   font-weight: 600;
+	   font-size: 1.05rem;
+	   padding: 6px 12px;
+	   border-radius: 6px;
+	   transition: background 0.2s;
+   }
+
+   .admin-menu-link:hover {
+	   background: #eaf4ff;
+	   text-decoration: underline;
+   }
 
 	.error {
 		background-color: #fee;

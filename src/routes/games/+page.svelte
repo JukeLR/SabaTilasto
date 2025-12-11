@@ -174,7 +174,14 @@ import { page } from '$app/stores';
 </svelte:head>
 
 <div class="games-container">
-	<h1>Pelit</h1>
+	<div style="display: flex; justify-content: space-between; align-items: center;">
+		<h1>Pelit</h1>
+		{#if userRole === 'admin'}
+			<nav class="admin-menu">
+				<a href="/admin/teams" class="admin-menu-link">Joukkueet</a>
+			</nav>
+		{/if}
+	</div>
 	<button class="btn-create" style="margin-bottom: 24px;" onclick={() => goto('/games/new')}>
 		Luo Peli
 	</button>
@@ -496,5 +503,23 @@ import { page } from '$app/stores';
 		td:nth-child(3) {
 			display: none;
 		}
+	}
+	.admin-menu {
+		display: flex;
+		gap: 18px;
+		align-items: center;
+	}
+	.admin-menu-link {
+		color: #4a90e2;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 1.05rem;
+		padding: 6px 12px;
+		border-radius: 6px;
+		transition: background 0.2s;
+	}
+	.admin-menu-link:hover {
+		background: #eaf4ff;
+		text-decoration: underline;
 	}
 </style>
