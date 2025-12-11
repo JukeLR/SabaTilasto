@@ -186,6 +186,11 @@
     if (total === 0) return '';
     return ((saves / total) * 100).toFixed(1) + '%';
   }
+
+  export let homeXG;
+  export let awayXG;
+  export let xgError: string | null;
+  export let data;
 </script>
 
 <div class="container">    
@@ -269,6 +274,16 @@
         </tbody>
       </table>
     </div>
+    <!-- POISTA TÄSTÄ KOMMENTOINTI KUN HALUAT ETTÄ xG NÄKYY
+      <h2>Ottelun maaliodottama (xG)</h2>
+      <p>{game?.ownTeamName ?? 'Koti'} xG: {data.homeXG !== undefined && data.homeXG !== null ? Number(data.homeXG).toFixed(2) : '–'}</p>
+      <p>DEBUG homeXG: {JSON.stringify(data.homeXG)}</p>
+      <p>{game?.opponentName ?? 'Vieras'} xG: {data.awayXG !== undefined && data.awayXG !== null ? Number(data.awayXG).toFixed(2) : '–'}</p>
+      <p>DEBUG awayXG: {JSON.stringify(data.awayXG)}</p>
+    -->
+    {#if xgError}
+      <div class="error-message">xG-virhe: {xgError}</div>
+    {/if}
   {/if}
 </div>
 <!-- Kenttäkuva ja pisteet renderöidään vain kerran, alla -->
