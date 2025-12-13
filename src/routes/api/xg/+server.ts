@@ -3,7 +3,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 export const POST: RequestHandler = async ({ request }) => {
     const shots = await request.json();
     try {
-        const response = await fetch('http://localhost:8000/calculate_xg', {
+        const response = await fetch('https://xg-api-235492266180.europe-north1.run.app/calculate_xg', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(shots)

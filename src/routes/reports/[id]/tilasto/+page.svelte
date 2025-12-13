@@ -273,17 +273,21 @@
           {/if}
         </tbody>
       </table>
-    </div>
-    <!-- POISTA TÄSTÄ KOMMENTOINTI KUN HALUAT ETTÄ xG NÄKYY
-      <h2>Ottelun maaliodottama (xG)</h2>
-      <p>{game?.ownTeamName ?? 'Koti'} xG: {data.homeXG !== undefined && data.homeXG !== null ? Number(data.homeXG).toFixed(2) : '–'}</p>
-      <p>DEBUG homeXG: {JSON.stringify(data.homeXG)}</p>
-      <p>{game?.opponentName ?? 'Vieras'} xG: {data.awayXG !== undefined && data.awayXG !== null ? Number(data.awayXG).toFixed(2) : '–'}</p>
-      <p>DEBUG awayXG: {JSON.stringify(data.awayXG)}</p>
-    -->
-    {#if xgError}
-      <div class="error-message">xG-virhe: {xgError}</div>
-    {/if}
+    </div>    
+      {#if (
+        ((data.homeXG !== undefined && data.homeXG !== null) || (data.awayXG !== undefined && data.awayXG !== null)) &&
+        !(Number(data.homeXG) === 0 && Number(data.awayXG) === 0)
+      )}
+        <h2>Ottelun maaliodottama (xG)</h2>
+        <div style="font-size:1.3rem; font-weight:bold; color:#222;">
+          <p>{game?.ownTeamName ?? 'Koti'} xG: {data.homeXG !== undefined && data.homeXG !== null ? Number(data.homeXG).toFixed(2) : '–'}</p>      
+          <p>{game?.opponentName ?? 'Vieras'} xG: {data.awayXG !== undefined && data.awayXG !== null ? Number(data.awayXG).toFixed(2) : '–'}</p>
+        </div>
+      {/if}
+      
+      {#if xgError}
+        <div class="error-message">xG-virhe: {xgError}</div>
+      {/if}
   {/if}
 </div>
 <!-- Kenttäkuva ja pisteet renderöidään vain kerran, alla -->
