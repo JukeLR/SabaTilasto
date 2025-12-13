@@ -65,7 +65,7 @@ function handleFieldClick(event: MouseEvent) {
 	let neonX = clickX;
 	let storeY = clickY;
 	let neonY = clickY;
-	if (!joukkueiden_paikat) {
+	if (!$joukkueidenPaikat) {
 		neonX = 1 - clickX;
 		neonY = 1 - clickY;
 	}
@@ -87,29 +87,38 @@ let saveError = '';
 let pollingSaveActive = false;
 let pollingSaveInterval: ReturnType<typeof setInterval> | null = null;
 
-async function trySaveStats() {
+async function trySaveStats(options: { includeOpponentShotsOff?: boolean } = {}) {
 	const id = $page.params.id ?? $page.data.id;
 	try {
+		const body: any = {
+			plus_points: get(plusPoints),
+			minus_points: get(minusPoints),
+			team_goals: get(teamGoals),
+			opponent_goals: get(opponentGoals),
+			shots_on_goal: get(shotsOnGoal),
+			shots_off_target: get(shotsOffTarget),
+			shots_blocked: get(shotsBlocked),
+			blocks: get(blocks),
+			saves: get(saves),
+			goalie_game_interruption: get(goalieGameInterruption),
+			goalie_long_pass: get(goalieLongPass),
+			goalie_short_pass: get(goalieShortPass),
+			goalie_turnover: get(goalieTurnover),
+			assists: get(assists)
+		};
+		if (options.includeOpponentShotsOff) {
+			body.opponent_shots_off = 1;
+		} else if (options.includeOpponentShotsOff === false) {
+			body.opponent_shots_off = get(opponentShotOff);
+		}
+		// Jos polling, lisää _fromPolling: true bodyyn
+		if (options.includeOpponentShotsOff === false) {
+			body._fromPolling = true;
+		}
 		const res = await fetch(`/api/games/${id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				plus_points: get(plusPoints),
-				minus_points: get(minusPoints),
-				team_goals: get(teamGoals),
-				opponent_goals: get(opponentGoals),
-				shots_on_goal: get(shotsOnGoal),
-				shots_off_target: get(shotsOffTarget),
-				shots_blocked: get(shotsBlocked),
-				blocks: get(blocks),
-				saves: get(saves),
-				goalie_game_interruption: get(goalieGameInterruption),
-				opponent_shots_off: get(opponentShotOff),
-				goalie_long_pass: get(goalieLongPass),
-				goalie_short_pass: get(goalieShortPass),
-				goalie_turnover: get(goalieTurnover),
-				assists: get(assists)
-			})
+			body: JSON.stringify(body)
 		});
 		if (!res.ok) throw new Error('Tallennus epäonnistui');
 		saveError = '';
@@ -154,8 +163,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -185,7 +194,7 @@ function handleSave() {
 		lockedAssistId = null;
 		// ...existing code...
 		// Tallennetaan tilastot Neon-tietokantaan
-		trySaveStats().then(success => {
+		trySaveStats({ includeOpponentShotsOff: true }).then(success => {
 			if (!success && !pollingSaveActive) {
 				pollingSaveActive = true;
 				pollingSaveInterval = setInterval(trySaveStats, 10000);
@@ -216,8 +225,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -245,7 +254,7 @@ function handleSave() {
 		selectedGoalieId = null;
 		selectedNoGoalie = false;
 		// ...existing code...
-		trySaveStats().then(success => {
+			trySaveStats({ includeOpponentShotsOff: true }).then(success => {
 			if (!success && !pollingSaveActive) {
 				pollingSaveActive = true;
 				pollingSaveInterval = setInterval(trySaveStats, 10000);
@@ -269,8 +278,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -319,8 +328,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -369,8 +378,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -420,8 +429,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -456,26 +465,20 @@ function handleSave() {
 		return;
 	}
 	if (
-		selectedStat === 'opponentShotOff') 
-	{ 
-		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
-		if (tempPoint) {
+		selectedStat === 'opponentShotOff' && tempPoint) 
+		{ 
+			// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
 			const { x, y, renderX, renderY } = tempPoint;
 			marksStore.update(arr => [
 				...arr,
 				{ x, y, renderX, renderY, char: 'O', color: 'red' }
 			]);
-		}
-		// 2. kasvatetaan arvoa yhdellä
-		opponentShotOff.update(n => n + 1);
-		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
-		if (tempPoint) {
-			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
-			// Varmista että koordinaatit ovat olemassa
+			// 2. kasvatetaan arvoa yhdellä
+			opponentShotOff.update(n => n + 1);
+			// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
-				// Lähetä tiedot taustalla
 				fetch('/api/shotmap', {
 					method: 'POST',
 					body: JSON.stringify({
@@ -490,20 +493,18 @@ function handleSave() {
 				});
 			}
 			tempPoint = null;
+			selectedStat = '';
+			// Debug: tulosta storejen arvot
+			console.log('opponentShotOff:', get(opponentShotOff));        
+			// ...existing code...
+			trySaveStats().then(success => {
+				if (!success && !pollingSaveActive) {
+					pollingSaveActive = true;
+					pollingSaveInterval = setInterval(trySaveStats, 10000);
+				}
+			});
+			return;
 		}
-		// Debug: tulosta storejen arvot
-		console.log('opponentShotOff:', get(opponentShotOff));		
-		// 5. Nollaa valinnat
-		selectedStat = '';		
-		// ...existing code...
-		trySaveStats().then(success => {
-			if (!success && !pollingSaveActive) {
-				pollingSaveActive = true;
-				pollingSaveInterval = setInterval(trySaveStats, 10000);
-			}
-		});
-		return;
-	}
 	if (
 		selectedStat === 'blocks') 
 	{ 
@@ -520,8 +521,8 @@ function handleSave() {
 		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
 		if (tempPoint) {
 			// Laske neonX ja neonY
-			let neonX = joukkueiden_paikat ? tempPoint.x : 1 - tempPoint.x;
-			let neonY = joukkueiden_paikat ? tempPoint.y : 1 - tempPoint.y;
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
 			// Varmista että koordinaatit ovat olemassa
 			if (typeof neonX === 'number' && typeof neonY === 'number') {
 				// Lähetä tiedot taustalla
@@ -561,7 +562,7 @@ function handleSave() {
 let ownTeamName = '';
 let opponentTeamName = '';
 let ownTeamId: number | null = null;
-let joukkueiden_paikat = true; // true = oma vasemmalla, false = oma oikealla
+import { joukkueidenPaikat } from '$lib/stores/joukkueidenPaikat';
 let debugData = {};
 
 // Kenttäpelaajanappien monivalinta
@@ -756,7 +757,7 @@ onMount(() => {
 		// Polling: päivitä Neon-tietokanta storejen arvoilla 30s välein
 		const poll = setInterval(() => {
 			// Polling PATCH Neon-tietokantaan
-			trySaveStats();
+			trySaveStats({ includeOpponentShotsOff: false });
 		}, 30000);
 		cleanupPolling = () => clearInterval(poll);
 		// Päivitä lineup vielä kerran
@@ -772,10 +773,10 @@ onMount(() => {
 </script>
 <div class="desktop-stats-root">
 	<div class="top-row">
-		{#if joukkueiden_paikat}
+		{#if $joukkueidenPaikat}
 			<div class="team-name left">{ownTeamName}</div>
 			<div class="center-controls">
-				<button class="arrow-btn" aria-label="Vaihda joukkueiden paikat" on:click={() => joukkueiden_paikat = !joukkueiden_paikat}>
+				   <button class="arrow-btn" aria-label="Vaihda joukkueiden paikat" on:click={() => joukkueidenPaikat.update(v => !v)}>
 					<svg width="48" height="24" viewBox="0 0 48 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
 						<path d="M2 12h44" stroke="white" stroke-width="3" stroke-linecap="round"/>
 						<path d="M10 6l-8 6 8 6" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -788,7 +789,7 @@ onMount(() => {
 		{:else}
 			<div class="team-name left">{opponentTeamName}</div>
 			<div class="center-controls">
-				<button class="arrow-btn swapped" aria-label="Vaihda joukkueiden paikat" on:click={() => joukkueiden_paikat = !joukkueiden_paikat}>
+				   <button class="arrow-btn swapped" aria-label="Vaihda joukkueiden paikat" on:click={() => joukkueidenPaikat.update(v => !v)}>
 					<svg width="48" height="24" viewBox="0 0 48 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
 						<path d="M2 12h44" stroke="white" stroke-width="3" stroke-linecap="round"/>
 						<path d="M10 6l-8 6 8 6" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>

@@ -237,7 +237,9 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 	if (body.opponent_shots_off !== undefined) {
 		// Jos body.opponent_shots_off on numero, kasvatetaan arvoa yhdellä
 		const currentOpponentShotsOff = typeof currentGame.opponent_shots_off === 'number' ? currentGame.opponent_shots_off : 0;
-		updateFields.opponent_shots_off = isPolling ? body.opponent_shots_off : currentOpponentShotsOff + Number(body.opponent_shots_off);
+		updateFields.opponent_shots_off = isPolling
+			? Number(body.opponent_shots_off) // aseta suoraan pollingissa
+			: currentOpponentShotsOff + Number(body.opponent_shots_off); // lisää käyttäjän tilastoinnissa
 	}
 	if (body.goal_type !== undefined) {
 		updateFields.goal_type = isPolling ? body.goal_type : [...(Array.isArray(currentGame.goal_type) ? currentGame.goal_type : []), body.goal_type];
@@ -247,8 +249,15 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 	}
 
 	// Jos ei päivitettäviä kenttiä
+
 	if (Object.keys(updateFields).length === 0) {
 		return json({ error: 'Ei päivitettäviä kenttiä' }, { status: 400 });
+	}
+
+	// DEBUG: tulosta päivitettävät kentät
+	console.log('UPDATE FIELDS:', updateFields);
+	if (updateFields.opponent_shots_off !== undefined) {
+		console.log('Päivitetään opponent_shots_off:', updateFields.opponent_shots_off);
 	}
 
 	// Rakenna SQL-päivitys
