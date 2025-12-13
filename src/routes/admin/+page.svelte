@@ -179,12 +179,7 @@ function getTeamNames(userTeams: any[]): string {
 <div class="admin-container">
 	<header>
 		<h1>Käyttäjähallinta</h1>
-		<nav class="admin-menu">
-			{#if data?.user?.role === 'admin'}
-				<a href="/admin/teams" class="admin-menu-link">Joukkueet</a>
-			{/if}
-			<!-- ...muita admin-linkkejä tähän... -->
-		</nav>
+		
 	</header>
 
 	{#if loading}

@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount } from 'svelte';  
   import { goto } from '$app/navigation';
+  import { teamsStore, fetchTeams } from '$lib/stores/teams';
 
   interface Game {
     id: number;
@@ -28,6 +29,8 @@
   let userTeamIds: number[] = [];
 
   onMount(async () => {
+    // Hae joukkueet ensin
+    await fetchTeams();
     // Hae käyttäjä layoutin datasta
     const data = page && page.subscribe ? (await new Promise<any>(res => {
       let unsub: (() => void) | undefined;
@@ -119,6 +122,7 @@
             <thead>
               <tr>
                 <th>Päivämäärä</th>
+                <th>Oma joukkue</th>
                 <th>Vastustaja</th>
                 <th>Pelipaikka</th>
                 <th>Toiminnot</th>
@@ -128,6 +132,7 @@
               {#each ongoingGames as game}
                 <tr>
                   <td>{formatDate(game.game_date)}</td>
+                  <td>{$teamsStore[game.own_team_id] || game.own_team_id}</td>
                   <td>{game.opponent_team_name}</td>
                   <td>{game.game_location || '-'}</td>
                   <td class="actions">
@@ -153,6 +158,7 @@
             <thead>
               <tr>
                 <th>Päivämäärä</th>
+                <th>Oma joukkue</th>
                 <th>Vastustaja</th>
                 <th>Pelipaikka</th>
                 <th>Toiminnot</th>
@@ -162,6 +168,7 @@
               {#each completedGames as game}
                 <tr>
                   <td>{formatDate(game.game_date)}</td>
+                  <td>{$teamsStore[game.own_team_id] || game.own_team_id}</td>
                   <td>{game.opponent_team_name}</td>
                   <td>{game.game_location || '-'}</td>
                   <td class="actions">

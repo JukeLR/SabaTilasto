@@ -1,3 +1,4 @@
+      
 <script lang="ts">
     function getPlayerMinuses(playerId: number) {
       if (!game || !Array.isArray(game.minus_points)) return 0;
@@ -15,7 +16,7 @@
   let user = null;
   let userRole = '';
   let userTeamIds: number[] = [];
-  let shotmap: Array<{ x: number; y: number; team: number; type: string; games_id: number }> = [];
+  let shotmap: Array<{ x: number; y: number; team: number; type: string; games_id: number; player_id?: number; xg?: number }> = [];
 
 
   onMount(async () => {
@@ -83,7 +84,7 @@
       const response = await fetch(`/api/games/${gameId}/players`);
       const data = await response.json();
       if (response.ok) {
-        players = data.players || [];
+        players = (data.players || []).map(p => ({ ...p, id: Number(p.id) }));
         // Lisää goalie_change-pelaaja listaan jos löytyy ja ei jo mukana
         if (game && typeof game.goalie_change === 'number' && game.goalie_change > 0) {
           const goalieId = game.goalie_change;
@@ -187,13 +188,18 @@
     return ((saves / total) * 100).toFixed(1) + '%';
   }
 
+  // Laske pelaajakohtainen xG tämän pelin shotmapista (team!=0)
+
+  // Pelaajakohtainen xG tulee backendistä playerXG-oliona
+
   export let homeXG;
   export let awayXG;
   export let xgError: string | null;
   export let data;
 </script>
 
-<div class="container">    
+<div class="container">
+
   <h1>Pelin tilasto</h1>
   <button class="btn-back" on:click={goBackToReports}>← Takaisin</button>
   {#if isLoading}
@@ -212,22 +218,24 @@
     </div>
     <div class="player-stats">
       <h2>Pelaajatilastot</h2>
+
       <table class="stats-table">
         <thead>
           <tr>
             <th>Nimi</th>
             <th>Maalit</th>
             <th>Syötöt</th>
-            <th>Vedot kohti maalia</th>
-            <th>Vedot ohi maalin</th>
-            <th>Vedot blokkiin</th>
+            <th>Vedot<br/>kohti maalia</th>
+            <th>Vedot<br/>ohi maalin</th>
+            <th>Vedot<br/>blokkiin</th>
             <th>Blokit</th>
             <th>Plussat</th>
             <th>Miinukset</th>
             <th>Torjunnat</th>
-            <th>Päästetyt maalit</th>
-            <th>Maalivahdin katkot</th>
+            <th>Päästetyt<br/>maalit</th>
+            <th>Maalivahdin<br/>katkot</th>
             <th>Torjunta-%</th>
+            <th>xG</th>
           </tr>
         </thead>
         <tbody>
@@ -252,6 +260,7 @@
               <td>{getPlayerGoalsAgainst(p.id)}</td>
               <td>{getPlayerGoalieInterruptions(p.id)}</td>
               <td>{getPlayerSavePercentage(p.id)}</td>
+              <td>{data?.playerXG && data.playerXG[Number(p.id)] !== undefined && data.playerXG[Number(p.id)] !== null ? Number(data.playerXG[Number(p.id)]).toFixed(2) : '0.00'}</td>
             </tr>
           {/each}
           {#if userRole !== 'pelaaja'}
@@ -269,10 +278,13 @@
             <td>{players.reduce((sum, p) => sum + getPlayerGoalsAgainst(p.id), 0)}</td>
             <td>{players.reduce((sum, p) => sum + getPlayerGoalieInterruptions(p.id), 0)}</td>
             <td></td>
+            <td>{players.reduce((sum, p) => sum + (data?.playerXG && data.playerXG[Number(p.id)] !== undefined && data.playerXG[Number(p.id)] !== null ? Number(data.playerXG[Number(p.id)]) : 0), 0).toFixed(2)}</td>
           </tr>
           {/if}
         </tbody>
       </table>
+    
+      
     </div>    
       {#if (
         ((data.homeXG !== undefined && data.homeXG !== null) || (data.awayXG !== undefined && data.awayXG !== null)) &&

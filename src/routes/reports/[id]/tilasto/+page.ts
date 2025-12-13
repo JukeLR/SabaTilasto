@@ -60,12 +60,46 @@ export const load: PageLoad = async ({ params, fetch }) => {
     dataAway.xg_total = null;
   }
 
+  // Laske pelaajakohtainen xG samalla tyylillä
+  const playerIds = [...new Set(allShots.map((s: any) => s.player_id).filter((id: any) => id != null))];
+  const playerXG: Record<number, number|null> = {};
+
+  for (const playerId of playerIds) {
+    const playerShots = allShots
+      .filter((s: any) => Number(s.player_id) === Number(playerId) && s.team === 1)
+      .map((s: any) => ({
+        ...s,
+        x: Number(s.x),
+        y: Number(s.y),
+        team: 'home'
+      }));
+    console.log('playerId', playerId, 'shots', playerShots);
+    if (playerShots.length === 0) {
+      playerXG[playerId] = 0;
+      continue;
+    }
+    const resPlayer = await fetch('/api/xg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(playerShots)
+    });
+    if (resPlayer.ok) {
+      const dataPlayer = await resPlayer.json();
+      console.log('playerId', playerId, 'xg_total', dataPlayer.xg_total);
+      playerXG[playerId] = dataPlayer.xg_total;
+    } else {
+      playerXG[playerId] = null;
+    }
+  }
+
   console.log('homeXG:', dataHome.xg_total);
   console.log('awayXG:', dataAway.xg_total);
+  console.log('playerXG:', playerXG);
 
   return {
     homeXG: dataHome.xg_total,
     awayXG: dataAway.xg_total,
+    playerXG,
     xgError
   };
 };
