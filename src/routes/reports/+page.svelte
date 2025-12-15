@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';  
   import { goto } from '$app/navigation';
   import { teamsStore, fetchTeams } from '$lib/stores/teams';
+  import { afterNavigate } from '$app/navigation';
 
   interface Game {
     id: number;
@@ -21,6 +22,7 @@
 
   let ongoingGames: Game[] = [];
   let completedGames: Game[] = [];
+  let showReportLoading = false;
 
 
   import { page } from '$app/stores';
@@ -61,6 +63,7 @@
       const data = await response.json();
       if (response.ok) {
         games = data.games || [];
+        
         // Vastuuvalmentaja: suodata vain omat joukkueet
         if (userRole === 'vastuuvalmentaja' && userTeamIds.length > 0) {
           games = games.filter(game => userTeamIds.includes(Number(game.own_team_id)));
@@ -78,6 +81,7 @@
           );
         }
         ongoingGames = games.filter(game => game.status === 'Käynnissä');
+      // showReportLoading määritellään komponentin tilana, ei tässä funktiossa
         completedGames = games.filter(game => game.status === 'Pelattu');
       } else {
         error = data.error || 'Pelien haku epäonnistui';
@@ -100,8 +104,13 @@
   }
 
   function showReport(gameId: number) {
+    showReportLoading = true;
     goto(`/reports/${gameId}/tilasto`);
   }
+
+  afterNavigate(() => {
+    showReportLoading = false;
+  });
 </script>
 
 <div class="container">
@@ -184,6 +193,10 @@
       {/if}
     </section>
   {/if}
+
+  {#if showReportLoading}
+    <div class="modal-loading">Ladataan...</div>
+  {/if}
 </div>
 
 <style>
@@ -237,6 +250,23 @@
   .btn-report {
     background: #fbc02d;
     color: #222;
+  }
+  .modal-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    font-size: 2rem;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
+    backdrop-filter: blur(2px);
   }
   .no-games {
     color: #888;

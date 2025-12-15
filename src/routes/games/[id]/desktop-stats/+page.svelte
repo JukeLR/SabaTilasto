@@ -682,6 +682,9 @@ function handleActionBtnClick(type: 'plusminus' | 'goalassist') {
 
 // "Lopeta peli" -napin toiminto
 async function handleEndGame() {
+	if (!window.confirm('Haluatko varmasti lopettaa pelin?')) {
+		return;
+	}
 	const id = $page.params.id ?? $page.data.id;
 	// 1. Päivitä kaikki tilastot Neon-tietokantaan (kuten polling tekee)
 	await fetch(`/api/games/${id}`, {
