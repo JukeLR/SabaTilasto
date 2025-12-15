@@ -109,7 +109,7 @@
     const gameData = await res.json();
     let arr = Array.isArray(gameData[field]) ? [...gameData[field]] : [];
     const pid = Number(playerId);
-    arr = arr.map(Number); // Varmista että kaikki ovat numeroita
+    arr = arr.map(Number).filter(x => !isNaN(x)); // Varmista että kaikki ovat numeroita ja poista null/NaN
     if (delta > 0) {
       arr.push(pid);
     } else {
@@ -120,6 +120,8 @@
         return;
       }
     }
+    // Poista mahdolliset null/NaN/undefined arvot vielä varmuuden vuoksi
+    arr = arr.filter(x => typeof x === 'number' && !isNaN(x));
     // Päivitä backend
     const patchRes = await fetch(`/api/games/${gameId}`, {
       method: 'PATCH',
