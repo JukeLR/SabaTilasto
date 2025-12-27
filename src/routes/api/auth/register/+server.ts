@@ -3,7 +3,7 @@ import { createUser, getUserByUsername, getUserByEmail } from '$lib/auth';
 
 export const POST = async ({ request, cookies }: RequestEvent) => {
 	try {
-		const { username, email, password, firstName, lastName } = await request.json();
+		const { username, email, password, firstName, lastName, teamId } = await request.json();
 
 
 		// Validointi
@@ -30,8 +30,8 @@ export const POST = async ({ request, cookies }: RequestEvent) => {
 			return json({ error: 'Sähköpostiosoite on jo käytössä' }, { status: 400 });
 		}
 
-		// Luo uusi käyttäjä
-		const user = await createUser(username, email, password, firstName, lastName);
+		// Luo uusi käyttäjä ja lisää teamId team_ids-taulukkoon
+		const user = await createUser(username, email, password, firstName, lastName, teamId ? [parseInt(teamId)] : []);
 
 		// Aseta session cookie
 		cookies.set('user_id', user.id.toString(), {

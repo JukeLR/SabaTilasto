@@ -1,12 +1,30 @@
 <script lang="ts">
-	let username = $state('');
-	let email = $state('');
-	let password = $state('');
-	let confirmPassword = $state('');
-	let firstName = $state('');
-	let lastName = $state('');
-	let error = $state('');
-	let isLoading = $state(false);
+import { onMount } from 'svelte';
+	let username = '';
+	let email = '';
+	let password = '';
+	let confirmPassword = '';
+	let firstName = '';
+	let lastName = '';
+	let error = '';
+	let isLoading = false;
+
+	// Joukkuevalinta
+	let teams: Array<{ id: number, name: string, age_group: string }> = [];
+	let selectedTeamId: string = '';
+
+	// Hae joukkueet kun sivu avautuu
+	onMount(async () => {
+		try {
+			const res = await fetch('/api/admin/teams');
+			const data = await res.json();
+			if (res.ok && Array.isArray(data.teams)) {
+				teams = data.teams;
+			}
+		} catch (e) {
+			// ignore
+		}
+	});
 
 	async function handleRegister() {
 		error = '';
@@ -19,6 +37,10 @@
 			error = 'Etunimi ja sukunimi ovat pakollisia';
 			return;
 		}
+		if (!selectedTeamId) {
+			error = 'Valitse oma joukkue';
+			return;
+		}
 
 		isLoading = true;
 
@@ -26,7 +48,7 @@
 			const response = await fetch('/api/auth/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ username, email, password, firstName, lastName })
+				body: JSON.stringify({ username, email, password, firstName, lastName, teamId: selectedTeamId })
 			});
 
 			const data = await response.json();
@@ -74,6 +96,17 @@
 					disabled={isLoading}
 				/>
 			</div>
+
+			<div class="form-group">
+				<label for="team">Oma joukkue</label>
+				<select id="team" bind:value={selectedTeamId} required disabled={isLoading}>
+					<option value="" disabled>Valitse joukkue</option>
+					{#each teams as team}
+						<option value={team.id}>{team.name}{team.age_group ? ` (${team.age_group})` : ''}</option>
+					{/each}
+				</select>
+			</div>
+
 			<div class="form-group">
 				<label for="username">Käyttäjätunnus</label>
 				<input 
@@ -207,27 +240,36 @@
 		transition: background-color 0.2s;
 	}
 
+	select {
+		width: 100%;
+		padding: 12px;
+		border: 2px solid #ddd;
+		border-radius: 6px;
+		font-size: 1rem;
+		transition: border-color 0.2s;
+		background: #fff;
+	}
+	select:disabled {
+		background-color: #f5f5f5;
+		cursor: not-allowed;
+	}
 	button:hover:not(:disabled) {
 		background-color: #357abd;
 	}
-
 	button:disabled {
 		background-color: #ccc;
 		cursor: not-allowed;
 	}
-
 	.auth-link {
 		margin-top: 20px;
 		text-align: center;
 		color: #666;
 	}
-
 	.auth-link a {
 		color: #4a90e2;
 		text-decoration: none;
 		font-weight: 600;
 	}
-
 	.auth-link a:hover {
 		text-decoration: underline;
 	}

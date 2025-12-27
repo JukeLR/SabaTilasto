@@ -6,19 +6,28 @@ export async function createUser(
 	email: string, 
 	password: string,
 	firstName?: string,
-	lastName?: string
+	lastName?: string,
+	teamIds: number[] = []
 ): Promise<User> {
 	try {
 		const passwordHash = await bcrypt.hash(password, 10);
-		
-		console.log('Attempting to create user:', { username, email, firstName, lastName });
-		
+
+		console.log('Attempting to create user:', { username, email, firstName, lastName, teamIds });
+
 		const result = await sql`
-			INSERT INTO users (username, email, password, first_name, last_name, role)
-			VALUES (${username}, ${email}, ${passwordHash}, ${firstName || null}, ${lastName || null}, 'pelaaja')
+			INSERT INTO users (username, email, password, first_name, last_name, role, team_ids)
+			VALUES (
+				${username},
+				${email},
+				${passwordHash},
+				${firstName || null},
+				${lastName || null},
+				'pelaaja',
+				${teamIds.length > 0 ? teamIds : null}
+			)
 			RETURNING *
 		`;
-		
+
 		console.log('User created successfully:', result[0]?.id);
 		return result[0] as User;
 	} catch (error) {
