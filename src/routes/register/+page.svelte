@@ -1,4 +1,5 @@
 <script lang="ts">
+let showPrivacy = false;
 import { onMount } from 'svelte';
 	let username = '';
 	let email = '';
@@ -76,6 +77,43 @@ import { onMount } from 'svelte';
 		{/if}
 
 		<form onsubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+		<div class="privacy-info">
+			Lisätietoja henkilötietojen käsittelystä löydät
+			<a href="#" onclick={(e) => { e.preventDefault(); showPrivacy = true; }}>tietosuojaselosteesta</a>.
+		</div>
+
+		{#if showPrivacy}
+			<div class="privacy-modal-backdrop" onclick={() => showPrivacy = false}>
+				<div class="privacy-modal" onclick={e => e.stopPropagation()}>
+					<h2>Tietosuojaseloste – Saba‑Tilasto</h2>
+					<p><strong>Rekisterinpitäjä:</strong><br />
+					Jukka Latva‑Ranta<br />
+					jukka.latvaranta@gmail.com<br />
+					+358 400 805091</p>
+					<p><strong>Rekisterin nimi:</strong><br />
+					Saba‑Tilasto Käyttäjärekisteri</p>
+					<p><strong>Kerättävät tiedot:</strong><br />
+					– Nimi<br />
+					– Käyttäjätunnus<br />
+					– Sähköpostiosoite</p>
+					<p><strong>Käsittelyn tarkoitus:</strong><br />
+					– Käyttäjätilien hallinta<br />
+					– Unohtuneen salasanan palautus<br />
+					– Palvelun toimivuuden varmistaminen</p>
+					<p><strong>Oikeusperuste:</strong><br />
+					– Sopimus (käyttäjätilin luominen)<br />
+					– Oikeutettu etu (palvelun ylläpito ja tietoturva)</p>
+					<p><strong>Tietojen säilytys:</strong><br />
+					Tietoja säilytetään niin kauan kuin käyttäjätili on aktiivinen tai kunnes käyttäjä pyytää poistamista, ellei lakisääteinen velvoite edellytä säilytystä.</p>
+					<p><strong>Tietojen luovutus:</strong><br />
+					Tietoja ei luovuteta kolmansille osapuolille ilman perusteltua tarvetta. Tietoja ei siirretä EU/ETA‑alueen ulkopuolelle ilman asianmukaista suojaa.</p>
+					<p><strong>Rekisteröidyn oikeudet:</strong><br />
+					Käyttäjä voi pyytää tietojensa tarkastamista, oikaisua, poistamista tai käsittelyn rajoittamista ottamalla yhteyttä rekisterinpitäjään.</p>
+					<button class="close-modal" onclick={() => showPrivacy = false}>Sulje</button>
+				</div>
+			</div>
+		{/if}
+
 			<div class="form-group">
 				<label for="firstName">Etunimi</label>
 				<input 
@@ -133,7 +171,7 @@ import { onMount } from 'svelte';
 				<label for="password">Salasana</label>
 				<input 
 					type="password" 
-					id="password" 
+					id="password" 				
 					bind:value={password}
 					required 
 					disabled={isLoading}
@@ -163,6 +201,66 @@ import { onMount } from 'svelte';
 </div>
 
 <style>
+	.privacy-info {
+		margin-bottom: 18px;
+		font-size: 0.98rem;
+		color: #444;
+		text-align: left;
+	}
+	.privacy-info a {
+		color: #4a90e2;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.privacy-modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0,0,0,0.35);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+	.privacy-modal {
+		background: #fff;
+		padding: 32px 24px 24px 24px;
+		border-radius: 10px;
+		max-width: 420px;
+		width: 95vw;
+		box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+		position: relative;
+		color: #222;
+		font-size: 1rem;
+	}
+	.privacy-modal h2 {
+		font-size: 1.2rem;
+		margin-bottom: 18px;
+		text-align: center;
+	}
+	.privacy-modal p {
+		margin-bottom: 12px;
+		line-height: 1.5;
+	}
+	.close-modal {
+		margin-top: 10px;
+		display: block;
+		width: 100%;
+		padding: 10px;
+		background: #4a90e2;
+		color: #fff;
+		border: none;
+		border-radius: 6px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+	.close-modal:hover {
+		background: #357abd;
+	}
 	.auth-container {
 		display: flex;
 		justify-content: center;
