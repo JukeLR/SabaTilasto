@@ -1,63 +1,72 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
-	import favicon from '$lib/assets/favicon.svg';
-	import { onMount } from 'svelte';
+import { goto, invalidateAll } from '$app/navigation';
+import { page } from '$app/stores';
+import favicon from '$lib/assets/favicon.svg';
+import { onMount } from 'svelte';
+import { globalLoading } from '$lib/stores/globalLoading';
 
-	let { children, data } = $props();
-	
-	let showMenu = $state(false);
-	let showLoginModal = $state(false);
-	let loginUsername = $state('');
-	let loginPassword = $state('');
-	let loginError = $state('');
-	let isLoggingIn = $state(false);
-	
-	let isLoggedIn = $state(data?.isLoggedIn || false);
-	let currentUser = $state(data?.user);
-	let userRole = $derived(currentUser?.role || '');
+let { children, data } = $props();
+    
+let showMenu = $state(false);
+let showLoginModal = $state(false);
+let loginUsername = $state('');
+let loginPassword = $state('');
+let loginError = $state('');
+let isLoggingIn = $state(false);
+    
+let isLoggedIn = $state(data?.isLoggedIn || false);
+let currentUser = $state(data?.user);
+let userRole = $derived(currentUser?.role || '');
 
-	function toggleMenu() {
-		showMenu = !showMenu;
-	}
+import { get } from 'svelte/store';
 
-	function navigateTo(path: string) {
-		showMenu = false;
-		window.location.href = path;
-	}
+let globalLoadingValue: string | null = null;
+$effect(() => {
+	const unsub = globalLoading.subscribe(v => globalLoadingValue = v);
+	return unsub;
+});
 
-	async function logout() {
-		showMenu = false;
-		
-		try {
-			const response = await fetch('/api/auth/logout', { 
-				method: 'POST',
-				credentials: 'include'
-			});
-			
-			if (response.ok) {
-				// Tyhjennä paikallinen tila
-				isLoggedIn = false;
-				currentUser = null;
-				
-				// Invalidoi kaikki data ja lataa uudelleen
-				await invalidateAll();
-				
-				// Ohjaa etusivulle
-				if (typeof window !== 'undefined') {
-					await goto('/', { replaceState: true, invalidateAll: true });
-				}
-			} else {
-				console.error('Logout failed:', response.status);
-				// Yritä silti kirjata ulos pakottamalla reload
-				window.location.href = '/';
+function toggleMenu() {
+	showMenu = !showMenu;
+}
+
+function navigateTo(path: string) {
+	showMenu = false;
+	window.location.href = path;
+}
+
+async function logout() {
+	showMenu = false;
+    
+	try {
+		const response = await fetch('/api/auth/logout', { 
+			method: 'POST',
+			credentials: 'include'
+		});
+        
+		if (response.ok) {
+			// Tyhjennä paikallinen tila
+			isLoggedIn = false;
+			currentUser = null;
+            
+			// Invalidoi kaikki data ja lataa uudelleen
+			await invalidateAll();
+            
+			// Ohjaa etusivulle
+			if (typeof window !== 'undefined') {
+				await goto('/', { replaceState: true, invalidateAll: true });
 			}
-		} catch (error) {
-			console.error('Logout error:', error);
-			// Virhetilanteessa pakota reload
+		} else {
+			console.error('Logout failed:', response.status);
+			// Yritä silti kirjata ulos pakottamalla reload
 			window.location.href = '/';
 		}
+	} catch (error) {
+		console.error('Logout error:', error);
+		// Virhetilanteessa pakota reload
+		window.location.href = '/';
 	}
+}
 
 	function openLoginModal() {
 		showMenu = false;
@@ -110,6 +119,15 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+
+{#if globalLoadingValue}
+<div class="loading-overlay">
+	<div class="loading-modal">
+		<span class="loading-spinner"></span>
+		<span>{globalLoadingValue}</span>
+	</div>
+</div>
+{/if}
 
 <!-- Hampurilaisvalikko -->
 <div class="hamburger-menu">
@@ -470,5 +488,42 @@
 		.menu-dropdown {
 			right: -10px;
 		}
+	}
+	.loading-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0,0,0,0.25);
+		z-index: 2000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.loading-modal {
+		background: #fff;
+		padding: 32px 48px;
+		border-radius: 16px;
+		box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 18px;
+		font-size: 1.2rem;
+		font-weight: 600;
+	}
+	.loading-spinner {
+		width: 36px;
+		height: 36px;
+		border: 4px solid #e0e0e0;
+		border-top: 4px solid #5b9bd5;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: 8px;
+	}
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
 	}
 </style>

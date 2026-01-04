@@ -13,6 +13,8 @@ import { shotsBlocked } from '$lib/stores/shotsBlocked';
 import { blocks } from '$lib/stores/blocks';
 import { saves, goalieGameInterruption, opponentShotOff } from '$lib/stores/saves';
 import { goto } from '$app/navigation';
+import { tick } from 'svelte';
+import { globalLoading } from '$lib/stores/globalLoading';
 import { page } from '$app/stores';
 
 	interface Game {
@@ -33,6 +35,7 @@ import { page } from '$app/stores';
 	let user = null;
 	let userRole = '';
 	let userTeamId: number | null = null;
+	// Käytetään globaalia overlay-storea
 
 	// Jaa pelit tilan mukaan
 	let createdGames = $derived(games.filter(game => game.status === 'Luotu'));
@@ -96,21 +99,26 @@ import { page } from '$app/stores';
 		});
 	}
 
-	function viewGame(gameId: number, status: string) {
-		// Luotu-tilan pelit avataan muokkaukseen
+	async function viewGame(gameId: number, status: string) {
+		globalLoading.set('Siirrytään...');
+		await tick();
+		if (typeof window !== 'undefined') void document.body.offsetHeight;
 		if (status === 'Luotu') {
 			if (typeof window !== 'undefined') {
-				goto(`/games/new?edit=${gameId}`);
+				setTimeout(() => goto(`/games/new?edit=${gameId}`), 300);
 			}
 		} else {
-			// Käynnissä ja Pelattu pelit avataan raporttinäkymässä
 			if (typeof window !== 'undefined') {
-				goto(`/reports/${gameId}/tilasto`);
+				setTimeout(() => goto(`/reports/${gameId}/tilasto`), 300);
 			}
 		}
 	}
 
 	async function startGame(gameId: number, mode: 'mobile' | 'desktop' = 'mobile') {
+		globalLoading.set('Ladataan peliä...');
+		await tick();
+		if (typeof window !== 'undefined') void document.body.offsetHeight;
+		let navigated = false;
 		try {
 			// Päivitä pelin status käynnissä-tilaan
 			const response = await fetch(`/api/games/${gameId}`, {
@@ -149,21 +157,29 @@ import { page } from '$app/stores';
 
 			// Ohjaa tilastointisivulle
 			if (typeof window !== 'undefined') {
+				await tick();
+				navigated = true;
 				if (mode === 'desktop') {
-					goto(`/games/${gameId}/desktop-stats`);
+					setTimeout(() => goto(`/games/${gameId}/desktop-stats`), 300);
 				} else {
-					goto(`/games/${gameId}/stats`);
+					setTimeout(() => goto(`/games/${gameId}/stats`), 300);
 				}
 			}
 		} catch (err) {
 			console.error('Error starting game:', err);
 			// Ohjaa silti tilastointisivulle vaikka status-päivitys epäonnistuisi
 			if (typeof window !== 'undefined') {
+				await tick();
+				navigated = true;
 				if (mode === 'desktop') {
-					goto(`/games/${gameId}/desktop-stats`);
+					setTimeout(() => goto(`/games/${gameId}/desktop-stats`), 300);
 				} else {
-					goto(`/games/${gameId}/stats`);
+					setTimeout(() => goto(`/games/${gameId}/stats`), 300);
 				}
+			}
+		} finally {
+			if (!navigated) {
+				globalLoading.set(null);
 			}
 		}
 	}
@@ -174,6 +190,7 @@ import { page } from '$app/stores';
 </svelte:head>
 
 <div class="games-container">
+
 	<div style="display: flex; justify-content: space-between; align-items: center;">
 		<h1>Pelit</h1>
 		{#if userRole === 'admin'}
@@ -182,7 +199,7 @@ import { page } from '$app/stores';
 			</nav>
 		{/if}
 	</div>
-	<button class="btn-create" style="margin-bottom: 24px;" onclick={() => goto('/games/new')}>
+	<button class="btn-create" style="margin-bottom: 24px;" on:click={async () => { globalLoading.set('Siirrytään...'); await tick(); setTimeout(() => goto('/games/new'), 300); }}>
 		Luo Peli
 	</button>
 
@@ -217,13 +234,13 @@ import { page } from '$app/stores';
 									<td>{game.opponent_team_name}</td>
 									<td>{game.game_location || '-'}</td>
 									<td class="actions">
-										<button class="btn-view" onclick={() => viewGame(game.id, game.status)}>
+										<button class="btn-view" on:click={() => viewGame(game.id, game.status)}>
 											Muokkaa
 										</button>
-										   <button class="btn-start" onclick={() => startGame(game.id, 'mobile')}>
+										<button class="btn-start" on:click={() => startGame(game.id, 'mobile')}>
 											   Aloita<br/>mobiilitilastointi
 										   </button>
-										   <button class="btn-desktop" onclick={() => startGame(game.id, 'desktop')}>
+										<button class="btn-desktop" on:click={() => startGame(game.id, 'desktop')}>
 											   Aloita<br/>työpöytätilastointi
 										   </button>
 									</td>
@@ -261,13 +278,13 @@ import { page } from '$app/stores';
 									<td>{game.opponent_team_name}</td>
 									<td>{game.game_location || '-'}</td>
 									<td class="actions">
-										<button class="btn-view" onclick={() => viewGame(game.id, game.status)}>
+										<button class="btn-view" on:click={() => viewGame(game.id, game.status)}>
 											Näytä raportti
 										</button>
-										<button class="btn-continue" onclick={() => startGame(game.id)}>
+										<button class="btn-continue" on:click={() => startGame(game.id)}>
 											Mobiilitilastointi
 										</button>
-										<button class="btn-desktop" onclick={() => goto(`/games/${game.id}/desktop-stats`)}>
+										<button class="btn-desktop" on:click={async () => { globalLoading.set('Siirrytään...'); await tick(); setTimeout(() => goto(`/games/${game.id}/desktop-stats`), 300); }}>
 											Työpöytätilastointi
 										</button>
 									</td>
@@ -305,7 +322,7 @@ import { page } from '$app/stores';
 									<td>{game.opponent_team_name}</td>
 									<td>{game.game_location || '-'}</td>
 									<td class="actions">
-										<button class="btn-view" onclick={() => viewGame(game.id, game.status)}>
+										<button class="btn-view" on:click={() => viewGame(game.id, game.status)}>
 											Näytä raportti
 										</button>
 									</td>
@@ -522,4 +539,43 @@ import { page } from '$app/stores';
 		background: #eaf4ff;
 		text-decoration: underline;
 	}
+	.loading-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0,0,0,0.25);
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	}
+	.loading-modal {
+		background: #fff;
+		padding: 32px 48px;
+		border-radius: 16px;
+		box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 18px;
+		font-size: 1.2rem;
+		font-weight: 600;
+	}
+	.loading-spinner {
+		width: 36px;
+		height: 36px;
+		border: 4px solid #e0e0e0;
+		border-top: 4px solid #5b9bd5;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: 8px;
+	}
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
 </style>
+
+
