@@ -189,6 +189,9 @@ import { page } from '$app/stores';
 	<title>Pelit - SabaTilasto</title>
 </svelte:head>
 
+{#if $globalLoading}
+	<div class="modal-loading">Ladataan...</div>
+{/if}
 <div class="games-container">
 
 	<div style="display: flex; justify-content: space-between; align-items: center;">
@@ -575,6 +578,23 @@ import { page } from '$app/stores';
 	@keyframes spin {
 		0% { transform: rotate(0deg); }
 		100% { transform: rotate(360deg); }
+	}
+	.modal-loading {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0,0,0,0.3);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 9999;
+		font-size: 2rem;
+		color: #fff;
+		font-weight: bold;
+		letter-spacing: 1px;
+		backdrop-filter: blur(2px);
 	}
 </style>
 

@@ -196,6 +196,11 @@
   export let awayXG;
   export let xgError: string | null;
   export let data;
+
+  let showGoals = true;
+  let showShotsOnGoal = true;
+  let showBlocks = true;
+  let showShotsOffTarget = true;
 </script>
 
 <div class="container">
@@ -302,7 +307,15 @@
       {/if}
   {/if}
 </div>
-<!-- Kenttäkuva ja pisteet renderöidään vain kerran, alla -->
+<!-- Toimintonapit kenttäkuvan yläpuolelle -->
+{#if game && Array.isArray(shotmap) && shotmap.length > 0}
+  <div class="field-controls" style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+    <button class:active-btn={showGoals} on:click={() => showGoals = !showGoals}>Maalit</button>
+    <button class:active-btn={showShotsOnGoal} on:click={() => showShotsOnGoal = !showShotsOnGoal}>Vedot kohti maalia</button>
+    <button class:active-btn={showBlocks} on:click={() => showBlocks = !showBlocks}>Blokit</button>
+    <button class:active-btn={showShotsOffTarget} on:click={() => showShotsOffTarget = !showShotsOffTarget}>Vedot ohimaalin</button>
+  </div>
+{/if}
 {#if game && Array.isArray(shotmap) && shotmap.length > 0}
   <div style="width:100%; ">
     <div style="display:flex; justify-content:space-between; align-items:left; max-width:1200px;">
@@ -312,7 +325,13 @@
     <div class="kentta-container-fit">
       <img src="/Kentta.svg" alt="Kenttä" class="kentta-img-fit" />
       {#if userRole === 'pelaaja' && Array.isArray(user?.player_ids) && user.player_ids.length > 0}
-        {#each shotmap.filter(pt => Number(pt.player_id) === Number(user.player_ids[0])) as point}
+        {#each shotmap.filter(pt => Number(pt.player_id) === Number(user.player_ids[0]))
+          .filter(pt =>
+            (showGoals && pt.type === 'M') ||
+            (showShotsOnGoal && pt.type === 'K') ||
+            (showBlocks && (pt.type === 'B' || pt.type === 'BLOCK')) ||
+            (showShotsOffTarget && (pt.type === 'O' || pt.type === 'OFF_TARGET'))
+          ) as point}
           <svg
             class="kentta-overlay-fit"
             style="left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%);"
@@ -322,7 +341,12 @@
           </svg>
         {/each}
       {:else}
-        {#each shotmap as point}
+        {#each shotmap.filter(pt =>
+            (showGoals && pt.type === 'M') ||
+            (showShotsOnGoal && pt.type === 'K') ||
+            (showBlocks && (pt.type === 'B' || pt.type === 'BLOCK')) ||
+            (showShotsOffTarget && (pt.type === 'O' || pt.type === 'OFF_TARGET'))
+          ) as point}
           <svg
             class="kentta-overlay-fit"
             style="left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%);"
@@ -430,6 +454,24 @@
     color: #555;
     font-size: 1.1rem;
     margin: 20px 0;
+  }
+  .field-controls button {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid #bbb;
+    background: #f5f5f5;
+    color: #222;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+  .field-controls button.active-btn {
+    background: #5b9bd5;
+    color: #fff;
+    border: 1.5px solid #357ab8;
   }
 </style>
 
