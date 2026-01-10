@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { globalLoading } from '$lib/stores/globalLoading';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
@@ -398,6 +399,7 @@
 			
 			// Ohjaa pelit-sivulle tallennuksen jälkeen
 			if (typeof window !== 'undefined') {
+				globalLoading.set(null);
 				goto('/games');
 			}
 			
