@@ -33,7 +33,7 @@ import { page } from '$app/stores';
 	let isLoading = $state(true);
 	let error = $state('');
 	let user = null;
-	let userRole = '';
+	let userRole = $state('');
 	let userTeamId: number | null = null;
 	// Käytetään globaalia overlay-storea
 

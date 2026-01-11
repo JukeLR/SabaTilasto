@@ -710,10 +710,12 @@ async function handleEndGame() {
 		})
 	});
 	// 2. Ohjaa takaisin /games-sivulle
+	globalLoading.set(null);
 	goto('/games');
 }
 
 import { fetchTeams } from '$lib/stores/teams';
+  import { globalLoading } from '$lib/stores/globalLoading';
 
 // gameFieldPositions on nyt käytettävissä Svelte storesta
 onMount(() => {
