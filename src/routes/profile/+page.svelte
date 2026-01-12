@@ -97,7 +97,8 @@
 			const response = await fetch('/api/auth/profile', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(updateData)
+				body: JSON.stringify(updateData),
+				credentials: 'include'
 			});
 
 			if (!response.ok) {
