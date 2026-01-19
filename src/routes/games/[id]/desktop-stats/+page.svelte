@@ -44,9 +44,9 @@ const statButtons = [
 	{ key: 'shotsOffTarget', label: 'Veto ohi<br />maalista', color: 'green' },
 	{ key: 'shotsBlocked', label: 'Veto<br />blokkiin', color: 'green' },
 	{ key: 'opponentGoals', label: 'Maali<br />Vastustajalle', color: 'red' },
-	{ key: 'saves', label: 'Oman maali-<br />vahdin torjunta', color: 'green' },
+	{ key: 'saves', label: 'Vastustajan veto<br />kohti maalia', color: 'red' },
 	{ key: 'opponentShotOff', label: 'Vastustajan veto<br />ohi maalista', color: 'red' },
-	{ key: 'blocks', label: 'Veto<br />blokattu', color: 'red' }
+	{ key: 'blocks', label: 'Vastustajan veto<br />blokattu', color: 'red' }
 ];
 
 function updateFieldSize() {
@@ -807,9 +807,6 @@ onMount(() => {
 		{/if}
 	</div>
 
-
-
-
 	<div class="field-image-wrapper" style="position: relative;">
 		
 		<img
@@ -852,7 +849,7 @@ onMount(() => {
 		   {#each statButtons as btn}
 			   {#if btn.key === 'saves'}
 				   <button
-					   class="stat-btn green {selectedStat === btn.key ? 'selected' : ''}"
+					   class="stat-btn red {selectedStat === btn.key ? 'selected' : ''}"
 					   on:click={() => {
 						   selectedStat = (selectedStat === btn.key ? '' : btn.key);
 						   if (selectedStat === 'saves' && typeof $gameFieldPositions[0] === 'number') {
