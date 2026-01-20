@@ -25,6 +25,11 @@ import { goalieShortPass } from '$lib/stores/goalieShortPass';
 import { goalieTurnover } from '$lib/stores/goalieTurnover';
 import { plusMinusPlayers } from '$lib/stores/plusMinusPlayers';
 
+import { teamTurnoverGoal } from '$lib/stores/teamTurnoverGoal';
+import { teamTurnoverNogoal } from '$lib/stores/teamTurnoverNogoal';
+import { opponentTurnoverGoal } from '$lib/stores/opponentTurnoverGoal';
+import { opponentTurnoverNogoal } from '$lib/stores/opponentTurnoverNogoal';
+
 // Päivitä pelaajien nimet aina kun gameLineup päivittyy
 $: fetchLineupPlayers($gameLineup);
 
@@ -46,7 +51,11 @@ const statButtons = [
 	{ key: 'opponentGoals', label: 'Maali<br />Vastustajalle', color: 'red' },
 	{ key: 'saves', label: 'Vastustajan veto<br />kohti maalia', color: 'red' },
 	{ key: 'opponentShotOff', label: 'Vastustajan veto<br />ohi maalista', color: 'red' },
-	{ key: 'blocks', label: 'Vastustajan veto<br />blokattu', color: 'red' }
+	{ key: 'blocks', label: 'Vastustajan veto<br />blokattu', color: 'red' },
+	{ key: 'teamTurnoverGoal', label: 'Pelinkääntö<br />(maali)', color: 'green' },
+	{ key: 'teamTurnoverNogoal', label: 'Pelinkääntö<br />(ei maalia)', color: 'green' },
+	{ key: 'opponentTurnoverGoal', label: 'Vastustajan pelinkääntö<br />(maali)', color: 'red' },
+	{ key: 'opponentTurnoverNogoal', label: 'Vastustajan pelinkääntö<br />(ei maalia)', color: 'red' }
 ];
 
 function updateFieldSize() {
@@ -104,7 +113,11 @@ async function trySaveStats(options: { includeOpponentShotsOff?: boolean } = {})
 			goalie_long_pass: get(goalieLongPass),
 			goalie_short_pass: get(goalieShortPass),
 			goalie_turnover: get(goalieTurnover),
-			assists: get(assists)
+			assists: get(assists),
+			team_turnover_goal: get(teamTurnoverGoal),
+			team_turnover_nogoal: get(teamTurnoverNogoal),
+			opponent_turnover_goal: get(opponentTurnoverGoal),
+			opponent_turnover_nogoal: get(opponentTurnoverNogoal)
 		};
 		if (options.includeOpponentShotsOff) {
 			body.opponent_shots_off = 1;
@@ -554,6 +567,206 @@ function handleSave() {
 			}
 		});
 		return;
+	}
+	if (
+		selectedStat === 'teamTurnoverGoal') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'TG', color: 'green' }
+			]);
+		}
+		// 2. Lisää pelaajan id shotsBlockediin
+		teamTurnoverGoal.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/turnovermap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 0,
+						type: 'TG',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('teamTurnoverGoal:', get(teamTurnoverGoal));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
+		return;
+	}
+	if (
+		selectedStat === 'teamTurnoverNogoal') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'to', color: 'green' }
+			]);
+		}
+		// 2. Lisää pelaajan id shotsBlockediin
+		teamTurnoverNogoal.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/turnovermap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 0,
+						type: 'to',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('teamTurnoverNogoal:', get(teamTurnoverNogoal));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
+		return;
+	}
+	if (
+		selectedStat === 'opponentTurnoverGoal') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'TG', color: 'red' }
+			]);
+		}
+		// 2. Lisää pelaajan id shotsBlockediin
+		opponentTurnoverGoal.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/turnovermap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 1,
+						type: 'TG',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('opponentTurnoverGoal:', get(opponentTurnoverGoal));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
+		return;
+	}
+	if (
+		selectedStat === 'opponentTurnoverNogoal') 
+	{ 
+		// 1. Lisää uusi kirjain marks-taulukkoon tempPointin kohdalle
+		if (tempPoint) {
+			const { x, y, renderX, renderY } = tempPoint;
+			marksStore.update(arr => [
+				...arr,
+				{ x, y, renderX, renderY, char: 'to', color: 'red' }
+			]);
+		}
+		// 2. Lisää pelaajan id shotsBlockediin
+		opponentTurnoverNogoal.update(arr => [...arr, selectedPlayerIds[0]]);
+		// Taustalla: lisää uusi rivi Neon-taulukkoon shotmap, jos piste on merkitty
+		if (tempPoint) {
+			// Laske neonX ja neonY
+			let neonX = $joukkueidenPaikat ? tempPoint.x : 1 - tempPoint.x;
+			let neonY = $joukkueidenPaikat ? tempPoint.y : 1 - tempPoint.y;
+			// Varmista että koordinaatit ovat olemassa
+			if (typeof neonX === 'number' && typeof neonY === 'number') {
+				// Lähetä tiedot taustalla
+				fetch('/api/turnovermap', {
+					method: 'POST',
+					body: JSON.stringify({
+						x: neonX,
+						y: neonY,
+						player_id: selectedPlayerIds[0],
+						team: 1,
+						type: 'to',
+						games_id: parseInt($page.params.id ?? $page.data.id)
+					}),
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+			tempPoint = null;
+		}
+		// Debug: tulosta storejen arvot
+		console.log('opponentTurnoverNogoal:', get(opponentTurnoverNogoal));		
+		// 5. Nollaa valinnat
+		selectedStat = '';
+		selectedPlayerIds = [];
+		// ...existing code...
+		trySaveStats().then(success => {
+			if (!success && !pollingSaveActive) {
+				pollingSaveActive = true;
+				pollingSaveInterval = setInterval(trySaveStats, 10000);
+			}
+		});
+		return;
 	}		
 }
 
@@ -706,6 +919,10 @@ async function handleEndGame() {
 			goalie_short_pass: get(goalieShortPass),
 			goalie_turnover: get(goalieTurnover),
 			assists: get(assists),
+			team_turnover_goal: get(teamTurnoverGoal),
+			team_turnover_nogoal: get(teamTurnoverNogoal),
+			opponent_turnover_goal: get(opponentTurnoverGoal),
+			opponent_turnover_nogoal: get(opponentTurnoverNogoal),
 			status: 'Pelattu'
 		})
 	});
@@ -755,6 +972,10 @@ onMount(() => {
 		if (Array.isArray(data.assists) && data.assists.length > 0) assists.set(data.assists);
 		if (Array.isArray(data.plus_points) && data.plus_points.length > 0) plusPoints.set(data.plus_points);
 		if (Array.isArray(data.minus_points) && data.minus_points.length > 0) minusPoints.set(data.minus_points);
+		if (Array.isArray(data.team_turnover_goal) && data.team_turnover_goal.length > 0) teamTurnoverGoal.set(data.team_turnover_goal);
+		if (Array.isArray(data.team_turnover_nogoal) && data.team_turnover_nogoal.length > 0) teamTurnoverNogoal.set(data.team_turnover_nogoal);
+		if (Array.isArray(data.opponent_turnover_goal) && data.opponent_turnover_goal.length > 0) opponentTurnoverGoal.set(data.opponent_turnover_goal);
+		if (Array.isArray(data.opponent_turnover_nogoal) && data.opponent_turnover_nogoal.length > 0) opponentTurnoverNogoal.set(data.opponent_turnover_nogoal);
 
 		// Älä ylikirjoita storeja API-vastauksella, polling hoitaa Neon-päivityksen taustalla
 		await fetchLineupPlayers($gameLineup);
@@ -883,6 +1104,10 @@ onMount(() => {
 						: btn.key === 'blocks' ? $blocks.length
 						: btn.key === 'saves' ? $saves.length
 						: btn.key === 'opponentShotOff' ? $opponentShotOff
+						: btn.key === 'teamTurnoverGoal' ? $teamTurnoverGoal.length
+						: btn.key === 'teamTurnoverNogoal' ? $teamTurnoverNogoal.length
+						: btn.key === 'opponentTurnoverGoal' ? $opponentTurnoverGoal.length
+						: btn.key === 'opponentTurnoverNogoal' ? $opponentTurnoverNogoal.length
 						: ''}
 					</span>
 				   </button>
@@ -1215,7 +1440,7 @@ onMount(() => {
 	.stats-buttons-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		grid-template-rows: repeat(3, 1fr);
+		grid-template-rows: repeat(4, 1fr);
 		gap: 9px;
 		max-width: 900px;
 		margin: 10px auto 0 auto;
@@ -1232,7 +1457,7 @@ onMount(() => {
 		font-family: inherit;
 		font-size: 12px;
 		font-weight: 700;
-		padding: 12px 22px 12px 18px;
+		padding: 4px 22px 4px 18px;
 		box-shadow: 0 1px 4px #0001;
 		cursor: pointer;
 		transition: filter 0.15s;

@@ -17,6 +17,7 @@
   let userRole = '';
   let userTeamIds: number[] = [];
   let shotmap: Array<{ x: number; y: number; team: number; type: string; games_id: number; player_id?: number; xg?: number }> = [];
+  let turnovermap: Array<{ x: number; y: number; team: number; type: string; games_id: number; player_id?: number }> = [];
 
 
   onMount(async () => {
@@ -37,6 +38,7 @@
       game = null;
       players = [];
       shotmap = [];
+      turnovermap = [];
       return;
     }
 
@@ -58,6 +60,18 @@
       }
     } catch (e) {
       // Ei virheilmoitusta
+    }
+    
+    // Hae turnovermap-pisteet tälle pelille
+    try {
+      const res = await fetch(`/api/turnovermap?games_id=${gameId}`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) {
+        // Suodata vain tämän pelin pisteet
+        turnovermap = data.filter((row: any) => Number(row.games_id) === Number(gameId));
+      } 
+    } catch (e) {
+        // Ei virheilmoitusta
     }
   });
 
@@ -201,6 +215,8 @@
   let showShotsOnGoal = true;
   let showBlocks = true;
   let showShotsOffTarget = true;
+  let showTurnoverGoal = true;
+  let showTurnoverNoGoal = true;
 </script>
 
 <div class="container">
@@ -308,15 +324,17 @@
   {/if}
 </div>
 <!-- Toimintonapit kenttäkuvan yläpuolelle -->
-{#if game && Array.isArray(shotmap) && shotmap.length > 0}
+<!-- {#if game && Array.isArray(shotmap) && shotmap.length > 0} -->
   <div class="field-controls" style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
     <button class:active-btn={showGoals} on:click={() => showGoals = !showGoals}>Maalit</button>
     <button class:active-btn={showShotsOnGoal} on:click={() => showShotsOnGoal = !showShotsOnGoal}>Vedot kohti maalia</button>
     <button class:active-btn={showBlocks} on:click={() => showBlocks = !showBlocks}>Blokit</button>
     <button class:active-btn={showShotsOffTarget} on:click={() => showShotsOffTarget = !showShotsOffTarget}>Vedot ohimaalin</button>
+    <button class:active-btn={showTurnoverGoal} on:click={() => showTurnoverGoal = !showTurnoverGoal}>Pelinkäännöt<br/>(maalit)</button>
+    <button class:active-btn={showTurnoverNoGoal} on:click={() => showTurnoverNoGoal = !showTurnoverNoGoal}>Pelinkäännöt<br/>(ei maalia)</button>
   </div>
-{/if}
-{#if game && Array.isArray(shotmap) && shotmap.length > 0}
+<!-- {/if} -->
+<!-- {#if game && Array.isArray(shotmap) && shotmap.length > 0} -->
   <div style="width:100%; ">
     <div style="display:flex; justify-content:space-between; align-items:left; max-width:1200px;">
       <div style="font-size:1.3rem; font-weight:bold; color:#222;">{game?.ownTeamName ?? ''}</div>
@@ -331,6 +349,19 @@
             (showShotsOnGoal && pt.type === 'K') ||
             (showBlocks && (pt.type === 'B' || pt.type === 'BLOCK')) ||
             (showShotsOffTarget && (pt.type === 'O' || pt.type === 'OFF_TARGET'))
+          ) as point}
+          <svg
+            class="kentta-overlay-fit"
+            style="left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%);"
+            width="32" height="32" viewBox="0 0 32 32"
+          >
+            <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
+          </svg>
+        {/each}
+        {#each turnovermap.filter(pt => Number(pt.player_id) === Number(user.player_ids[0]))
+          .filter(pt =>
+            (showTurnoverGoal && pt.type === 'TG') ||
+            (showTurnoverNoGoal && pt.type === 'to')            
           ) as point}
           <svg
             class="kentta-overlay-fit"
@@ -355,10 +386,22 @@
             <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
           </svg>
         {/each}
+        {#each turnovermap.filter(pt =>
+            (showTurnoverGoal && pt.type === 'TG') ||
+            (showTurnoverNoGoal && pt.type === 'to')            
+          ) as point}
+          <svg
+            class="kentta-overlay-fit"
+            style="left:{point.x * 100}%; top:{100 - point.y * 100}%; transform:translate(-50%,-50%);"
+            width="32" height="32" viewBox="0 0 32 32"
+          >
+            <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill={point.team === 1 ? 'green' : 'red'}>{point.type}</text>
+          </svg>
+        {/each}
       {/if}
     </div>
   </div>
-{/if}
+<!-- {/if} -->
 
 <style>
   .btn-back {

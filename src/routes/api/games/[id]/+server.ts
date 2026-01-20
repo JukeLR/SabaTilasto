@@ -37,6 +37,10 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 				g.goalie_turnover,
 				g.plus_points,
 				g.minus_points,
+                g.team_turnover_goal,
+				g.team_turnover_nogoal,
+				g.opponent_turnover_goal,
+				g.opponent_turnover_nogoal,
 				t.name as "ownTeamName"
 			FROM games g
 			LEFT JOIN teams t ON g.own_team_id = t.id
@@ -61,6 +65,10 @@ export const GET = async ({ params, cookies, url }: RequestEvent) => {
 		game.blocks = Array.isArray(game.blocks) ? game.blocks : (game.blocks ? [game.blocks] : []);
 		game.saves = Array.isArray(game.saves) ? game.saves : (game.saves ? [game.saves] : []);
 		game.goalie_game_interruption = Array.isArray(game.goalie_game_interruption) ? game.goalie_game_interruption : (game.goalie_game_interruption ? [game.goalie_game_interruption] : []);
+		game.team_turnover_goal = Array.isArray(game.team_turnover_goal) ? game.team_turnover_goal : (game.team_turnover_goal ? [game.team_turnover_goal] : []);
+		game.team_turnover_nogoal = Array.isArray(game.team_turnover_nogoal) ? game.team_turnover_nogoal : (game.team_turnover_nogoal ? [game.team_turnover_nogoal] : []);
+		game.opponent_turnover_goal = Array.isArray(game.opponent_turnover_goal) ? game.opponent_turnover_goal : (game.opponent_turnover_goal ? [game.opponent_turnover_goal] : []);
+		game.opponent_turnover_nogoal = Array.isArray(game.opponent_turnover_nogoal) ? game.opponent_turnover_nogoal : (game.opponent_turnover_nogoal ? [game.opponent_turnover_nogoal] : []);
 
 		// Parse plus_points and minus_points from string to array if needed
 		function parsePgArray(val) {
@@ -157,6 +165,10 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			g.blocks,
 			g.saves,
 			g.goalie_game_interruption,
+			g.team_turnover_goal,
+			g.team_turnover_nogoal,
+			g.opponent_turnover_goal,
+			g.opponent_turnover_nogoal,
 			g.opponent_shots_off
             ,g.plus_points
             ,g.minus_points
@@ -231,6 +243,18 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 	if (body.goalie_game_interruption !== undefined) {
 		updateFields.goalie_game_interruption = body.goalie_game_interruption;
 	}
+	if (body.team_turnover_goal !== undefined) {
+		updateFields.team_turnover_goal = body.team_turnover_goal;
+	}
+	if (body.team_turnover_nogoal !== undefined) {
+		updateFields.team_turnover_nogoal = body.team_turnover_nogoal;
+	}
+	if (body.opponent_turnover_goal !== undefined) {
+		updateFields.opponent_turnover_goal = body.opponent_turnover_goal;
+	}
+	if (body.opponent_turnover_nogoal !== undefined) {
+		updateFields.opponent_turnover_nogoal = body.opponent_turnover_nogoal;
+	}
 	if (body.blocks !== undefined) {
 		updateFields.blocks = body.blocks;
 	}
@@ -278,7 +302,11 @@ export const PATCH = async ({ params, request }: RequestEvent) => {
 			goalie_game_interruption = ${updateFields.goalie_game_interruption !== undefined ? updateFields.goalie_game_interruption : currentGame.goalie_game_interruption},
 			goalie_long_pass = ${updateFields.goalie_long_pass !== undefined ? updateFields.goalie_long_pass : currentGame.goalie_long_pass},
 			goalie_short_pass = ${updateFields.goalie_short_pass !== undefined ? updateFields.goalie_short_pass : currentGame.goalie_short_pass},
-			goalie_turnover = ${updateFields.goalie_turnover !== undefined ? updateFields.goalie_turnover : currentGame.goalie_turnover},			
+			goalie_turnover = ${updateFields.goalie_turnover !== undefined ? updateFields.goalie_turnover : currentGame.goalie_turnover},
+			team_turnover_goal = ${updateFields.team_turnover_goal !== undefined ? updateFields.team_turnover_goal : currentGame.team_turnover_goal},
+			team_turnover_nogoal = ${updateFields.team_turnover_nogoal !== undefined ? updateFields.team_turnover_nogoal : currentGame.team_turnover_nogoal},
+			opponent_turnover_goal = ${updateFields.opponent_turnover_goal !== undefined ? updateFields.opponent_turnover_goal : currentGame.opponent_turnover_goal},
+			opponent_turnover_nogoal = ${updateFields.opponent_turnover_nogoal !== undefined ? updateFields.opponent_turnover_nogoal : currentGame.opponent_turnover_nogoal},			
 			assists = ${updateFields.assists !== undefined ? updateFields.assists : currentGame.assists},
 			status = ${updateFields.status !== undefined ? updateFields.status : currentGame.status},
 			opponent_team_name = ${updateFields.opponent_team_name !== undefined ? updateFields.opponent_team_name : currentGame.opponentName},

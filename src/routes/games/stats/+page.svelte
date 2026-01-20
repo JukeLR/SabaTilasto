@@ -32,9 +32,7 @@ let overlayHeight = 800;
 
     async function fetchStats() {
         console.log('fetchStats kutsuttu, selectedTeam:', selectedTeam);
-      // ...existing code...
-      // ...existing code...
-      // ...existing code...
+     
       if (!selectedTeam) {
         alert('Valitse joukkue ennen hakua!');
         return;
