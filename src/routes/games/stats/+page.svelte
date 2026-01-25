@@ -575,7 +575,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
             <th>Torjunta-%</th>
             <th>Päästettyjä <br/>maaleja/peli</th>
             <th>Katkot</th>
-            <th>Katkot/peli</th>
+            <!-- <th>Katkot/peli</th> -->
           </tr>
         </thead>
         <tbody>
@@ -592,7 +592,7 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                 <td>{goalieStats[name]?.savePct ?? '0.0'}%</td>
                 <td>{goalieStats[name]?.goalsPerGame ?? '0.00'}</td>
                 <td>{goalieStats[name]?.interruptions ?? 0}</td>
-                <td>{goalieStats[name]?.interruptionsPerGame ?? '0.00'}</td>
+                <!-- <td>{goalieStats[name]?.interruptionsPerGame ?? '0.00'}</td> -->
               </tr>
             {/each}
         </tbody>
@@ -614,13 +614,13 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                 <th>-</th>
                 <th>+/-</th>
                 <th>Blokit</th>
-                <th>Blokit/peli</th>
+                <!-- <th>Blokit/peli</th> -->
                 <th>Vedot <br/>maalia kohti</th>
-                <th>Vedot <br/>maalia kohti/peli</th>
+                <!-- <th>Vedot <br/>maalia kohti/peli</th> -->
                 <th>Vedot <br/>blokkiin</th>
-                <th>Vedot <br/>blokkiin/peli</th>
+                <!-- <th>Vedot <br/>blokkiin/peli</th> -->
                 <th>Vedot <br/>ohi maalin</th>
-                <th>Vedot <br/>ohi maalin/peli</th>                
+                <!-- <th>Vedot <br/>ohi maalin/peli</th> -->                
               </tr>
             </thead>
             <tbody>
@@ -639,13 +639,13 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                   <td>{playerStats[player.id]?.minus ?? ''}</td>
                   <td>{(playerStats[player.id]?.plus ?? 0) - (playerStats[player.id]?.minus ?? 0)}</td>
                   <td>{playerStats[player.id]?.blocks ?? 0}</td>
-                  <td>{playerStats[player.id]?.blocksPerGame ?? "0.00"}</td>
+                  <!-- <td>{playerStats[player.id]?.blocksPerGame ?? "0.00"}</td> -->
                   <td>{playerStats[player.id]?.shotsOnGoal ?? 0}</td>
-                  <td>{playerStats[player.id]?.shotsOnGoalPerGame ?? "0.00"}</td>
+                  <!-- <td>{playerStats[player.id]?.shotsOnGoalPerGame ?? "0.00"}</td> -->
                   <td>{playerStats[player.id]?.shotsBlocked ?? 0}</td>
-                  <td>{playerStats[player.id]?.shotsBlockedPerGame ?? "0.00"}</td>
+                  <!-- <td>{playerStats[player.id]?.shotsBlockedPerGame ?? "0.00"}</td> -->
                   <td>{playerStats[player.id]?.shotsOffTarget ?? 0}</td>
-                  <td>{playerStats[player.id]?.shotsOffTargetPerGame ?? "0.00"}</td>                  
+                  <!-- <td>{playerStats[player.id]?.shotsOffTargetPerGame ?? "0.00"}</td> -->                  
                 </tr>
               {/each}
             </tbody>
