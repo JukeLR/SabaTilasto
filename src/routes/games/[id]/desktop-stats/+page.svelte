@@ -595,7 +595,7 @@ function handleSave() {
 						x: neonX,
 						y: neonY,
 						player_id: selectedPlayerIds[0],
-						team: 0,
+						team: 1,
 						type: 'TG',
 						games_id: parseInt($page.params.id ?? $page.data.id)
 					}),
@@ -645,7 +645,7 @@ function handleSave() {
 						x: neonX,
 						y: neonY,
 						player_id: selectedPlayerIds[0],
-						team: 0,
+						team: 1,
 						type: 'to',
 						games_id: parseInt($page.params.id ?? $page.data.id)
 					}),
@@ -695,7 +695,7 @@ function handleSave() {
 						x: neonX,
 						y: neonY,
 						player_id: selectedPlayerIds[0],
-						team: 1,
+						team: 0,
 						type: 'TG',
 						games_id: parseInt($page.params.id ?? $page.data.id)
 					}),
@@ -745,7 +745,7 @@ function handleSave() {
 						x: neonX,
 						y: neonY,
 						player_id: selectedPlayerIds[0],
-						team: 1,
+						team: 0,
 						type: 'to',
 						games_id: parseInt($page.params.id ?? $page.data.id)
 					}),
