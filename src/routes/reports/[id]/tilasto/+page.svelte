@@ -201,6 +201,22 @@
     if (total === 0) return '';
     return ((saves / total) * 100).toFixed(1) + '%';
   }
+  function getTeamTurnoverGoal(playerId: number) {
+    if (!game || !Array.isArray(game.team_turnover_goal)) return 0;
+    return game.team_turnover_goal.filter((id: number) => id === playerId).length;
+  }
+  function getTeamTurnoverNogoal(playerId: number) {
+    if (!game || !Array.isArray(game.team_turnover_nogoal)) return 0;
+    return game.team_turnover_nogoal.filter((id: number) => id === playerId).length;
+  }
+  function getOpponentTurnoverGoal(playerId: number) {
+    if (!game || !Array.isArray(game.opponent_turnover_goal)) return 0;
+    return game.opponent_turnover_goal.filter((id: number) => id === playerId).length;
+  }
+  function getOpponentTurnoverNogoal(playerId: number) {
+    if (!game || !Array.isArray(game.opponent_turnover_nogoal)) return 0;
+    return game.opponent_turnover_nogoal.filter((id: number) => id === playerId).length;
+  }
 
   // Laske pelaajakohtainen xG tämän pelin shotmapista (team!=0)
 
@@ -256,6 +272,8 @@
             <th>Päästetyt<br/>maalit</th>
             <th>Maalivahdin<br/>katkot</th>
             <th>Torjunta-%</th>
+            <th>Pelinkäännöt<br>(maali)</th>
+            <th>Pelinkäännöt<br>(ei maalia)</th>
             <th>xG</th>
           </tr>
         </thead>
@@ -281,6 +299,8 @@
               <td>{getPlayerGoalsAgainst(p.id)}</td>
               <td>{getPlayerGoalieInterruptions(p.id)}</td>
               <td>{getPlayerSavePercentage(p.id)}</td>
+              <td><span style="color: green;">{getTeamTurnoverGoal(p.id)}</span> / <span style="color: red;">{getOpponentTurnoverGoal(p.id)}</span></td>
+              <td><span style="color: green;">{getTeamTurnoverNogoal(p.id)}</span> / <span style="color: red;">{getOpponentTurnoverNogoal(p.id)}</span></td>
               <td>{data?.playerXG && data.playerXG[Number(p.id)] !== undefined && data.playerXG[Number(p.id)] !== null ? Number(data.playerXG[Number(p.id)]).toFixed(2) : '0.00'}</td>
             </tr>
           {/each}
@@ -299,6 +319,8 @@
             <td>{players.reduce((sum, p) => sum + getPlayerGoalsAgainst(p.id), 0)}</td>
             <td>{players.reduce((sum, p) => sum + getPlayerGoalieInterruptions(p.id), 0)}</td>
             <td></td>
+            <td><span style="color: green;">{players.reduce((sum, p) => sum + getTeamTurnoverGoal(p.id), 0)}</span> / <span style="color: red;">{players.reduce((sum, p) => sum + getOpponentTurnoverGoal(p.id), 0)}</span></td>
+            <td><span style="color: green;">{players.reduce((sum, p) => sum + getTeamTurnoverNogoal(p.id), 0)}</span> / <span style="color: red;">{players.reduce((sum, p) => sum + getOpponentTurnoverNogoal(p.id), 0)}</span></td>
             <td>{players.reduce((sum, p) => sum + (data?.playerXG && data.playerXG[Number(p.id)] !== undefined && data.playerXG[Number(p.id)] !== null ? Number(data.playerXG[Number(p.id)]) : 0), 0).toFixed(2)}</td>
           </tr>
           {/if}
