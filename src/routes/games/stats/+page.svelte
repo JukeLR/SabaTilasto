@@ -1,21 +1,51 @@
 <script lang="ts">
-    let goalieNames: string[] = [];
-    let playerNames: string[] = [];
-      let goalieStats: Record<string, {
-        name: string;
-        games: number;
-        wins: number;
-        draws: number;
-        losses: number;
-        assists: number;
-        saves: number;
-        opponentGoals: number;
-        interruptions: number;
-        savePct?: string;
-        goalsPerGame?: string;
-        interruptionsPerGame?: string;
-      }> = {};
-let playerStats: Record<number, { id: number; name: string; games: number; wins: number; draws: number; losses: number; goals: number; assists: number; points: number; pointsPerGame: string; blocks: number; blocksPerGame: string; shotsOnGoal: number; shotsOnGoalPerGame: string; shotsBlocked: number; shotsBlockedPerGame: string; shotsOffTarget: number; shotsOffTargetPerGame: string; plus?: number; minus?: number }> = {};
+import { onMount } from 'svelte';
+import { page } from '$app/stores';
+import type { User } from '$lib/db';
+let goalieNames: string[] = [];
+let playerNames: string[] = [];
+let goalieStats: Record<string, {
+  name: string;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  assists: number;
+  saves: number;
+  opponentGoals: number;
+  interruptions: number;
+  savePct?: string;
+  goalsPerGame?: string;
+  interruptionsPerGame?: string;
+  opponentTurnoverGoal: number;
+  opponentTurnoverNogoal: number;
+}> = {};
+let playerStats: Record<number, { 
+  id: number; 
+  name: string; 
+  games: number; 
+  wins: number; 
+  draws: number; 
+  losses: number; 
+  goals: number; 
+  assists: number; 
+  points: number; 
+  pointsPerGame: string; 
+  blocks: number; 
+  blocksPerGame: string; 
+  shotsOnGoal: number; 
+  shotsOnGoalPerGame: string; 
+  shotsBlocked: number; 
+  shotsBlockedPerGame: string; 
+  shotsOffTarget: number; 
+  shotsOffTargetPerGame: string; 
+  plus?: number; 
+  minus?: number ; 
+  teamTurnoverGoal: number; 
+  teamTurnoverNogoal: number; 
+  opponentTurnoverGoal: number; 
+  opponentTurnoverNogoal: number; 
+}> = {};
 let playerList: Array<{ id: number; name: string }> = [];
 let usedGameIds: number[] = [];
 let showGoalsHeatmap = false;
@@ -93,12 +123,12 @@ let overlayHeight = 800;
       }
       
 
-        // Pelaajien pelatut pelit, voitot, tasapelit, tappiot, maalit, syötöt, pisteet, pistettä/peli, blokit, blokit/peli, vedot kohti maalia, vedot maaliakohti/peli, vedot blokkiin, vedot blokkiin/peli, vedot ohi maalin ja vedot ohi maalin/peli
+        // Pelaajien pelatut pelit, voitot, tasapelit, tappiot, maalit, syötöt, pisteet, pistettä/peli, blokit, blokit/peli, vedot kohti maalia, vedot maaliakohti/peli, vedot blokkiin, vedot blokkiin/peli, vedot ohi maalin ja vedot ohi maalin/peli, teamTurnoverGoal, teamTurnoverNogoal, opponentTurnoverGoal, opponentTurnoverNogoal
         playerStats = {};
         playerList = [];
         if (Array.isArray(playersData.players)) {
           for (const p of playersData.players) {
-            playerStats[p.id] = { id: p.id, name: `${p.first_name} ${p.last_name}`, games: 0, wins: 0, draws: 0, losses: 0, goals: 0, assists: 0, points: 0, pointsPerGame: "0.00", blocks: 0, blocksPerGame: "0.00", shotsOnGoal: 0, shotsOnGoalPerGame: "0.00", shotsBlocked: 0, shotsBlockedPerGame: "0.00", shotsOffTarget: 0, shotsOffTargetPerGame: "0.00" };
+            playerStats[p.id] = { id: p.id, name: `${p.first_name} ${p.last_name}`, games: 0, wins: 0, draws: 0, losses: 0, goals: 0, assists: 0, points: 0, pointsPerGame: "0.00", blocks: 0, blocksPerGame: "0.00", shotsOnGoal: 0, shotsOnGoalPerGame: "0.00", shotsBlocked: 0, shotsBlockedPerGame: "0.00", shotsOffTarget: 0, shotsOffTargetPerGame: "0.00", teamTurnoverGoal: 0, teamTurnoverNogoal: 0, opponentTurnoverGoal: 0, opponentTurnoverNogoal: 0 };
             playerList.push({ id: p.id, name: `${p.first_name} ${p.last_name}` });
           }
         }
@@ -153,6 +183,22 @@ let overlayHeight = 800;
                   // Vedot ohi maalin
                   const shotsOffTargetArr = Array.isArray(game.shots_off_target) ? game.shots_off_target : [];
                   playerStats[pid].shotsOffTarget += shotsOffTargetArr.filter((otid: string) => parseInt(otid) === pid).length;
+                  // TeamTurnoverGoal -tilanteiden määrä
+                  const teamTurnoverGoalArr = Array.isArray(game.team_turnover_goal) ? game.team_turnover_goal : [];
+                  const teamTurnoverGoals = teamTurnoverGoalArr.filter((tid: string) => parseInt(tid) === pid).length;
+                  playerStats[pid].teamTurnoverGoal += teamTurnoverGoals;
+                  // TeamTurnoverNogoal -tilanteiden määrä
+                  const teamTurnoverNogoalArr = Array.isArray(game.team_turnover_nogoal) ? game.team_turnover_nogoal : [];
+                  const teamTurnoverNogoals = teamTurnoverNogoalArr.filter((tid: string) => parseInt(tid) === pid).length;
+                  playerStats[pid].teamTurnoverNogoal += teamTurnoverNogoals;
+                  // OpponentTurnoverGoal -tilanteiden määrä
+                  const opponentTurnoverGoalArr = Array.isArray(game.opponent_turnover_goal) ? game.opponent_turnover_goal : [];
+                  const opponentTurnoverGoals = opponentTurnoverGoalArr.filter((tid: string) => parseInt(tid) === pid).length;
+                  playerStats[pid].opponentTurnoverGoal += opponentTurnoverGoals;
+                  // OpponentTurnoverNogoal -tilanteiden määrä
+                  const opponentTurnoverNogoalArr = Array.isArray(game.opponent_turnover_nogoal) ? game.opponent_turnover_nogoal : [];
+                  const opponentTurnoverNogoals = opponentTurnoverNogoalArr.filter((tid: string) => parseInt(tid) === pid).length;
+                  playerStats[pid].opponentTurnoverNogoal += opponentTurnoverNogoals;
                 }
               }
             }
@@ -190,14 +236,14 @@ let overlayHeight = 800;
             uniqueGoalies = uniqueGoalies.filter((gid) => allowedIds.includes(gid));
           }
           const teamGoals = Array.isArray(game.team_goals) ? game.team_goals.length : 0;
-          const opponentGoals = Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0;
+          const opponentGoals = Array.isArray(game.opponent_goals) ? game.opponent_goals.length : 0;          
           const isWin = teamGoals > opponentGoals;
           const isDraw = teamGoals === opponentGoals;
           const isLoss = teamGoals < opponentGoals;
           for (const gid of uniqueGoalies) {
             const name = goalieIdMap[gid];
             if (!goalieStats[name]) {
-              goalieStats[name] = { name, games: 0, wins: 0, draws: 0, losses: 0, assists: 0, saves: 0, opponentGoals: 0, interruptions: 0 };
+              goalieStats[name] = { name, games: 0, wins: 0, draws: 0, losses: 0, assists: 0, saves: 0, opponentGoals: 0, interruptions: 0, opponentTurnoverGoal: 0, opponentTurnoverNogoal: 0 };
             }
             goalieStats[name].games += 1;
             if (isWin) goalieStats[name].wins += 1;
@@ -218,6 +264,15 @@ let overlayHeight = 800;
             // Laske katkot
             if (Array.isArray(game.goalie_game_interruption)) {
               goalieStats[name].interruptions += game.goalie_game_interruption.filter((iid: number) => iid === gid).length;
+            }
+            // Laske opponentTurnoverGoal tilanteet
+            if (Array.isArray(game.opponent_turnover_goal)) {
+              console.log('DEBUG opponent_turnover_goal:', game.opponent_turnover_goal, 'gid:', gid, 'goalie name:', name);
+              goalieStats[name].opponentTurnoverGoal += game.opponent_turnover_goal.filter((pid: any) => Number(pid) === Number(gid)).length;
+            }
+            // Laske opponentTurnoverNogoal tilanteet
+            if (Array.isArray(game.opponent_turnover_nogoal)) {
+              goalieStats[name].opponentTurnoverNogoal += game.opponent_turnover_nogoal.filter((aid: number) => aid === gid).length;
             }
           }
         }
@@ -260,8 +315,7 @@ let overlayHeight = 800;
         return aLast.localeCompare(bLast);
       });
     }
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
+  
   // onMount already imported above, getContext not needed
   let teams: any[] = [];
   let competitions: any[] = [];
@@ -286,7 +340,7 @@ let overlayHeight = 800;
   let selectedCompetition: number | null = null;
   let startDate: string = '';
   let endDate: string = '';
-  import type { User } from '$lib/db';
+  
   let user: User | null = null;
   let userRole = '';
   let userTeamId: number | null = null;
@@ -569,12 +623,14 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
             <th>Voitot</th>
             <th>Tasapelit</th>
             <th>Tappiot</th>
-              <th>Syötöt</th>
+            <th>Syötöt</th>
             <th>Torjunnat</th>
             <th>Päästetyt</th>
             <th>Torjunta-%</th>
             <th>Päästettyjä <br/>maaleja/peli</th>
             <th>Katkot</th>
+            <!-- <th>Pelinkäännöt<br>(maali)</th> -->
+            <!-- <th>Pelinkäännöt<br>(ei maalia)</th> -->
             <!-- <th>Katkot/peli</th> -->
           </tr>
         </thead>
@@ -592,6 +648,8 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                 <td>{goalieStats[name]?.savePct ?? '0.0'}%</td>
                 <td>{goalieStats[name]?.goalsPerGame ?? '0.00'}</td>
                 <td>{goalieStats[name]?.interruptions ?? 0}</td>
+                <!-- <td>{goalieStats[name]?.opponentTurnoverGoal ?? 0}</td> -->
+                <!-- <td>{goalieStats[name]?.opponentTurnoverNogoal ?? 0}</td> -->                
                 <!-- <td>{goalieStats[name]?.interruptionsPerGame ?? '0.00'}</td> -->
               </tr>
             {/each}
@@ -620,7 +678,9 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                 <th>Vedot <br/>blokkiin</th>
                 <!-- <th>Vedot <br/>blokkiin/peli</th> -->
                 <th>Vedot <br/>ohi maalin</th>
-                <!-- <th>Vedot <br/>ohi maalin/peli</th> -->                
+                <!-- <th>Vedot <br/>ohi maalin/peli</th> -->
+                <th>Pelinkäännöt<br>(maali)</th>
+                <th>Pelinkäännöt<br>(ei maalia)</th>                
               </tr>
             </thead>
             <tbody>
@@ -645,7 +705,9 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                   <td>{playerStats[player.id]?.shotsBlocked ?? 0}</td>
                   <!-- <td>{playerStats[player.id]?.shotsBlockedPerGame ?? "0.00"}</td> -->
                   <td>{playerStats[player.id]?.shotsOffTarget ?? 0}</td>
-                  <!-- <td>{playerStats[player.id]?.shotsOffTargetPerGame ?? "0.00"}</td> -->                  
+                  <!-- <td>{playerStats[player.id]?.shotsOffTargetPerGame ?? "0.00"}</td> -->
+                  <td><span style="color: green;">{playerStats[player.id]?.teamTurnoverGoal ?? 0}</span> / <span style="color: red;">{playerStats[player.id]?.opponentTurnoverGoal ?? 0}</span></td>
+                  <td><span style="color: green;">{playerStats[player.id]?.teamTurnoverNogoal ?? 0}</span> / <span style="color: red;">{playerStats[player.id]?.opponentTurnoverNogoal ?? 0}</span></td>                  
                 </tr>
               {/each}
             </tbody>
