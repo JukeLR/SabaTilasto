@@ -56,8 +56,16 @@ export async function getUserById(id: number): Promise<User | null> {
 	const result = await sql`
 		SELECT * FROM users WHERE id = ${id}
 	`;
-	
-	return result[0] as User || null;
+	const user = result[0] as User | null;
+	if (user && typeof user.player_ids === 'string') {
+		// PostgreSQL array: '{1,2,3}'
+		user.player_ids = user.player_ids
+			.replace(/[{}]/g, '')
+			.split(',')
+			.filter(Boolean)
+			.map(Number);
+	}
+	return user;
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {

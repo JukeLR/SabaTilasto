@@ -689,7 +689,11 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
             <tbody>
               {#each playerList as player}
                 <tr>
-                  <td class="name-col">{player.name}</td>
+                  <td class="name-col">
+                    <a href={`/games/stats/player/${player.id}`} style="color: #1976d2; text-decoration: underline; cursor: pointer;">
+                      {player.name}
+                    </a>
+                  </td>
                   <td>{playerStats[player.id]?.games ?? 0}</td>
                   <td>{playerStats[player.id]?.wins ?? 0}</td>
                   <td>{playerStats[player.id]?.draws ?? 0}</td>

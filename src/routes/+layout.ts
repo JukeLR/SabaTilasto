@@ -67,10 +67,11 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 
 			// Junioripäällikkö, toimihenkilö ja pelaaja pääsevät etusivulle, tilastoihin, omaan profiiliin ja raportteihin
 			if (role === 'toimihenkilö' || role === 'junioripäällikkö' || role === 'pelaaja') {
-				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut
+				// Sallitut polut: etusivu, tilastot, oma profiili, raportit ja kaikki raporttien alasivut sekä kaikki pelaajatilastosivut
 				const allowedPaths = ['/', '/games/stats', '/profile'];
 				if (
 					allowedPaths.includes(pathname) ||
+					pathname.startsWith('/games/stats/player') ||
 					pathname.startsWith('/reports')
 				) {
 					return {
