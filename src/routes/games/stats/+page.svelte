@@ -266,8 +266,7 @@ let overlayHeight = 800;
               goalieStats[name].interruptions += game.goalie_game_interruption.filter((iid: number) => iid === gid).length;
             }
             // Laske opponentTurnoverGoal tilanteet
-            if (Array.isArray(game.opponent_turnover_goal)) {
-              console.log('DEBUG opponent_turnover_goal:', game.opponent_turnover_goal, 'gid:', gid, 'goalie name:', name);
+            if (Array.isArray(game.opponent_turnover_goal)) {              
               goalieStats[name].opponentTurnoverGoal += game.opponent_turnover_goal.filter((pid: any) => Number(pid) === Number(gid)).length;
             }
             // Laske opponentTurnoverNogoal tilanteet
@@ -629,8 +628,8 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
             <th>Torjunta-%</th>
             <th>Päästettyjä <br/>maaleja/peli</th>
             <th>Katkot</th>
-            <!-- <th>Pelinkäännöt<br>(maali)</th> -->
-            <!-- <th>Pelinkäännöt<br>(ei maalia)</th> -->
+            <th>Pelinkäännöt<br>(maali)</th>
+            <th>Pelinkäännöt<br>(ei maalia)</th>
             <!-- <th>Katkot/peli</th> -->
           </tr>
         </thead>
@@ -648,8 +647,12 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
                 <td>{goalieStats[name]?.savePct ?? '0.0'}%</td>
                 <td>{goalieStats[name]?.goalsPerGame ?? '0.00'}</td>
                 <td>{goalieStats[name]?.interruptions ?? 0}</td>
-                <!-- <td>{goalieStats[name]?.opponentTurnoverGoal ?? 0}</td> -->
-                <!-- <td>{goalieStats[name]?.opponentTurnoverNogoal ?? 0}</td> -->                
+                <td style="color: {goalieStats[name]?.opponentTurnoverGoal > 0 ? 'red' : 'inherit'}">
+                  {goalieStats[name]?.opponentTurnoverGoal ?? 0}
+                </td>
+                <td style="color: {goalieStats[name]?.opponentTurnoverNogoal > 0 ? 'red' : 'inherit'}">
+                  {goalieStats[name]?.opponentTurnoverNogoal ?? 0}
+                </td>                
                 <!-- <td>{goalieStats[name]?.interruptionsPerGame ?? '0.00'}</td> -->
               </tr>
             {/each}
