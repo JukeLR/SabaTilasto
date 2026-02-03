@@ -34,6 +34,7 @@
     if (data && data.goalsPerGame) {
       if (goalsChartInstance) goalsChartInstance.destroy();
       const labels = data.goalsPerGame.map((g: any) => g.date);
+      const gameIds = data.goalsPerGame.map((g: any) => g.id);
       goalsChartInstance = new Chart(goalsChartEl, {
         type: 'line',
         data: {
@@ -55,13 +56,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = goalsChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.assistsPerGame) {
       if (assistsChartInstance) assistsChartInstance.destroy();
       const labels = data.assistsPerGame.map((a: any) => a.date);
+      const gameIds = data.assistsPerGame.map((a: any) => a.id);
       assistsChartInstance = new Chart(assistsChartEl, {
         type: 'line',
         data: {
@@ -83,13 +95,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = assistsChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.shotsOnGoalPerGame) {
       if (shotsChartInstance) shotsChartInstance.destroy();
       const labels = data.shotsOnGoalPerGame.map((s: any) => s.date);
+      const gameIds = data.shotsOnGoalPerGame.map((s: any) => s.id);
       shotsChartInstance = new Chart(shotsChartEl, {
         type: 'line',
         data: {
@@ -111,13 +134,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = shotsChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.shotsOffTargetPerGame) {
       if (shotsOffChartInstance) shotsOffChartInstance.destroy();
       const labels = data.shotsOffTargetPerGame.map((s: any) => s.date);
+      const gameIds = data.shotsOffTargetPerGame.map((s: any) => s.id);
       shotsOffChartInstance = new Chart(shotsOffChartEl, {
         type: 'line',
         data: {
@@ -139,13 +173,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = shotsOffChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.shotsBlockedPerGame) {
       if (shotsBlockedChartInstance) shotsBlockedChartInstance.destroy();
       const labels = data.shotsBlockedPerGame.map((s: any) => s.date);
+      const gameIds = data.shotsBlockedPerGame.map((s: any) => s.id);
       shotsBlockedChartInstance = new Chart(shotsBlockedChartEl, {
         type: 'line',
         data: {
@@ -167,13 +212,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = shotsBlockedChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.blocksPerGame) {
       if (blocksChartInstance) blocksChartInstance.destroy();
       const labels = data.blocksPerGame.map((b: any) => b.date);
+      const gameIds = data.blocksPerGame.map((b: any) => b.id);
       blocksChartInstance = new Chart(blocksChartEl, {
         type: 'line',
         data: {
@@ -195,13 +251,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = blocksChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.teamTurnoverGoalPerGame) {
       if (teamTurnoverGoalChartInstance) teamTurnoverGoalChartInstance.destroy();
       const labels = data.teamTurnoverGoalPerGame.map((t: any) => t.date);
+      const gameIds = data.teamTurnoverGoalPerGame.map((t: any) => t.id);
       teamTurnoverGoalChartInstance = new Chart(teamTurnoverGoalChartEl, {
         type: 'line',
         data: {
@@ -223,13 +290,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = teamTurnoverGoalChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.teamTurnoverNogoalPerGame) {
       if (teamTurnoverNogoalChartInstance) teamTurnoverNogoalChartInstance.destroy();
       const labels = data.teamTurnoverNogoalPerGame.map((t: any) => t.date);
+      const gameIds = data.teamTurnoverNogoalPerGame.map((t: any) => t.id);
       teamTurnoverNogoalChartInstance = new Chart(teamTurnoverNogoalChartEl, {
         type: 'line',
         data: {
@@ -251,13 +329,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = teamTurnoverNogoalChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.opponentTurnoverGoalPerGame) {
       if (opponentTurnoverGoalChartInstance) opponentTurnoverGoalChartInstance.destroy();
       const labels = data.opponentTurnoverGoalPerGame.map((t: any) => t.date);
+      const gameIds = data.opponentTurnoverGoalPerGame.map((t: any) => t.id);
       opponentTurnoverGoalChartInstance = new Chart(opponentTurnoverGoalChartEl, {
         type: 'line',
         data: {
@@ -279,13 +368,24 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = opponentTurnoverGoalChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }
     if (data && data.opponentTurnoverNogoalPerGame) {
       if (opponentTurnoverNogoalChartInstance) opponentTurnoverNogoalChartInstance.destroy();
       const labels = data.opponentTurnoverNogoalPerGame.map((t: any) => t.date);
+      const gameIds = data.opponentTurnoverNogoalPerGame.map((t: any) => t.id);
       opponentTurnoverNogoalChartInstance = new Chart(opponentTurnoverNogoalChartEl, {
         type: 'line',
         data: {
@@ -307,7 +407,17 @@
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: yAxisOptions }
+          scales: { y: yAxisOptions },
+          onClick: (evt: any) => {
+            const points = opponentTurnoverNogoalChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              const gameId = gameIds[idx];
+              if (gameId) {
+                window.location.href = `/reports/${gameId}/tilasto`;
+              }
+            }
+          }
         }
       });
     }

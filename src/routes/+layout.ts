@@ -72,6 +72,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				if (
 					allowedPaths.includes(pathname) ||
 					pathname.startsWith('/games/stats/player') ||
+					pathname.startsWith('/games/stats/goalie') ||
 					pathname.startsWith('/reports')
 				) {
 					return {

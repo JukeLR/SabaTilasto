@@ -223,16 +223,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             } else {
             dateStr = '' + game.game_date;
             }
-            goalsPerGame.push({ date: dateStr, goals });
-            assistsPerGame.push({ date: dateStr, assists });
-            shotsOnGoalPerGame.push({ date: dateStr, shots });
-            shotsOffTargetPerGame.push({ date: dateStr, shots: shotsOff });
-            shotsBlockedPerGame.push({ date: dateStr, shots: shotsBlocked });
-            blocksPerGame.push({ date: dateStr, blocks });
-            teamTurnoverGoalPerGame.push({ date: dateStr, turnovers });
-            teamTurnoverNogoalPerGame.push({ date: dateStr, turnovers: turnoversNoGoal });
-            opponentTurnoverGoalPerGame.push({ date: dateStr, turnovers: opponentTurnoversGoal });
-            opponentTurnoverNogoalPerGame.push({ date: dateStr, turnovers: opponentTurnoversNogoal });
+            goalsPerGame.push({ date: dateStr, goals, id: game.id });
+            assistsPerGame.push({ date: dateStr, assists, id: game.id });
+            shotsOnGoalPerGame.push({ date: dateStr, shots, id: game.id });
+            shotsOffTargetPerGame.push({ date: dateStr, shots: shotsOff, id: game.id });
+            shotsBlockedPerGame.push({ date: dateStr, shots: shotsBlocked, id: game.id });
+            blocksPerGame.push({ date: dateStr, blocks, id: game.id });
+            teamTurnoverGoalPerGame.push({ date: dateStr, turnovers, id: game.id });
+            teamTurnoverNogoalPerGame.push({ date: dateStr, turnovers: turnoversNoGoal, id: game.id });
+            opponentTurnoverGoalPerGame.push({ date: dateStr, turnovers: opponentTurnoversGoal, id: game.id });
+            opponentTurnoverNogoalPerGame.push({ date: dateStr, turnovers: opponentTurnoversNogoal, id: game.id });
         }
     }
   } catch (e) {

@@ -2,7 +2,7 @@
 import { onMount } from 'svelte';
 import { page } from '$app/stores';
 import type { User } from '$lib/db';
-let goalieNames: string[] = [];
+let goalieNames: Array<{ id: number; name: string }> = [];
 let playerNames: string[] = [];
 let goalieStats: Record<string, {
   name: string;
@@ -78,7 +78,7 @@ let overlayHeight = 800;
       }
       goalieNames = filteredGoalies
         .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
-        .map((p: any) => `${p.first_name} ${p.last_name}`);
+        .map((p: any) => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }));
       // Hae kenttäpelaajat
       const playersRes = await fetch(`/api/players?team_id=${selectedTeam}&not_position=Maalivahti`);
       const playersData = await playersRes.json();
@@ -634,24 +634,26 @@ $: if (shotmapPoints && shotmapPoints.length > 0) {
           </tr>
         </thead>
         <tbody>
-            {#each goalieNames as name}
+            {#each goalieNames as goalie}
               <tr>
-                <td class="name-col">{name}</td>
-                <td>{goalieStats[name]?.games ?? 0}</td>
-                <td>{goalieStats[name]?.wins ?? 0}</td>
-                <td>{goalieStats[name]?.draws ?? 0}</td>
-                <td>{goalieStats[name]?.losses ?? 0}</td>
-                <td>{goalieStats[name]?.assists ?? 0}</td>
-                <td>{goalieStats[name]?.saves ?? 0}</td>
-                <td>{goalieStats[name]?.opponentGoals ?? 0}</td>
-                <td>{goalieStats[name]?.savePct ?? '0.0'}%</td>
-                <td>{goalieStats[name]?.goalsPerGame ?? '0.00'}</td>
-                <td>{goalieStats[name]?.interruptions ?? 0}</td>
-                <td style="color: {goalieStats[name]?.opponentTurnoverGoal > 0 ? 'red' : 'inherit'}">
-                  {goalieStats[name]?.opponentTurnoverGoal ?? 0}
+                <td class="name-col">
+                  <a href="/games/stats/goalie/{goalie.id}">{goalie.name}</a>
                 </td>
-                <td style="color: {goalieStats[name]?.opponentTurnoverNogoal > 0 ? 'red' : 'inherit'}">
-                  {goalieStats[name]?.opponentTurnoverNogoal ?? 0}
+                <td>{goalieStats[goalie.name]?.games ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.wins ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.draws ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.losses ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.assists ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.saves ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.opponentGoals ?? 0}</td>
+                <td>{goalieStats[goalie.name]?.savePct ?? '0.0'}%</td>
+                <td>{goalieStats[goalie.name]?.goalsPerGame ?? '0.00'}</td>
+                <td>{goalieStats[goalie.name]?.interruptions ?? 0}</td>
+                <td style="color: {goalieStats[goalie.name]?.opponentTurnoverGoal > 0 ? 'red' : 'inherit'}">
+                  {goalieStats[goalie.name]?.opponentTurnoverGoal ?? 0}
+                </td>
+                <td style="color: {goalieStats[goalie.name]?.opponentTurnoverNogoal > 0 ? 'red' : 'inherit'}">
+                  {goalieStats[goalie.name]?.opponentTurnoverNogoal ?? 0}
                 </td>                
                 <!-- <td>{goalieStats[name]?.interruptionsPerGame ?? '0.00'}</td> -->
               </tr>
