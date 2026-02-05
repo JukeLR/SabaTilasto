@@ -2,9 +2,13 @@
     let goalsAgainstChartEl: HTMLCanvasElement;
     let goalsAgainstChartInstance: any;
   export let data: any;
+  import { goto } from '$app/navigation';
+  import { afterNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
   let savesScatterEl: HTMLCanvasElement;
   let savesScatterInstance: any;
+
+  let showReportLoading = false;
 
   onMount(async () => {
 
@@ -67,7 +71,8 @@
                   const idx = elements[0].index;
                   const gameId = pctGameIds[idx];
                   if (gameId) {
-                    window.location.href = `/reports/${gameId}/tilasto`;
+                    showReportLoading = true;
+                    goto(`/reports/${gameId}/tilasto`);
                   }
                 }
               }
@@ -125,7 +130,8 @@
             const idx = elements[0].index;
             const gameId = gameIds[idx];
             if (gameId) {
-              window.location.href = `/reports/${gameId}/tilasto`;
+              showReportLoading = true;
+              goto(`/reports/${gameId}/tilasto`);
             }
           }
         }
@@ -183,13 +189,18 @@
               const idx = elements[0].index;
               const gameId = gaGameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
         }
       });
     }
+  });
+
+  afterNavigate(() => {
+    showReportLoading = false;
   });
 </script>
 
@@ -211,5 +222,30 @@
     <div style="width:100%; max-width:100%; margin-bottom:32px;">
         <canvas id="torjuntaPctChart" style="width:100%; height:400px;"></canvas>
     </div>
+
+    {#if showReportLoading}
+    <div class="modal-loading">Ladataan...</div>
+    {/if}
+
 </main>
+
+<style>  
+  .modal-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    font-size: 2rem;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
+    backdrop-filter: blur(2px);
+  }
+</style>
 

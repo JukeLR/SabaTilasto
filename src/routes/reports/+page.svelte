@@ -100,6 +100,7 @@
   }
 
   function viewGame(gameId: number) {
+    showReportLoading = true;
     goto(`/reports/${gameId}/tilasto`);
   }
 

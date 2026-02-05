@@ -1,5 +1,7 @@
 <script lang="ts">
   export let data;
+  import { goto } from '$app/navigation';
+  import { afterNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
   let goalsChartEl: HTMLCanvasElement;
   let assistsChartEl: HTMLCanvasElement;
@@ -21,6 +23,8 @@
   let teamTurnoverNogoalChartInstance: any;
   let opponentTurnoverGoalChartInstance: any;
   let opponentTurnoverNogoalChartInstance: any;
+
+  let showReportLoading = false;
 
   // Chart.js tuonti dynaamisesti (vain client)
   onMount(async () => {
@@ -63,7 +67,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);                
               }
             }
           }
@@ -102,7 +107,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -141,7 +147,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -180,7 +187,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -219,7 +227,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -258,7 +267,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -297,7 +307,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -336,7 +347,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -375,7 +387,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -414,7 +427,8 @@
               const idx = points[0].index;
               const gameId = gameIds[idx];
               if (gameId) {
-                window.location.href = `/reports/${gameId}/tilasto`;
+                showReportLoading = true;
+                goto(`/reports/${gameId}/tilasto`);
               }
             }
           }
@@ -423,6 +437,9 @@
     }
   });
 
+  afterNavigate(() => {
+    showReportLoading = false;
+  });
 </script>
 
 <main>
@@ -470,5 +487,28 @@
   <div style="width:100%; max-width:100%; margin-bottom:32px;">
     <canvas bind:this={opponentTurnoverNogoalChartEl} style="width:100%; height:400px;"></canvas>
   </div>
+
+  {#if showReportLoading}
+    <div class="modal-loading">Ladataan...</div>
+  {/if}
   <!-- Lisää sisältöä tähän jatkossa -->
 </main>
+<style>  
+  .modal-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    font-size: 2rem;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
+    backdrop-filter: blur(2px);
+  }
+</style>
