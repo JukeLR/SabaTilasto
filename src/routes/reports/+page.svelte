@@ -41,6 +41,7 @@
     user = data?.user || null;
     userRole = user?.role || '';
     userTeamIds = Array.isArray(user?.team_ids) ? user.team_ids.map((id: any) => Number(id)) : [];
+      console.log('user.team_ids:', user?.team_ids);
 
     // Pelaaja-roolilla ilman player_id:tä ei haeta yhtään peliä eikä näytetä listaa
     if (userRole === 'pelaaja' && (!Array.isArray(user?.player_ids) || user.player_ids.length === 0)) {

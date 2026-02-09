@@ -12,14 +12,17 @@ export const GET = async ({ url, cookies }: RequestEvent) => {
 		const userResult = await sql`SELECT role, team_ids FROM users WHERE id = ${parseInt(userId)}`;
 		const user = userResult[0];
 		let effectiveTeamId = url.searchParams.get('team_id');
-		// Jos toimihenkilö ja on team_id, rajoitetaan vain omaan joukkueeseen
+		// Jos toimihenkilö ja on useita team_ids, haetaan kaikki joukkueet
+		let teamIdList: number[] | null = null;
 		if (user && user.role === 'toimihenkilö' && Array.isArray(user.team_ids) && user.team_ids.length > 0) {
-			effectiveTeamId = user.team_ids[0];
+			teamIdList = user.team_ids.map((id: any) => Number(id));
 		}
 
 		const seriesId = url.searchParams.get('series_id');
 		let whereClauses = [];
-		if (effectiveTeamId) {
+		if (teamIdList && teamIdList.length > 0) {
+			whereClauses.push(`own_team_id IN (${teamIdList.join(',')})`);
+		} else if (effectiveTeamId) {
 			whereClauses.push(`own_team_id = ${parseInt(effectiveTeamId)}`);
 		}
 		if (seriesId) {
